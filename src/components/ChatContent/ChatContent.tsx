@@ -9,6 +9,7 @@ import styles from "./ChatContent.module.css";
 import { ContextFiles } from "./ContextFiles";
 import { AssistantInput } from "./AssistantInput";
 // import { SystemInput } from "./SystemInput";
+import { useConfig } from "../../contexts/config-context";
 
 const PlaceHolderText: React.FC = () => (
   <Text>Welcome to Refact chat! How can I assist you today?</Text>
@@ -34,14 +35,17 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
       isStreaming,
     } = props;
 
+    const { host } = useConfig();
+
     const innerRef = React.useRef<HTMLDivElement>(null);
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     useImperativeHandle(ref, () => innerRef.current!, []);
 
     useEffect(() => {
-      innerRef.current?.scrollIntoView &&
+      if (host !== "jetbrains" && innerRef.current?.scrollIntoView) {
         innerRef.current.scrollIntoView({ behavior: "instant", block: "end" });
-    }, [messages]);
+      }
+    }, [messages, host]);
 
     return (
       <ScrollArea style={{ flexGrow: 1, height: "auto" }} scrollbars="vertical">
