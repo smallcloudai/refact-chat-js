@@ -1,11 +1,12 @@
 import React from "react";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { Container, Flex, Text, Box, Button } from "@radix-ui/themes";
-import { ToolCall, ToolResult } from "../../events";
+import { ChatContextFile, ToolCall, ToolResult } from "../../events";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
 import classNames from "classnames";
 import styles from "./ChatContent.module.css";
 import { Markdown } from "../CommandLine/Markdown";
+import { ContextFiles } from "./ContextFiles";
 
 const Chevron: React.FC<{ open: boolean }> = ({ open }) => {
   return (
@@ -48,7 +49,8 @@ const Result: React.FC<{ children: string }> = ({ children }) => {
 const ToolMessage: React.FC<{
   toolCall: ToolCall;
   result?: ToolResult;
-}> = ({ toolCall, result }) => {
+  files: ChatContextFile[];
+}> = ({ toolCall, result, files }) => {
   const results = result?.content ?? "";
   const name = toolCall.function.name ?? "";
 
@@ -79,6 +81,7 @@ const ToolMessage: React.FC<{
   return (
     <Flex gap="2" direction="column">
       <Result>{content}</Result>
+      <ContextFiles files={files} />
     </Flex>
   );
 };
@@ -86,7 +89,8 @@ const ToolMessage: React.FC<{
 export const ToolContent: React.FC<{
   toolCalls: ToolCall[];
   results: Record<string, ToolResult>;
-}> = ({ toolCalls, results }) => {
+  files: ChatContextFile[];
+}> = ({ toolCalls, results, files }) => {
   const [open, setOpen] = React.useState(false);
 
   if (toolCalls.length === 0) return null;
@@ -115,7 +119,11 @@ export const ToolContent: React.FC<{
             const key = `${toolCall.id}-${toolCall.index}`;
             return (
               <Box key={key} py="2">
-                <ToolMessage toolCall={toolCall} result={result} />
+                <ToolMessage
+                  toolCall={toolCall}
+                  result={result}
+                  files={files}
+                />
               </Box>
             );
           })}

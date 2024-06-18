@@ -2,7 +2,14 @@ import React from "react";
 import { Markdown, MarkdownProps } from "../Markdown";
 
 import { Container, Box } from "@radix-ui/themes";
-import { ToolCall, ToolResult } from "../../events";
+import {
+  ChatContextFile,
+  ChatMessages,
+  ToolCall,
+  ToolResult,
+  isChatContextFileMessage,
+  isToolMessage,
+} from "../../events";
 import { ToolContent } from "./ToolsContent";
 
 type ChatInputProps = Pick<
@@ -11,7 +18,7 @@ type ChatInputProps = Pick<
 > & {
   message: string | null;
   toolCalls?: ToolCall[] | null;
-  toolResults: Record<string, ToolResult>;
+  auxMessages?: ChatMessages;
 };
 
 function fallbackCopying(text: string) {
@@ -31,12 +38,28 @@ function fallbackCopying(text: string) {
 }
 
 export const AssistantInput: React.FC<ChatInputProps> = (props) => {
+  const messages = props.auxMessages ?? [];
+
+  const results = messages.reduce<Record<string, ToolResult>>(
+    (acc, message) => {
+      if (isToolMessage(message)) {
+        const result = message[1];
+        return {
+          ...acc,
+          [result.tool_call_id]: result,
+        };
+      }
+      return acc;
+    },
+    {},
+  );
+
+  const files = messages.reduce<ChatContextFile[]>((acc, message) => {
+    if (!isChatContextFileMessage(message)) return acc;
+    return [...acc, ...message[1]];
+  }, []);
   return (
     <Container position="relative">
-      {props.toolCalls && (
-        <ToolContent toolCalls={props.toolCalls} results={props.toolResults} />
-      )}
-
       {props.message && (
         <Box py="4">
           <Markdown
@@ -59,6 +82,11 @@ export const AssistantInput: React.FC<ChatInputProps> = (props) => {
           </Markdown>
         </Box>
       )}
+      <ToolContent
+        toolCalls={props.toolCalls ?? []}
+        results={results}
+        files={files}
+      />
     </Container>
   );
 };
