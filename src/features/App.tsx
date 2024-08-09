@@ -5,23 +5,51 @@ import { CloudLogin } from "../components/CloudLogin";
 import { EnterpriseSetup } from "../components/EnterpriseSetup";
 import { SelfHostingSetup } from "../components/SelfHostingSetup";
 import { Flex } from "@radix-ui/themes";
-import { usePostMessage } from "../hooks";
+import { Chat } from "./Chat";
+import { Sidebar } from "../components/Sidebar/Sidebar";
+import {
+  // useEventBusForHost,
+  usePostMessage,
+  // useChatHistory,
+  // useEventBusForChat,
+  useEventsBusForIDE,
+} from "../hooks";
 import {
   EVENT_NAMES_FROM_SETUP,
   HostSettings,
   OpenExternalUrl,
   SetupHost,
 } from "../events/setup";
-import { ChatWithSideBar } from "../lib/render/ChatWithSideBar";
-import { Documentation } from "./Documentation";
+import { useConfig } from "../app/hooks";
+import { FIMDebug } from "./FIM";
+import { Statistics } from "./Statistics";
+import { store, persistor } from "../app/store";
+import { Provider } from "react-redux";
+import { PersistGate } from "redux-persist/integration/react";
+import { Theme } from "../components/Theme";
+import { useEventBusForApp } from "../hooks/useEventBusForApp";
 
 export interface AppProps {
   style?: React.CSSProperties;
 }
 
-export const App: React.FC<AppProps> = ({ style }: AppProps) => {
-  const { pages, navigate } = usePages();
+const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
+  const { pages, navigate, isPageInHistory } = usePages();
+  const { openHotKeys, openSettings } = useEventsBusForIDE();
+  useEventBusForApp();
+  // TODO: can replace this with a selector for state.chat.thread.id
+
   const postMessage = usePostMessage();
+  const config = useConfig();
+
+  // const historyHook = useChatHistory();
+  // const chatHook = useEventBusForChat();
+  // const fimHook = useEventBysForFIMDebug();
+  // const statisticsHook = useEventBusForStatistic();
+
+  if (config.apiKey && config.addressURL && !isPageInHistory("history")) {
+    navigate({ type: "push", page: { name: "history" } });
+  }
 
   const setupHost = useCallback(
     (host: HostSettings) => {
@@ -71,11 +99,53 @@ export const App: React.FC<AppProps> = ({ style }: AppProps) => {
     navigate({ type: "pop" });
   };
 
+  // const handleCreateNewChat = useCallback(() => {
+  //   historyHook.createNewChat();
+  //   navigate({ type: "push", page: { name: "chat" } });
+  // }, [historyHook, navigate]);
+
+  const handleNavigation = useCallback(
+    (to: "fim" | "stats" | "hot keys" | "settings" | "chat" | "") => {
+      if (to === "settings") {
+        openSettings();
+      } else if (to === "hot keys") {
+        openHotKeys();
+      } else if (to === "fim") {
+        navigate({
+          type: "push",
+          page: { name: "fill in the middle debug page" },
+        });
+      } else if (to === "stats") {
+        navigate({ type: "push", page: { name: "statistics page" } });
+      } else if (to === "chat") {
+        navigate({ type: "push", page: { name: "chat" } });
+      }
+    },
+    [navigate, openHotKeys, openSettings],
+  );
+
+  // goTo settings, fim, stats, hot keys
+
   return (
-    <Flex style={{ justifyContent: "center", ...style }}>
+    <Flex
+      style={{
+        flexDirection: "column",
+        alignItems: "stretch",
+        height: "100vh",
+        ...style,
+      }}
+    >
       {pages.map((page, i) => {
         return (
-          <Flex key={i} display={i === pages.length - 1 ? "flex" : "none"}>
+          <Flex
+            key={i}
+            display={i === pages.length - 1 ? "flex" : "none"}
+            style={{
+              flexDirection: "row",
+              height: "100%",
+              justifyContent: "center",
+            }}
+          >
             {page.name === "initial setup" && (
               <InitialSetup onPressNext={onPressNext} />
             )}
@@ -92,11 +162,57 @@ export const App: React.FC<AppProps> = ({ style }: AppProps) => {
             {page.name === "self hosting setup" && (
               <SelfHostingSetup goBack={goBack} next={selfHostingSetup} />
             )}
-            {page.name === "documentation settings" && <Documentation />}
-            {page.name === "chat" && <ChatWithSideBar />}
+            {page.name === "history" && (
+              <Sidebar
+                // history={historyHook.history}
+                takingNotes={false}
+                // currentChatId={currentChatId}
+                // onCreateNewChat={handleCreateNewChat}
+                account={undefined}
+                // onHistoryItemClick={handleHistoryItemClick}
+                // onDeleteHistoryItem={handleDelete}
+                onOpenChatInTab={undefined}
+                handleLogout={() => {
+                  // TODO: handle logout
+                }}
+                handleNavigation={handleNavigation}
+                style={{ maxWidth: "540px", flex: 1, height: "100%" }}
+              />
+            )}
+            {page.name === "chat" && (
+              <Chat
+                host={config.host}
+                tabbed={config.tabbed}
+                // {...chatHook}
+                backFromChat={goBack}
+              />
+            )}
+            {page.name === "fill in the middle debug page" && (
+              <FIMDebug host={config.host} tabbed={config.tabbed} />
+            )}
+            {page.name === "statistics page" && (
+              <Statistics
+                backFromStatistic={goBack}
+                tabbed={config.tabbed}
+                host={config.host}
+                onCloseStatistic={goBack}
+              />
+            )}
           </Flex>
         );
       })}
     </Flex>
+  );
+};
+
+export const App = () => {
+  return (
+    <Provider store={store}>
+      <PersistGate persistor={persistor}>
+        <Theme>
+          <InnerApp />
+        </Theme>
+      </PersistGate>
+    </Provider>
   );
 };

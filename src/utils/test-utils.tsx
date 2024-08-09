@@ -4,8 +4,8 @@ import "@testing-library/jest-dom/vitest";
 import { render, RenderOptions } from "@testing-library/react";
 import userEvent, { UserEvent } from "@testing-library/user-event";
 import { Theme } from "@radix-ui/themes";
-import { EVENT_NAMES_TO_CHAT, ReceivePrompts } from "../events";
-import { STUB_CAPS_RESPONSE, SYSTEM_PROMPTS } from "../__fixtures__";
+import { Provider } from "react-redux";
+import { store } from "../app/store";
 
 const customRender = (
   ui: ReactElement,
@@ -13,7 +13,14 @@ const customRender = (
 ): ReturnType<typeof render> & { user: UserEvent } => {
   const user = userEvent.setup();
   return {
-    ...render(ui, { wrapper: Theme, ...options }),
+    ...render(ui, {
+      wrapper: ({ children }) => (
+        <Provider store={store}>
+          <Theme>{children}</Theme>
+        </Provider>
+      ),
+      ...options,
+    }),
     user,
   };
 };
@@ -33,26 +40,26 @@ export function postMessage(data: unknown) {
   );
 }
 
-export function setUpCapsForChat(chatId = "") {
-  postMessage({
-    type: EVENT_NAMES_TO_CHAT.RECEIVE_CAPS,
-    payload: {
-      id: chatId,
-      caps: STUB_CAPS_RESPONSE,
-    },
-  });
-}
+// export function setUpCapsForChat(chatId = "") {
+//   postMessage({
+//     type: EVENT_NAMES_TO_CHAT.RECEIVE_CAPS,
+//     payload: {
+//       id: chatId,
+//       caps: STUB_CAPS_RESPONSE,
+//     },
+//   });
+// }
 
-export function setUpSystemPromptsForChat(chatId = "") {
-  const systemPromptsMessage: ReceivePrompts = {
-    type: EVENT_NAMES_TO_CHAT.RECEIVE_PROMPTS,
-    payload: {
-      id: chatId,
-      prompts: SYSTEM_PROMPTS,
-    },
-  };
-  postMessage(systemPromptsMessage);
-}
+// export function setUpSystemPromptsForChat(chatId = "") {
+//   const systemPromptsMessage: ReceivePrompts = {
+//     type: EVENT_NAMES_TO_CHAT.RECEIVE_PROMPTS,
+//     payload: {
+//       id: chatId,
+//       prompts: SYSTEM_PROMPTS,
+//     },
+//   };
+//   postMessage(systemPromptsMessage);
+// }
 
 export function stubResizeObserver() {
   const ResizeObserverMock = vi.fn(() => ({

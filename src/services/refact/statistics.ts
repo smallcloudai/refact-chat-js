@@ -1,4 +1,32 @@
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+
 import { STATISTIC_URL } from "./consts";
+
+// TODO: this could be for the whole lsp?
+export const statisticsApi = createApi({
+  reducerPath: "statisticsApi",
+
+  baseQuery: fetchBaseQuery({
+    // TODO: set this to the configured lsp url
+    baseUrl: "http://127.0.0.1:8001",
+  }),
+  endpoints: (builder) => ({
+    getStatisticData: builder.query<StatisticData, undefined>({
+      query: () => STATISTIC_URL,
+      transformResponse: (response: unknown): StatisticData => {
+        if (!isStatisticDataResponse(response)) {
+          throw new Error("Invalid response for statistic data");
+        }
+        try {
+          return JSON.parse(response.data) as StatisticData;
+        } catch {
+          throw new Error("Invalid response for statistic data");
+        }
+      },
+    }),
+  }),
+  refetchOnMountOrArgChange: true,
+});
 
 export type RefactTableImpactDateObj = {
   completions: number;
@@ -46,28 +74,4 @@ export function isStatisticDataResponse(
   if (!json || typeof json !== "object") return false;
   if (!("data" in json)) return false;
   return typeof json.data === "string";
-}
-
-export async function getStatisticData(
-  lspUrl?: string,
-): Promise<{ data: string }> {
-  const statisticDataEndpoint = lspUrl
-    ? `${lspUrl.replace(/\/*$/, "")}${STATISTIC_URL}`
-    : STATISTIC_URL;
-  const response = await fetch(statisticDataEndpoint, {
-    method: "GET",
-    credentials: "same-origin",
-    headers: {
-      accept: "application/json",
-    },
-  });
-  if (!response.ok) {
-    throw new Error(response.statusText);
-  }
-
-  const json: unknown = await response.json();
-  if (!isStatisticDataResponse(json)) {
-    throw new Error("Invalid response for statistic data");
-  }
-  return json;
 }

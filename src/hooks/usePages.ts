@@ -1,5 +1,4 @@
 import { useReducer } from "react";
-import { useConfig } from "../contexts/config-context";
 
 export interface InitialSetupPage {
   name: "initial setup";
@@ -21,6 +20,18 @@ export interface ChatPage {
   name: "chat";
 }
 
+export interface HistoryList {
+  name: "history";
+}
+
+export interface FIMDebugPage {
+  name: "fill in the middle debug page";
+}
+
+export interface StatisticsPage {
+  name: "statistics page";
+}
+
 export interface DocumentationSettingsPage {
   name: "documentation settings";
 }
@@ -31,6 +42,9 @@ export type Page =
   | EnterpriseSetup
   | SelfHostingSetup
   | ChatPage
+  | HistoryList
+  | FIMDebugPage
+  | StatisticsPage
   | DocumentationSettingsPage;
 
 export interface ChangePage {
@@ -60,12 +74,12 @@ function pageReducer(state: Page[], action: PageAction): Page[] {
 }
 
 export function usePages() {
-  const config = useConfig();
-  let firstPage: Page = { name: "initial setup" };
-  if (config.addressURL && config.apiKey) {
-    firstPage = { name: "chat" }; // todo: change this to chat history
-  }
+  const firstPage: Page = { name: "initial setup" };
   const [pages, dispatch] = useReducer(pageReducer, [firstPage]);
 
-  return { pages, navigate: dispatch };
+  const isPageInHistory = (name: string) => {
+    return pages.some((page) => page.name === name);
+  };
+
+  return { pages, navigate: dispatch, isPageInHistory };
 }
