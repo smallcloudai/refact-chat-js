@@ -67,7 +67,7 @@ export const commandsApi = createApi({
         }
       },
     }),
-    getCommandPreview: builder.query<ChatContextFile[], string>({
+    getCommandPreview: builder.query<(ChatContextFile | string)[], string>({
       queryFn: async (query, api, _opts, baseQuery) => {
         const state = api.getState() as RootState;
         const port = state.config.lspPort as unknown as number;
@@ -81,7 +81,7 @@ export const commandsApi = createApi({
         });
 
         if (response.error) return { error: response.error };
-
+        // console.log(response);
         if (
           !isCommandPreviewResponse(response.data) &&
           !isDetailMessage(response.data)
@@ -99,13 +99,24 @@ export const commandsApi = createApi({
           return { data: [] };
         }
 
-        const files = response.data.messages.reduce<ChatContextFile[]>(
-          (acc, { content }) => {
-            const fileData = parseOrElse<ChatContextFile[]>(content, []);
+        const files = response.data.messages.reduce<
+          (ChatContextFile | string)[]
+        >((acc, message) => {
+          // can be plain text
+          if (isCommandFilePreview(message)) {
+            const fileData = parseOrElse<ChatContextFile[]>(
+              message.content,
+              [],
+            );
             return [...acc, ...fileData];
-          },
-          [],
-        );
+          }
+
+          if (isCommandPlainTextPreview(message)) {
+            // TODO: add name or something
+            return [...acc, message.content];
+          }
+          return acc;
+        }, []);
 
         return { data: files };
       },
@@ -139,11 +150,44 @@ export function isDetailMessage(json: unknown): json is DetailMessage {
   if (!("detail" in json)) return false;
   return true;
 }
+type PreviewPlainText = {
+  content: string;
+  role: "plain_text";
+};
 
-export type CommandPreviewContent = {
+type PreviewFile = {
   content: string;
   role: "context_file";
 };
+
+export type CommandPreviewContent = PreviewPlainText | PreviewFile;
+
+function isCommandFilePreview(json: unknown): json is PreviewFile {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  if (!("role" in json)) return false;
+  if (json.role !== "context_file") return false;
+  if (!("content" in json)) return false;
+  if (typeof json.content !== "string") return false;
+  return true;
+}
+
+function isCommandPlainTextPreview(json: unknown): json is PreviewPlainText {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  if (!("role" in json)) return false;
+  if (json.role !== "plain_text") return false;
+  if (!("content" in json)) return false;
+  if (typeof json.content !== "string") return false;
+  return true;
+}
+
+function isCommandPreviewContent(json: unknown): json is CommandPreviewContent {
+  if (isCommandFilePreview(json)) return true;
+  if (isCommandPlainTextPreview(json)) return true;
+  return false;
+}
+
 export type CommandPreviewResponse = {
   messages: CommandPreviewContent[];
 };
@@ -158,13 +202,5 @@ export function isCommandPreviewResponse(
 
   if (!json.messages.length) return true;
 
-  const firstMessage: unknown = json.messages[0];
-  if (!firstMessage) return false;
-  if (typeof firstMessage !== "object") return false;
-  if (!("role" in firstMessage)) return false;
-  if (firstMessage.role !== "context_file") return false;
-  if (!("content" in firstMessage)) return false;
-  if (typeof firstMessage.content !== "string") return false;
-
-  return true;
+  return json.messages.every((message) => isCommandPreviewContent(message));
 }
