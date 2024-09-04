@@ -78,103 +78,96 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
     chatId: string;
     tools: ToolCommand[] | null;
   }
->("chatThread/sendChat", ({ messages, chatId, tools }, thunkAPI) => {
+>("chatThread/sendChat", async ({ messages, chatId, tools }, thunkAPI) => {
   const state = thunkAPI.getState();
 
   const messagesForLsp = formatMessagesForLsp(messages);
-  return sendChat({
-    messages: messagesForLsp,
-    model: state.chat.thread.model,
-    tools,
-    stream: true,
-    abortSignal: thunkAPI.signal,
-    chatId,
-    apiKey: state.config.apiKey,
-    port: state.config.lspPort,
-  })
-    .then((response) => {
-      if (!response.ok) {
-        return Promise.reject(new Error(response.statusText));
+  try {
+    const response = await sendChat({
+      messages: messagesForLsp,
+      model: state.chat.thread.model,
+      tools,
+      stream: true,
+      abortSignal: thunkAPI.signal,
+      chatId,
+      apiKey: state.config.apiKey,
+      port: state.config.lspPort,
+    });
+
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    }
+
+    const decoder = new TextDecoder();
+    const reader = response.body?.getReader();
+    if (!reader) return;
+
+    const shouldContinue = Math.random() > -100.0;
+    let streamAsString = "";
+    // let deltaCounter = 0;
+    while (shouldContinue) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      if (thunkAPI.signal.aborted) {
+        thunkAPI.dispatch(setPreventSend({ id: chatId }));
+        break;
       }
 
-      const decoder = new TextDecoder();
-      const reader = response.body?.getReader();
-      if (!reader) return;
+      streamAsString += decoder.decode(value, { stream: true });
 
-      return reader.read().then(function pump({ done, value }): Promise<void> {
-        if (done) return Promise.resolve();
-        if (thunkAPI.signal.aborted) {
-          thunkAPI.dispatch(setPreventSend({ id: chatId }));
-          return Promise.resolve();
+      const deltaParts = streamAsString.split("\n\n");
+      const deltas = deltaParts.slice(0, -1).filter((str) => str.length > 0);
+      streamAsString = deltaParts[deltaParts.length - 1];
+
+      // deltaCounter += 1;
+      // let deltaCounter2 = 0;
+      for (const delta of deltas) {
+        // deltaCounter2 += 1;
+        // console.warn(`delta${deltaCounter} thispacket${deltaCounter2}: ${delta}`);
+
+        if (!delta.startsWith("data: ")) {
+          const maybeError = checkForDetailMessage(delta);
+          if (maybeError) {
+            throw new Error(maybeError.detail);
+          }
+          // eslint-disable-next-line no-console
+          console.log("Unexpected data in streaming buf: " + delta);
+          continue;
         }
 
-        const streamAsString = decoder.decode(value);
+        const maybeJsonString = delta.substring(6);
 
-        const maybeError = checkForDetailMessage(streamAsString);
-        if (maybeError) {
-          const error = new Error(maybeError.detail);
-          throw error;
+        if (maybeJsonString === "[DONE]") return;
+
+        if (maybeJsonString === "[ERROR]") {
+          throw new Error("error from lsp");
         }
 
-        const deltas = streamAsString
-          .split("\n\n")
-          .filter((str) => str.length > 0);
-
-        if (deltas.length === 0) return Promise.resolve();
-
-        // could be improved
-        for (const delta of deltas) {
-          // can have error here.
-          if (!delta.startsWith("data: ")) {
-            // eslint-disable-next-line no-console
-            console.log("Unexpected data in streaming buf: " + delta);
-            continue;
-          }
-
-          const maybeJsonString = delta.substring(6);
-
-          if (maybeJsonString === "[DONE]") return Promise.resolve();
-
-          if (maybeJsonString === "[ERROR]") {
-            // check for error details
-            const errorMessage = "error from lsp";
-            const error = new Error(errorMessage);
-
-            return Promise.reject(error);
-          }
-
-          const maybeErrorData = checkForDetailMessage(maybeJsonString);
-          if (maybeErrorData) {
-            const errorMessage: string =
-              typeof maybeErrorData.detail === "string"
-                ? maybeErrorData.detail
-                : JSON.stringify(maybeErrorData.detail);
-            const error = new Error(errorMessage);
-            // eslint-disable-next-line no-console
-            console.error(error);
-            throw error;
-          }
-          const json = parseOrElse<Record<string, unknown>>(
-            maybeJsonString,
-            {},
-          );
-
-          // TODO: type check this. also some models create a new id :/
-          thunkAPI.dispatch(
-            chatResponse({ ...(json as ChatResponse), id: chatId }),
+        const maybeErrorData = checkForDetailMessage(maybeJsonString);
+        if (maybeErrorData) {
+          throw new Error(
+            typeof maybeErrorData.detail === "string"
+              ? maybeErrorData.detail
+              : JSON.stringify(maybeErrorData.detail),
           );
         }
 
-        return reader.read().then(pump);
-      });
-    })
-    .catch((err: Error) => {
-      // console.log("Catch called");
-      thunkAPI.dispatch(doneStreaming({ id: chatId }));
-      thunkAPI.dispatch(chatError({ id: chatId, message: err.message }));
-      return thunkAPI.rejectWithValue(err.message);
-    })
-    .finally(() => {
-      thunkAPI.dispatch(doneStreaming({ id: chatId }));
-    });
+        const json = parseOrElse<Record<string, unknown>>(maybeJsonString, {});
+
+        thunkAPI.dispatch(
+          chatResponse({ ...(json as ChatResponse), id: chatId }),
+        );
+      }
+    }
+  } catch (err) {
+    thunkAPI.dispatch(doneStreaming({ id: chatId }));
+    thunkAPI.dispatch(
+      chatError({ id: chatId, message: (err as Error).message }),
+    );
+    return thunkAPI.rejectWithValue((err as Error).message);
+  } finally {
+    thunkAPI.dispatch(doneStreaming({ id: chatId }));
+  }
 });
