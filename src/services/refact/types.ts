@@ -107,6 +107,7 @@ export type DiffChunk = {
   line2: number;
   lines_remove: string;
   lines_add: string;
+  file_name_rename: string | null;
   // apply?: boolean;
   // chunk_id?: number;
 };

@@ -79,7 +79,11 @@ const DiffHighlight: React.FC<{
   return (
     <Flex
       direction="column"
-      style={{ minWidth: "min-content", alignSelf: "stretch", width: "100%" }}
+      style={{
+        minWidth: "min-content",
+        alignSelf: "stretch",
+        width: "100%",
+      }}
     >
       {lines.map((line, index) => {
         return (
@@ -102,6 +106,11 @@ type DiffProps = {
 export const Diff: React.FC<DiffProps> = ({ diff }) => {
   const removeString = diff.lines_remove && toDiff(diff.lines_remove);
   const addString = diff.lines_add && toDiff(diff.lines_add);
+  const diffAction = diff.file_action;
+  if (diffAction === "rename") {
+    console.log(`[DEBUG]: diff rename: ${diff.file_name_rename}`);
+    return;
+  }
   return (
     <Flex
       className={styles.diff}
