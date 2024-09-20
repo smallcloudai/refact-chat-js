@@ -29,6 +29,11 @@ export const HISTORY: ChatHistoryItem[] = [
     model: "",
     createdAt: "2024-07-02T10:43:13.401Z",
     updatedAt: "2024-07-02T10:44:38.325Z",
+    tool_use: "explore",
+    system_prompt: {
+      description: "",
+      text: "[mode1] You are Refact Chat, a coding assistant. Use triple backquotes for code blocks. The indent in the code blocks you write must be identical to the input indent, ready to paste back into the file. ",
+    },
   },
   {
     id: "31f3bb3d-df6e-4f0f-b701-6b1e6e4a352b",
@@ -112,7 +117,12 @@ export const HISTORY: ChatHistoryItem[] = [
     title:
       "In this project, what is the difference between a toad and a frog?\n",
     model: "",
+    tool_use: "explore",
     createdAt: "2024-07-02T10:40:27.354Z",
     updatedAt: "2024-07-02T10:40:32.341Z",
+    system_prompt: {
+      description: "",
+      text: "[mode1] You are Refact Chat, a coding assistant. Use triple backquotes for code blocks. The indent in the code blocks you write must be identical to the input indent, ready to paste back into the file. ",
+    },
   },
 ];

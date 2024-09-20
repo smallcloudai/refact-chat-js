@@ -36,7 +36,12 @@ const createInitialState = (): Chat => {
     prevent_send: false,
     waiting_for_response: false,
     cache: {},
-    system_prompt: {},
+    system_prompt: {
+      default: {
+        description: "",
+        text: "[mode1] You are Refact Chat, a coding assistant. Use triple backquotes for code blocks. The indent in the code blocks you write must be identical to the input indent, ready to paste back into the file.",
+      },
+    },
     tool_use: "explore",
     send_immediately: false,
   };
@@ -80,6 +85,7 @@ export const chatReducer = createReducer(initialState, (builder) => {
     }
     next.tool_use = state.tool_use;
     next.thread.model = state.thread.model;
+    next.system_prompt = state.system_prompt;
     return next;
   });
 

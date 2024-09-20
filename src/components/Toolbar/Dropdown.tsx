@@ -12,6 +12,8 @@ import { useOpenUrl } from "../../hooks/useOpenUrl";
 import { DropdownMenu, Flex, IconButton } from "@radix-ui/themes";
 import { HamburgerMenuIcon, DiscordLogoIcon } from "@radix-ui/react-icons";
 import { Coin } from "../../images";
+import { selectHistory } from "../../features/History/selectors";
+import { exportChatHistoryAsJSON } from "../../utils/exportChatHistoryAsJSON";
 
 export type DropdownNavigationOptions =
   | "fim"
@@ -54,6 +56,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   const refs = useTourRefs();
   const user = useGetUser();
   const host = useAppSelector(selectHost);
+  const history = useAppSelector(selectHistory);
   const logout = useLogout();
   const { addressURL } = useConfig();
 
@@ -137,6 +140,16 @@ export const Dropdown: React.FC<DropdownProps> = ({
 
         <DropdownMenu.Item onSelect={() => handleNavigation("restart tour")}>
           Restart tour
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Item
+          onSelect={(event) => {
+            event.preventDefault();
+            const now = new Date().toISOString();
+            exportChatHistoryAsJSON(history, `chat_history_${now}.json`);
+          }}
+        >
+          Export chat history
         </DropdownMenu.Item>
 
         <DropdownMenu.Item onSelect={() => handleNavigation("fim")}>

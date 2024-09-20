@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import { Flex, Text } from "@radix-ui/themes";
 import { Root, Trigger, Content, Item } from "../Select";
 import type { SystemPrompts } from "../../services/refact";
@@ -30,6 +30,11 @@ export const PromptSelect: React.FC<PromptSelectProps> = ({
     [onChange, promptKeysAndValues],
   );
   const val = useMemo(() => Object.keys(value)[0] ?? "default", [value]);
+
+  useEffect(() => {
+    handleChange(val);
+  }, []);
+
   if (promptKeysAndValues.length === 0) return null;
 
   return (
