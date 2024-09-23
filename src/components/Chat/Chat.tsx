@@ -16,13 +16,14 @@ import {
   selectIsStreaming,
   selectIsWaiting,
   setChatModel,
-  // selectThread,
+  selectThread,
   selectPreventSend,
   selectChatId,
   selectMessages,
 } from "../../features/Chat/Thread";
 import { selectActiveFile } from "../../features/Chat/activeFile";
 import { Toolbar } from "../Toolbar";
+import { exportChatHistoryAsJSON } from "../../utils/exportChatHistoryAsJSON";
 
 export type ChatProps = {
   host: Config["host"];
@@ -59,6 +60,7 @@ export const Chat: React.FC<ChatProps> = ({
   const chatModel = useAppSelector(getSelectedChatModel);
   const dispatch = useAppDispatch();
   const messages = useAppSelector(selectMessages);
+  const thread = useAppSelector(selectThread);
   const onSetChatModel = useCallback(
     (value: string) => {
       const model = caps.default_cap === value ? "" : value;
@@ -157,6 +159,14 @@ export const Chat: React.FC<ChatProps> = ({
       <Flex justify="between" pl="1" pr="1" pt="1">
         {messages.length > 0 && (
           <Text size="1">model: {chatModel || caps.default_cap} </Text>
+        )}
+        {messages.length > 0 && (
+          <Text
+            size="1"
+            onClick={() => exportChatHistoryAsJSON(thread, "chat-history.json")}
+          >
+            Export as JSON
+          </Text>
         )}
       </Flex>
     </PageWrapper>

@@ -10,21 +10,14 @@ import {
   doneStreaming,
   removeChatFromCache,
   restoreChat,
-  ToolUse,
 } from "../Chat/Thread";
-import {
-  isUserMessage,
-  SystemPrompts,
-  UserMessage,
-} from "../../services/refact";
+import { isUserMessage, UserMessage } from "../../services/refact";
 import { AppDispatch, RootState } from "../../app/store";
 
 export type ChatHistoryItem = ChatThread & {
   createdAt: string;
   updatedAt: string;
   title: string;
-  tool_use: ToolUse;
-  system_prompt: SystemPrompts;
 };
 
 export type HistoryMeta = Pick<
@@ -50,8 +43,6 @@ export const historySlice = createSlice({
       const now = new Date().toISOString();
       const chat: ChatHistoryItem = {
         ...action.payload,
-        tool_use: "explore",
-        system_prompt: {} as SystemPrompts,
         title: action.payload.title
           ? action.payload.title
           : userMessage.content.replace(/^\s*/, "") || "New Chat",
