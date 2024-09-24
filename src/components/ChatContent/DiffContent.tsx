@@ -165,6 +165,8 @@ export const DiffTitle: React.FC<{ diffs: Record<string, DiffChunk[]> }> = ({
     const [head, ...tail] = items;
     const [fullPath, diffForFile] = head;
     const name = filename(fullPath);
+    const diffAction = diffForFile[0].file_action;
+    console.log(`[DEBUG]: diffAction: ${diffAction}`);
     const addLength = diffForFile.reduce<number>((acc, diff) => {
       return acc + (diff.lines_add ? diff.lines_add.split("\n").length : 0);
     }, 0);
