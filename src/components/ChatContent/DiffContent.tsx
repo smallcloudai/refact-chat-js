@@ -1,13 +1,5 @@
 import React from "react";
-import {
-  Text,
-  Container,
-  Box,
-  Flex,
-  Button,
-  Link,
-  Switch,
-} from "@radix-ui/themes";
+import { Text, Container, Box, Flex, Button, Link } from "@radix-ui/themes";
 import {
   DiffMessage,
   DiffStateResponse,
@@ -153,22 +145,34 @@ export const Diff: React.FC<DiffProps> = ({ diff }) => {
 };
 
 const GranularDiff: React.FC<DiffProps> = ({ diff }) => {
+  const { host } = useConfig();
   const status = useDiffStateQuery({ chunks: [diff] });
   const { onSubmit, result: _result } = useDiffApplyMutation();
+  const { onPreview, previewResult: _previewResult } = useDiffPreview();
+
   // TODO: add loading state
   return status.data?.map((stat, index) => {
     return (
       <Flex key={`granular-diff-${index}`} direction="column" gap="2">
-        <Flex justify="end" align="center" pr="2" pt="2">
-          <Text as="label" size="1">
-            {stat.state ? "Applied" : "Apply"}{" "}
-            <Switch
-              checked={stat.state}
-              onCheckedChange={() => {
-                void onSubmit({ chunks: [diff], toApply: [!stat.state] });
+        <Flex justify="end" align="center" pr="2" pt="2" gap="2">
+          {host === "vscode" && (
+            <Button
+              size="1"
+              onClick={() => {
+                void onPreview([stat.chunk], [!stat.state]);
               }}
-            />
-          </Text>
+            >
+              Show
+            </Button>
+          )}
+          <Button
+            size="1"
+            onClick={() => {
+              void onSubmit({ chunks: [diff], toApply: [!stat.state] });
+            }}
+          >
+            {stat.state ? "Applied" : "Apply"}
+          </Button>
         </Flex>
         <Box
           style={{
