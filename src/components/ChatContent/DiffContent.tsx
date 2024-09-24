@@ -171,7 +171,7 @@ const GranularDiff: React.FC<DiffProps> = ({ diff }) => {
               void onSubmit({ chunks: [diff], toApply: [!stat.state] });
             }}
           >
-            {stat.state ? "Applied" : "Apply"}
+            {stat.state ? "Unapply" : "Apply"}
           </Button>
         </Flex>
         <Box
@@ -381,7 +381,7 @@ const DiffForFile: React.FC<{
 
             {diffsForFile.length > 1 && (
               <Button size="1" onClick={() => setShowMore((prev) => !prev)}>
-                {showMore ? "Less" : "More"}
+                {showMore ? "Collapse" : "Expand"}
               </Button>
             )}
             <Button
