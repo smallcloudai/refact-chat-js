@@ -155,6 +155,7 @@ const GranularDiff: React.FC<DiffProps> = ({ diff }) => {
     return (
       <Flex key={`granular-diff-${index}`} direction="column" gap="2">
         <Flex justify="end" align="center" pr="2" pt="2" gap="2">
+          {/* TODO: does this only work in vscode? */}
           {host === "vscode" && (
             <Button
               size="1"
