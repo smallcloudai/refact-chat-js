@@ -22,6 +22,10 @@ export {
 } from "../features/Chat/selectedSnippet";
 export type { FimDebugData } from "../services/refact/fim";
 export type { ChatHistoryItem } from "../features/History/historySlice";
+export {
+  addInputValue,
+  setInputValue,
+} from "../components/ChatForm/useInputValue";
 // TODO: re-exporting from redux seems to break things :/
 export type InitialState = {
   fim: FIMDebugState;
