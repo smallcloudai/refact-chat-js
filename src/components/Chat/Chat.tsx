@@ -25,6 +25,9 @@ import {
 import { selectActiveFile } from "../../features/Chat/activeFile";
 import { Toolbar } from "../Toolbar";
 import { exportChatHistoryAsJSON } from "../../utils/exportChatHistoryAsJSON";
+import { copyChatHistoryToClipboard } from "../../utils/copyChatHistoryToClipboard";
+import { setError } from "../../features/Errors/errorsSlice";
+import { viewRawJSON } from "../../utils/viewRawJSON";
 
 export type ChatProps = {
   host: Config["host"];
@@ -107,6 +110,21 @@ export const Chat: React.FC<ChatProps> = ({
     }
   }, []);
 
+  const handleCopyToClipboardJSON = () => {
+    copyChatHistoryToClipboard(thread)
+      .then((response) => {
+        if (response.error) {
+          dispatch(setError(response.error));
+        }
+        console.log(
+          `[DEBUG]: copied to clipboard successfully! | success: ${response.success}`,
+        );
+      })
+      .catch(() => {
+        dispatch(setError("Unknown error occured while copying to clipboard"));
+      });
+  };
+
   useEffect(() => {
     if (!isWaiting && !isStreaming) {
       focusTextarea();
@@ -160,18 +178,35 @@ export const Chat: React.FC<ChatProps> = ({
       />
       <Flex justify="between" pl="1" pr="1" pt="1">
         {messages.length > 0 && (
-          <Flex align="center" gap="1">
-            <Text size="1">model: {chatModel || caps.default_cap} </Text> •{" "}
-            <Text size="1">mode: {chatToolUse} </Text>
+          <Flex align="center" justify="between" width="100%">
+            <Flex align="center" gap="1">
+              <Text size="1">model: {chatModel || caps.default_cap} </Text> •{" "}
+              <Text size="1">mode: {chatToolUse} </Text>
+            </Flex>
+            <Flex align="center" gap="1">
+              <Text size="1" onClick={handleCopyToClipboardJSON}>
+                Copy as JSON
+              </Text>
+              {" I "}
+              <Text
+                size="1"
+                onClick={() =>
+                  exportChatHistoryAsJSON(
+                    thread,
+                    `chat-history_${
+                      thread.title ? thread.title : new Date().toISOString()
+                    }.json`,
+                  )
+                }
+              >
+                Export as JSON
+              </Text>
+              {" I "}
+              <Text size="1" onClick={() => viewRawJSON(thread)}>
+                View raw
+              </Text>
+            </Flex>
           </Flex>
-        )}
-        {messages.length > 0 && (
-          <Text
-            size="1"
-            onClick={() => exportChatHistoryAsJSON(thread, "chat-history.json")}
-          >
-            Export as JSON
-          </Text>
         )}
       </Flex>
     </PageWrapper>
