@@ -162,13 +162,13 @@ export const Dropdown: React.FC<DropdownProps> = ({
           Edit privacy.yaml
         </DropdownMenu.Item>
 
-        {addressURL?.endsWith(".yaml") && (
+        {addressURL !== "Refact" && (
           <DropdownMenu.Item
             onSelect={() => {
               void openBringYourOwnKeyFile();
             }}
           >
-            Edit bring your own key
+            Edit Bring Your Own Key
           </DropdownMenu.Item>
         )}
 
