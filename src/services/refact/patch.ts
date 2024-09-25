@@ -31,6 +31,21 @@ type PatchResult = {
 };
 
 function isPatchResult(json: unknown): json is PatchResult {
+  if (!json || typeof json !== "object") return false;
+  if (!("file_text" in json)) return false;
+  if (typeof json.file_text !== "string") return false;
+  if (!("file_name_edit" in json)) return false;
+  if (typeof json.file_name_edit !== "string" && json.file_name_edit !== null)
+    return false;
+  if (!("file_name_delete" in json)) return false;
+  if (
+    typeof json.file_name_delete !== "string" &&
+    json.file_name_delete !== null
+  )
+    return false;
+  if (!("file_name_add" in json)) return false;
+  if (typeof json.file_name_add !== "string" && json.file_name_add !== null)
+    return false;
   return true;
 }
 type PatchResponse = {
