@@ -61,7 +61,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   const discordUrl = "https://www.smallcloud.ai/discord";
   const accountLink = linkForAccount(host);
   const openUrl = useOpenUrl();
-  const { openFile, openCustomizationFile, openPrivacyFile } =
+  const { openBringYourOwnKeyFile, openCustomizationFile, openPrivacyFile } =
     useEventsBusForIDE();
 
   return (
@@ -164,9 +164,8 @@ export const Dropdown: React.FC<DropdownProps> = ({
 
         {addressURL?.endsWith(".yaml") && (
           <DropdownMenu.Item
-            onSelect={(event) => {
-              event.preventDefault();
-              openFile({ file_name: addressURL });
+            onSelect={() => {
+              void openBringYourOwnKeyFile();
             }}
           >
             Edit bring your own key

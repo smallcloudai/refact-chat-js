@@ -106,6 +106,7 @@ export const useEventsBusForIDE = () => {
 
   const [getCustomizationPath] = pathApi.useLazyCustomizationPathQuery();
   const [getPrivacyPath] = pathApi.useLazyPrivacyPathQuery();
+  const [getBringYourOwnKeyPath] = pathApi.useLazyBringYourOwnKeyPathQuery();
 
   // Creating a generic function to trigger different queries from RTK Query (to avoid duplicative code)
   const openFileFromPathQuery = useCallback(
@@ -127,6 +128,8 @@ export const useEventsBusForIDE = () => {
   const openCustomizationFile = () =>
     openFileFromPathQuery(getCustomizationPath);
   const openPrivacyFile = () => openFileFromPathQuery(getPrivacyPath);
+  const openBringYourOwnKeyFile = () =>
+    openFileFromPathQuery(getBringYourOwnKeyPath);
 
   return {
     diffPasteBack,
@@ -140,6 +143,7 @@ export const useEventsBusForIDE = () => {
     queryPathThenOpenFile,
     openCustomizationFile,
     openPrivacyFile,
+    openBringYourOwnKeyFile,
     // canPaste,
   };
 };
