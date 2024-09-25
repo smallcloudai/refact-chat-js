@@ -107,6 +107,7 @@ export const useEventsBusForIDE = () => {
   const [getCustomizationPath] = pathApi.useLazyCustomizationPathQuery();
   const [getPrivacyPath] = pathApi.useLazyPrivacyPathQuery();
 
+  // Creating a generic function to trigger different queries from RTK Query (to avoid duplicative code)
   const openFileFromPathQuery = useCallback(
     async (
       getPathQuery: (arg: undefined) => {
@@ -116,7 +117,6 @@ export const useEventsBusForIDE = () => {
       const res = await getPathQuery(undefined).unwrap();
 
       if (res) {
-        console.log(`[DEBUG]: file to open: ${res}`);
         const action = ideOpenFile({ file_name: res });
         postMessage(action);
       }
