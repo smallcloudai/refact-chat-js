@@ -105,14 +105,28 @@ export const useEventsBusForIDE = () => {
   );
 
   const [getCustomizationPath] = pathApi.useLazyCustomizationPathQuery();
+  const [getPrivacyPath] = pathApi.useLazyPrivacyPathQuery();
 
-  const openCustomizationFile = useCallback(async () => {
-    const res = await getCustomizationPath(undefined).unwrap();
-    if (res) {
-      const action = ideOpenFile({ file_name: res });
-      postMessage(action);
-    }
-  }, [getCustomizationPath, postMessage]);
+  const openFileFromPathQuery = useCallback(
+    async (
+      getPathQuery: (arg: undefined) => {
+        unwrap: () => Promise<string | undefined>;
+      },
+    ) => {
+      const res = await getPathQuery(undefined).unwrap();
+
+      if (res) {
+        console.log(`[DEBUG]: file to open: ${res}`);
+        const action = ideOpenFile({ file_name: res });
+        postMessage(action);
+      }
+    },
+    [postMessage],
+  );
+
+  const openCustomizationFile = () =>
+    openFileFromPathQuery(getCustomizationPath);
+  const openPrivacyFile = () => openFileFromPathQuery(getPrivacyPath);
 
   return {
     diffPasteBack,
@@ -125,6 +139,7 @@ export const useEventsBusForIDE = () => {
     diffPreview,
     queryPathThenOpenFile,
     openCustomizationFile,
+    openPrivacyFile,
     // canPaste,
   };
 };
