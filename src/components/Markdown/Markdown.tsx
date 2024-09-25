@@ -82,7 +82,7 @@ const MaybePinButton: React.FC<{
 function processPinAndMarkdown(message?: string | null): Map<string, string> {
   if (!message) return new Map<string, string>();
 
-  const regexp = /📍[\s\S]*?```\n/g;
+  const regexp = /📍[\s\S]*?\n```\n/g;
 
   const results = message.match(regexp) ?? [];
 
