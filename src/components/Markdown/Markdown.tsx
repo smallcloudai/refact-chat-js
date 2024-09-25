@@ -26,6 +26,7 @@ import remarkMath from "remark-math";
 import "katex/dist/katex.min.css";
 // TODO: move this to a hook
 import { patchApi } from "../../services/refact";
+import { useEventsBusForIDE } from "../../hooks";
 
 export type MarkdownProps = Pick<
   React.ComponentProps<typeof ReactMarkdown>,
@@ -42,6 +43,7 @@ const MaybePinButton: React.FC<{
   children?: React.ReactNode;
   getMarkdown: (pin: string) => string | undefined;
 }> = ({ children, getMarkdown }) => {
+  const { diffPreview } = useEventsBusForIDE();
   const isPin = typeof children === "string" && children.startsWith("📍");
   const markdown = getMarkdown(String(children));
   const patch = patchApi.usePatchSingleFileFromTicketQuery(
@@ -52,8 +54,8 @@ const MaybePinButton: React.FC<{
     if (typeof children !== "string") return;
     if (!markdown) return;
     if (!patch.data) return;
-    // console.log({ patch });
-  }, [children, markdown, patch]);
+    diffPreview(patch.data);
+  }, [children, diffPreview, markdown, patch.data]);
 
   // TODO: errors ?
   if (isPin && markdown) {
@@ -62,7 +64,7 @@ const MaybePinButton: React.FC<{
         <Text as="p">{children}</Text>
         <Flex gap="2">
           <Button loading={!patch.data} onClick={handleShow}>
-            Show
+            Open
           </Button>
           <Button>Apply</Button>
         </Flex>
@@ -177,7 +179,7 @@ const _Markdown: React.FC<MarkdownProps> = ({
         return <Em {...props} />;
       },
     };
-  }, [rest]);
+  }, [getMarkDownForPin, rest]);
   return (
     <ReactMarkdown
       className={styles.markdown}

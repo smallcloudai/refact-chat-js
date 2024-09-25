@@ -205,7 +205,7 @@ export interface DiffPreviewResponse {
   state: DiffApplyResponse;
   results: {
     file_text: string;
-    file_name_edit: string;
+    file_name_edit: string | null;
     file_name_delete: null | string;
     file_name_add: null | string;
   }[];

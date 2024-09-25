@@ -48,6 +48,7 @@ function isPatchResult(json: unknown): json is PatchResult {
     return false;
   return true;
 }
+// TODO: Same for diff apply
 type PatchResponse = {
   state: PatchState[];
   results: PatchResult[];
@@ -82,10 +83,7 @@ export const patchApi = createApi({
   }),
 
   endpoints: (builder) => ({
-    patchSingleFileFromTicket: builder.query<
-      { state: PatchState; result: PatchResult },
-      PatchRequest
-    >({
+    patchSingleFileFromTicket: builder.query<PatchResponse, PatchRequest>({
       async queryFn(args, api, _extraOptions, baseQuery) {
         const state = api.getState() as RootState;
         const port = state.config.lspPort as unknown as number;
@@ -119,22 +117,7 @@ export const patchApi = createApi({
           };
         }
 
-        if (
-          result.data.state.length === 0 ||
-          result.data.results.length === 0
-        ) {
-          return {
-            error: {
-              status: "CUSTOM_ERROR",
-              error: "Patch results state or results is empty",
-              data: result.data,
-            },
-          };
-        }
-
-        return {
-          data: { state: result.data.state[0], result: result.data.results[0] },
-        };
+        return { data: result.data };
       },
     }),
   }),
