@@ -5,13 +5,14 @@ import { useConfig } from "./useConfig";
 import { updateConfig } from "../features/Config/configSlice";
 import { setFileInfo } from "../features/Chat/activeFile";
 import { setSelectedSnippet } from "../features/Chat/selectedSnippet";
-import { setOpenFiles } from "../events";
-import { newChatAction } from "../events";
+import { setOpenFiles } from "../features/OpenFiles/openFilesSlice";
+import { newChatAction } from "../features/Chat/Thread/actions";
 import {
   isPageInHistory,
   push,
   selectPages,
 } from "../features/Pages/pagesSlice";
+import { diffApi, resetDiffApi } from "../services/refact/diffs";
 
 export function useEventBusForApp() {
   const config = useConfig();
@@ -41,6 +42,10 @@ export function useEventBusForApp() {
 
       if (setOpenFiles.match(event.data)) {
         dispatch(event.data);
+      }
+
+      if (resetDiffApi.match(event.data)) {
+        dispatch(diffApi.util.resetApiState());
       }
     };
 

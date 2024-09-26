@@ -7,6 +7,7 @@ import {
 } from "./consts";
 import { DiffChunk, isDiffChunk, isDiffErrorResponseData } from "./types";
 import { RootState } from "../../app/store";
+import { createAction } from "@reduxjs/toolkit";
 
 export type DiffAppliedStateArgs = {
   chunks: DiffChunk[];
@@ -129,6 +130,8 @@ type PatchRequest = {
 // function cacheIdForChunk(chunk: DiffChunk) {
 //   return `${chunk.file_name}-${chunk.line1}-${chunk.line2}`;
 // }
+
+export const resetDiffApi = createAction("diffs/reset");
 
 export const diffApi = createApi({
   reducerPath: "diffs",

@@ -51,10 +51,12 @@ const MaybePinButton: React.FC<{
   const openFiles = useSelector(selectOpenFiles);
   const isPin = typeof children === "string" && children.startsWith("📍");
   const markdown = getMarkdown(String(children));
+
   const patch = diffApi.usePatchSingleFileFromTicketQuery(
     { pin: String(children), markdown: String(markdown) },
     { skip: !isPin || !markdown },
   );
+
   const handleShow = useCallback(() => {
     if (typeof children !== "string") return;
     if (!markdown) return;
@@ -73,6 +75,7 @@ const MaybePinButton: React.FC<{
     }, []);
 
     const fileIsOpen = files.some((file) => openFiles.includes(file));
+
     if (fileIsOpen) {
       handleShow();
     } else if (patch.data) {
@@ -82,9 +85,8 @@ const MaybePinButton: React.FC<{
     }
   }, [handleShow, onSubmit, openFiles, patch.data]);
 
-  // TODO: errors, unapply ?
   // TODO: ui, handle small screens
-  if (isPin && markdown) {
+  if (isPin && markdown && patch.data) {
     return (
       <Flex my="2" gap="2" justify="between">
         <Text
@@ -95,10 +97,21 @@ const MaybePinButton: React.FC<{
           {children}
         </Text>
         <Flex gap="2" justify="end">
-          <Button size="1" loading={!patch.data} onClick={handleShow}>
+          <Button
+            size="1"
+            // loading={!patch.data}
+            onClick={handleShow}
+            title={"Show Patch"}
+          >
             Open
           </Button>
-          <Button size="1" loading={!patch.data} onClick={handleApply}>
+          <Button
+            size="1"
+            // loading={!patch.data}
+            onClick={handleApply}
+            // disabled={!!patch.error}
+            title={patch.error ? "Patch applied" : "Apply patch"}
+          >
             Apply
           </Button>
         </Flex>
