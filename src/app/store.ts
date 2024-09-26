@@ -23,7 +23,6 @@ import {
   diffApi,
   pathApi,
   pingApi,
-  patchApi,
 } from "../services/refact";
 import { smallCloudApi } from "../services/smallcloud";
 import { reducer as fimReducer } from "../features/FIM/reducer";
@@ -40,6 +39,7 @@ import {
 import { errorSlice } from "../features/Errors/errorsSlice";
 import { warningSlice } from "../features/Errors/warningSlice";
 import { pagesSlice } from "../features/Pages/pagesSlice";
+import { openFilesSlice } from "../features/OpenFiles/openFilesSlice";
 import mergeInitialState from "redux-persist/lib/stateReconciler/autoMergeLevel2";
 import { listenerMiddleware } from "./middleware";
 
@@ -64,12 +64,12 @@ const rootReducer = combineSlices(
     [smallCloudApi.reducerPath]: smallCloudApi.reducer,
     [pathApi.reducerPath]: pathApi.reducer,
     [pingApi.reducerPath]: pingApi.reducer,
-    [patchApi.reducerPath]: patchApi.reducer,
   },
   historySlice,
   errorSlice,
   warningSlice,
   pagesSlice,
+  openFilesSlice,
 );
 
 const persistConfig = {
@@ -115,7 +115,6 @@ export function setUpStore(preloadedState?: Partial<RootState>) {
             diffApi.middleware,
             smallCloudApi.middleware,
             pathApi.middleware,
-            patchApi.middleware,
           )
           .prepend(historyMiddleware.middleware)
           // .prepend(errorMiddleware.middleware)

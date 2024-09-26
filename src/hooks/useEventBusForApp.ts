@@ -5,6 +5,7 @@ import { useConfig } from "./useConfig";
 import { updateConfig } from "../features/Config/configSlice";
 import { setFileInfo } from "../features/Chat/activeFile";
 import { setSelectedSnippet } from "../features/Chat/selectedSnippet";
+import { setOpenFiles } from "../events";
 import { newChatAction } from "../events";
 import {
   isPageInHistory,
@@ -36,6 +37,10 @@ export function useEventBusForApp() {
           dispatch(push({ name: "chat" }));
         }
         dispatch(newChatAction(event.data.payload));
+      }
+
+      if (setOpenFiles.match(event.data)) {
+        dispatch(event.data);
       }
     };
 

@@ -9,4 +9,3 @@ export * from "./types";
 export * from "./diffs";
 export * from "./path";
 export * from "./ping";
-export * from "./patch";

@@ -25,8 +25,11 @@ import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
 import "katex/dist/katex.min.css";
 // TODO: move this to a hook
-import { patchApi } from "../../services/refact";
-import { useEventsBusForIDE } from "../../hooks";
+import { diffApi } from "../../services/refact";
+import { useDiffApplyMutation, useEventsBusForIDE } from "../../hooks";
+import { selectOpenFiles } from "../../features/OpenFiles/openFilesSlice";
+import { useSelector } from "react-redux";
+// import { TruncateLeft } from "../Text";
 
 export type MarkdownProps = Pick<
   React.ComponentProps<typeof ReactMarkdown>,
@@ -44,9 +47,11 @@ const MaybePinButton: React.FC<{
   getMarkdown: (pin: string) => string | undefined;
 }> = ({ children, getMarkdown }) => {
   const { diffPreview } = useEventsBusForIDE();
+  const { onSubmit, result: _result } = useDiffApplyMutation();
+  const openFiles = useSelector(selectOpenFiles);
   const isPin = typeof children === "string" && children.startsWith("📍");
   const markdown = getMarkdown(String(children));
-  const patch = patchApi.usePatchSingleFileFromTicketQuery(
+  const patch = diffApi.usePatchSingleFileFromTicketQuery(
     { pin: String(children), markdown: String(markdown) },
     { skip: !isPin || !markdown },
   );
@@ -57,16 +62,45 @@ const MaybePinButton: React.FC<{
     diffPreview(patch.data);
   }, [children, diffPreview, markdown, patch.data]);
 
-  // TODO: errors ?
+  const handleApply = useCallback(() => {
+    const results = patch.data?.results ?? [];
+    const files = results.reduce<string[]>((acc, cur) => {
+      const { file_name_add, file_name_delete, file_name_edit } = cur;
+      if (file_name_add) acc.push(file_name_add);
+      if (file_name_delete) acc.push(file_name_delete);
+      if (file_name_edit) acc.push(file_name_edit);
+      return acc;
+    }, []);
+
+    const fileIsOpen = files.some((file) => openFiles.includes(file));
+    if (fileIsOpen) {
+      handleShow();
+    } else if (patch.data) {
+      const chunks = patch.data.chunks;
+      const toApply = chunks.map(() => true);
+      void onSubmit({ chunks, toApply });
+    }
+  }, [handleShow, onSubmit, openFiles, patch.data]);
+
+  // TODO: errors, unapply ?
+  // TODO: ui, handle small screens
   if (isPin && markdown) {
     return (
       <Flex my="2" gap="2" justify="between">
-        <Text as="p">{children}</Text>
-        <Flex gap="2">
-          <Button loading={!patch.data} onClick={handleShow}>
+        <Text
+          as="p"
+          wrap="wrap"
+          style={{ lineBreak: "anywhere", wordBreak: "break-all" }}
+        >
+          {children}
+        </Text>
+        <Flex gap="2" justify="end">
+          <Button size="1" loading={!patch.data} onClick={handleShow}>
             Open
           </Button>
-          <Button>Apply</Button>
+          <Button size="1" loading={!patch.data} onClick={handleApply}>
+            Apply
+          </Button>
         </Flex>
       </Flex>
     );
