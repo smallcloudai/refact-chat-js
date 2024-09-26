@@ -28,30 +28,22 @@ export const Tour: React.FC<TourProps> = ({ page }) => {
   const step = state.type === "in_progress" ? state.step : 0;
 
   useEffect(() => {
-    if (state.type === "in_progress" && state.step === 2 && page === "chat") {
+    if (state.type === "in_progress" && step === 2 && page === "chat") {
       dispatch(next());
     }
 
-    if (
-      state.type === "in_progress" &&
-      state.step === 6 &&
-      page === "history"
-    ) {
+    if (state.type === "in_progress" && step === 6 && page === "history") {
       dispatch(next());
     }
 
-    if (
-      state.type === "in_progress" &&
-      state.step === 8 &&
-      page === "history"
-    ) {
+    if (state.type === "in_progress" && step === 8 && page === "history") {
       dispatch(push({ name: "tour end" }));
     }
 
     if (state.type === "finished" && page === "tour end") {
       dispatch(push({ name: "history" }));
     }
-  }, [state.type, step, page]);
+  }, [state.type, step, page, dispatch]);
 
   const chatWidth = "calc(100% - 20px)";
 

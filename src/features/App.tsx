@@ -71,7 +71,14 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
     if (!config.apiKey && !config.addressURL && isLoggedIn) {
       dispatch(popBackTo("initial setup"));
     }
-  }, [config.apiKey, config.addressURL, isLoggedIn, dispatch, tourState]);
+  }, [
+    config.apiKey,
+    config.addressURL,
+    isLoggedIn,
+    dispatch,
+    tourState,
+    historyState,
+  ]);
 
   const onPressNext = (host: Host) => {
     if (host === "cloud") {
