@@ -93,9 +93,9 @@ export const ToolContent: React.FC<{
     return [...acc, toolCall.function.name];
   }, []);
 
-  /* 
+  /*
     Calculates the usage amount of each tool by mapping over the unique tool names
-    and counting how many times each tool has been called in the toolCalls array.  
+    and counting how many times each tool has been called in the toolCalls array.
   */
   const toolUsageAmount = toolNames.map<ToolUsage>((toolName) => {
     return {
@@ -138,16 +138,17 @@ export const ToolContent: React.FC<{
               </Text>
               {hiddenFiles > 0 && (
                 <Text weight="light" size="1">
-                  {`📎 <${hiddenFiles} files hidden>`}
+                  {`<${hiddenFiles} files hidden>`}
                 </Text>
               )}
               {shownAttachedFiles.map((file, index) => (
                 <Text weight="light" size="1" key={index}>
-                  📎 {file}
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🔎 {file}
                 </Text>
               ))}
               {subchat && (
                 <Flex>
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                   <Spinner />
                   <Text weight="light" size="1" ml="4px">
                     {subchat}
