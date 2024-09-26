@@ -39,7 +39,7 @@ export type MarkdownProps = Pick<
   Pick<
     MarkdownCodeBlockProps,
     "startingLineNumber" | "showLineNumbers" | "useInlineStyles" | "style"
-  >;
+  > & { canHavePins?: boolean };
 
 const MaybePinButton: React.FC<{
   key?: Key | null;
@@ -150,7 +150,7 @@ const _Markdown: React.FC<MarkdownProps> = ({
   children,
   allowedElements,
   unwrapDisallowed,
-
+  canHavePins,
   ...rest
 }) => {
   const pinsAndMarkdown = useMemo<Map<string, string>>(
@@ -181,7 +181,10 @@ const _Markdown: React.FC<MarkdownProps> = ({
         return <MarkdownCodeBlock {...props} {...rest} />;
       },
       p({ color: _color, ref: _ref, node: _node, ...props }) {
-        return <MaybePinButton {...props} getMarkdown={getMarkDownForPin} />;
+        if (canHavePins) {
+          return <MaybePinButton {...props} getMarkdown={getMarkDownForPin} />;
+        }
+        return <Text my="2" as="p" {...props} />;
       },
       h1({ color: _color, ref: _ref, node: _node, ...props }) {
         return <Heading my="6" size="8" as="h1" {...props} />;
@@ -226,7 +229,7 @@ const _Markdown: React.FC<MarkdownProps> = ({
         return <Em {...props} />;
       },
     };
-  }, [getMarkDownForPin, rest]);
+  }, [getMarkDownForPin, rest, canHavePins]);
   return (
     <ReactMarkdown
       className={styles.markdown}
