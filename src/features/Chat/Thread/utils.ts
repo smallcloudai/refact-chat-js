@@ -6,6 +6,7 @@ import {
   ChatResponse,
   ContextMemory,
   DiffChunk,
+  SubchatResponse,
   ToolCall,
   ToolResult,
   UserMessage,
@@ -18,6 +19,8 @@ import {
   isDiffMessage,
   isDiffResponse,
   isPlainTextResponse,
+  isSubchatContextFileResponse,
+  isSubchatResponse,
   isToolCallDelta,
   isToolMessage,
   isToolResponse,
@@ -142,10 +145,15 @@ export function formatChatResponse(
     return [...messages, { role: response.role, content }];
   }
 
+  if (isSubchatResponse(response)) {
+    return handleSubchatResponse(messages, response);
+  }
+
   if (isToolResponse(response)) {
     const { tool_call_id, content, finish_reason } = response;
+    const filteredMessages = finishToolCallInMessages(messages, tool_call_id);
     const toolResult: ToolResult = { tool_call_id, content, finish_reason };
-    return [...messages, { role: response.role, content: toolResult }];
+    return [...filteredMessages, { role: response.role, content: toolResult }];
   }
 
   if (isDiffResponse(response)) {
@@ -254,6 +262,70 @@ export function formatChatResponse(
 
     return acc;
   }, messages);
+}
+
+function handleSubchatResponse(
+  messages: ChatMessages,
+  response: SubchatResponse,
+): ChatMessages {
+  for (let i = 0; i < messages.length; i++) {
+    const message = messages[i];
+    if (!isAssistantMessage(message)) {
+      continue;
+    }
+    if (!message.tool_calls) {
+      continue;
+    }
+    for (let j = 0; j < message.tool_calls.length; j++) {
+      const tool_call = message.tool_calls[j];
+      if (tool_call.id !== response.tool_call_id) {
+        continue;
+      }
+
+      const newMessage = { ...message };
+      const tool_calls = [...message.tool_calls];
+      newMessage.tool_calls = tool_calls;
+
+      tool_calls[j] = { ...tool_call };
+      tool_calls[j].subchat = response.subchat_id;
+
+      const { add_message } = response;
+      if (isSubchatContextFileResponse(add_message)) {
+        const content = parseOrElse<ChatContextFile[]>(add_message.content, []);
+        const attached_files = tool_calls[j].attached_files ?? [];
+        tool_calls[j].attached_files = [...attached_files];
+        for (const file of content) {
+          tool_calls[j].attached_files?.push(file.file_name);
+        }
+      }
+
+      const res = [...messages];
+      res[i] = newMessage;
+      return res;
+    }
+  }
+  return messages;
+}
+
+function finishToolCallInMessages(
+  messages: ChatMessages,
+  toolCallId: string,
+): ChatMessages {
+  return messages.map((message) => {
+    if (!isAssistantMessage(message)) {
+      return message;
+    }
+    if (!message.tool_calls) {
+      return message;
+    }
+    const tool_calls = message.tool_calls.map((toolCall) => {
+      if (toolCall.id !== toolCallId) {
+        return toolCall;
+      }
+      return { ...toolCall, attached_files: undefined, subchat: undefined };
+    });
+    return { ...message, tool_calls };
+  });
 }
 
 export function formatMessagesForLsp(messages: ChatMessages): LspChatMessage[] {
