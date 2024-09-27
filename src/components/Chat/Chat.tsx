@@ -83,12 +83,6 @@ export const Chat: React.FC<ChatProps> = ({
     [submit],
   );
 
-  const handleViewRawJSON = useCallback(() => {
-    const link = viewRawJSON(thread);
-    console.log(`[DEBUG]: link: ${link}`);
-    openUrl(link);
-  }, [openUrl, thread]);
-
   const onTextAreaHeightChange = useCallback(() => {
     if (!chatContentRef.current) return;
     // TODO: handle preventing scroll if the user is not on the bottom of the chat
@@ -109,8 +103,12 @@ export const Chat: React.FC<ChatProps> = ({
     }
   }, []);
 
-  const handleCopyToClipboardJSON = () => {
-    copyChatHistoryToClipboard(thread)
+  const handleCopyToClipboardJSON = useCallback(() => {
+    const currentChatThread = {
+      ...thread,
+      model: thread.model || caps.default_cap,
+    };
+    copyChatHistoryToClipboard(currentChatThread)
       .then((response) => {
         if (response.error) {
           dispatch(setError(response.error));
@@ -120,7 +118,16 @@ export const Chat: React.FC<ChatProps> = ({
       .catch(() => {
         dispatch(setError("Unknown error occured while copying to clipboard"));
       });
-  };
+  }, [dispatch, thread, caps.default_cap]);
+
+  const handleViewRawJSON = useCallback(() => {
+    const link = viewRawJSON({
+      ...thread,
+      model: thread.model || caps.default_cap,
+    });
+    console.log(`[DEBUG]: link: ${link}`);
+    openUrl(link);
+  }, [openUrl, thread, caps.default_cap]);
 
   useEffect(() => {
     if (!isWaiting && !isStreaming) {
