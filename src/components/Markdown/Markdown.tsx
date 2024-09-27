@@ -24,12 +24,14 @@ import {
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
 import "katex/dist/katex.min.css";
-// TODO: move this to a hook
 import { diffApi } from "../../services/refact";
-import { useDiffApplyMutation, useEventsBusForIDE } from "../../hooks";
+import {
+  useConfig,
+  useDiffApplyMutation,
+  useEventsBusForIDE,
+} from "../../hooks";
 import { selectOpenFiles } from "../../features/OpenFiles/openFilesSlice";
 import { useSelector } from "react-redux";
-// import { TruncateLeft } from "../Text";
 
 export type MarkdownProps = Pick<
   React.ComponentProps<typeof ReactMarkdown>,
@@ -46,6 +48,7 @@ const MaybePinButton: React.FC<{
   children?: React.ReactNode;
   getMarkdown: (pin: string) => string | undefined;
 }> = ({ children, getMarkdown }) => {
+  const { host } = useConfig();
   const { diffPreview } = useEventsBusForIDE();
   const { onSubmit, result: _result } = useDiffApplyMutation();
   const openFiles = useSelector(selectOpenFiles);
@@ -85,7 +88,6 @@ const MaybePinButton: React.FC<{
     }
   }, [handleShow, onSubmit, openFiles, patch.data]);
 
-  // TODO: ui, handle small screens
   if (isPin) {
     return (
       <Flex my="2" gap="2" wrap="wrap">
@@ -97,15 +99,17 @@ const MaybePinButton: React.FC<{
           {children}
         </Text>
         <Flex gap="2" justify="end" ml="auto">
-          <Button
-            size="1"
-            loading={!patch.data}
-            onClick={handleShow}
-            title={"Show Patch"}
-            disabled={!!patch.error}
-          >
-            Open
-          </Button>
+          {host !== "web" && (
+            <Button
+              size="1"
+              loading={!patch.data}
+              onClick={handleShow}
+              title={"Show Patch"}
+              disabled={!!patch.error}
+            >
+              Open
+            </Button>
+          )}
           <Button
             size="1"
             loading={!patch.data}
@@ -146,7 +150,6 @@ function processPinAndMarkdown(message?: string | null): Map<string, string> {
   return hashMap;
 }
 
-// TODO: MaybePinButton is exclusive to assistant messages
 const _Markdown: React.FC<MarkdownProps> = ({
   children,
   allowedElements,
