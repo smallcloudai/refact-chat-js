@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useEffect } from "react";
+import React, { useCallback, useRef, useEffect, useState } from "react";
 import { ChatForm, ChatFormProps } from "../ChatForm";
 import { ChatContent } from "../ChatContent";
 import { Flex, Button, Text, Container, Card } from "@radix-ui/themes";
@@ -10,6 +10,7 @@ import {
   useSendChatRequest,
 } from "../../hooks";
 import type { Config } from "../../features/Config/configSlice";
+import { ChatRawJSON } from "../ChatRawJSON";
 import {
   enableSend,
   getSelectedChatModel,
@@ -25,8 +26,6 @@ import {
 import { Toolbar } from "../Toolbar";
 import { copyChatHistoryToClipboard } from "../../utils/copyChatHistoryToClipboard";
 import { setError } from "../../features/Errors/errorsSlice";
-import { viewRawJSON } from "../../utils/viewRawJSON";
-import { useOpenUrl } from "../../hooks/useOpenUrl";
 import { setInformation } from "../../features/Errors/informationSlice";
 
 export type ChatProps = {
@@ -53,6 +52,7 @@ export const Chat: React.FC<ChatProps> = ({
   onSetSystemPrompt,
   selectedSystemPrompt,
 }) => {
+  const [isViewingRawJSON, setIsViewingRawJSON] = useState(false);
   const chatContentRef = useRef<HTMLDivElement>(null);
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
@@ -74,13 +74,14 @@ export const Chat: React.FC<ChatProps> = ({
   const preventSend = useAppSelector(selectPreventSend);
   const onEnableSend = () => dispatch(enableSend({ id: chatId }));
 
-  const openUrl = useOpenUrl();
-
   const handleSummit = useCallback(
     (value: string) => {
       void submit(value);
+      if (isViewingRawJSON) {
+        setIsViewingRawJSON(false);
+      }
     },
-    [submit],
+    [submit, isViewingRawJSON],
   );
 
   const onTextAreaHeightChange = useCallback(() => {
@@ -120,15 +121,6 @@ export const Chat: React.FC<ChatProps> = ({
       });
   }, [dispatch, thread, caps.default_cap]);
 
-  const handleViewRawJSON = useCallback(() => {
-    const link = viewRawJSON({
-      ...thread,
-      model: thread.model || caps.default_cap,
-    });
-    console.log(`[DEBUG]: link: ${link}`);
-    openUrl(link);
-  }, [openUrl, thread, caps.default_cap]);
-
   useEffect(() => {
     if (!isWaiting && !isStreaming) {
       focusTextarea();
@@ -144,6 +136,13 @@ export const Chat: React.FC<ChatProps> = ({
         ref={chatContentRef}
         onRetry={retryFromIndex}
       />
+      {isViewingRawJSON && (
+        <ChatRawJSON
+          thread={{ ...thread, model: thread.model || caps.default_cap }}
+          copyHandler={handleCopyToClipboardJSON}
+          handleClose={() => setIsViewingRawJSON(false)}
+        />
+      )}
 
       {!isStreaming && preventSend && unCalledTools && (
         <Container py="4" bottom="0" style={{ justifyContent: "flex-end" }}>
@@ -180,27 +179,8 @@ export const Chat: React.FC<ChatProps> = ({
             </Flex>
             {!isStreaming && (
               <Flex align="center" gap="1">
-                <Link size="1" onClick={handleCopyToClipboardJSON}>
-                  Copy as JSON
-                </Link>
-                {/* {" I "}
-              <Text
-                size="1"
-                onClick={() => {
-                  const link = exportChatHistoryAsJSON(
-                    thread,
-                    `chat-history_${
-                      thread.title ? thread.title : new Date().toISOString()
-                    }.json`,
-                  );
-                  openUrl(link);
-                }}
-              >
-                Export as JSON
-              </Text> */}
-                {" I "}
-                <Link size="1" onClick={handleViewRawJSON}>
-                  View raw
+                <Link size="1" onClick={() => setIsViewingRawJSON(true)}>
+                  View chat history
                 </Link>
               </Flex>
             )}

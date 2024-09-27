@@ -1,0 +1,33 @@
+.container {
+  justify-content: flex-end;
+  position: absolute;
+  width: calc(100% - (6 * var(--space-4)));
+  bottom: 170px;
+  left: 50%;
+  visibility: hidden;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition:
+    opacity 0.3s ease-in-out,
+    visibility 0.3s ease-in-out;
+  z-index: 100000;
+  background-color: var(--gray-1);
+}
+
+.closed {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%);
+  transition:
+    opacity 0.3s ease-in-out,
+    visibility 0.3s ease-in-out;
+}
+
+.opened {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%);
+  transition:
+    opacity 0.3s ease-in-out,
+    visibility 0.3s ease-in-out;
+}
