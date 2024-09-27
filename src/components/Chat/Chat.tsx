@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useEffect } from "react";
 import { ChatForm, ChatFormProps } from "../ChatForm";
 import { ChatContent } from "../ChatContent";
 import { Flex, Button, Text, Container, Card } from "@radix-ui/themes";
+import { Link } from "../Link";
 import { PageWrapper } from "../PageWrapper";
 import {
   useAppSelector,
@@ -22,10 +23,11 @@ import {
   getSelectedToolUse,
 } from "../../features/Chat/Thread";
 import { Toolbar } from "../Toolbar";
-import { exportChatHistoryAsJSON } from "../../utils/exportChatHistoryAsJSON";
 import { copyChatHistoryToClipboard } from "../../utils/copyChatHistoryToClipboard";
 import { setError } from "../../features/Errors/errorsSlice";
 import { viewRawJSON } from "../../utils/viewRawJSON";
+import { useOpenUrl } from "../../hooks/useOpenUrl";
+import { setInformation } from "../../features/Errors/informationSlice";
 
 export type ChatProps = {
   host: Config["host"];
@@ -72,12 +74,20 @@ export const Chat: React.FC<ChatProps> = ({
   const preventSend = useAppSelector(selectPreventSend);
   const onEnableSend = () => dispatch(enableSend({ id: chatId }));
 
+  const openUrl = useOpenUrl();
+
   const handleSummit = useCallback(
     (value: string) => {
       void submit(value);
     },
     [submit],
   );
+
+  const handleViewRawJSON = useCallback(() => {
+    const link = viewRawJSON(thread);
+    console.log(`[DEBUG]: link: ${link}`);
+    openUrl(link);
+  }, [openUrl, thread]);
 
   const onTextAreaHeightChange = useCallback(() => {
     if (!chatContentRef.current) return;
@@ -105,9 +115,7 @@ export const Chat: React.FC<ChatProps> = ({
         if (response.error) {
           dispatch(setError(response.error));
         }
-        console.log(
-          `[DEBUG]: copied to clipboard successfully! | success: ${response.success}`,
-        );
+        dispatch(setInformation("Chat history copied to clipboard"));
       })
       .catch(() => {
         dispatch(setError("Unknown error occured while copying to clipboard"));
@@ -163,29 +171,32 @@ export const Chat: React.FC<ChatProps> = ({
               <Text size="1">model: {chatModel || caps.default_cap} </Text> •{" "}
               <Text size="1">mode: {chatToolUse} </Text>
             </Flex>
-            <Flex align="center" gap="1">
-              <Text size="1" onClick={handleCopyToClipboardJSON}>
-                Copy as JSON
-              </Text>
-              {" I "}
+            {!isStreaming && (
+              <Flex align="center" gap="1">
+                <Link size="1" onClick={handleCopyToClipboardJSON}>
+                  Copy as JSON
+                </Link>
+                {/* {" I "}
               <Text
                 size="1"
-                onClick={() =>
-                  exportChatHistoryAsJSON(
+                onClick={() => {
+                  const link = exportChatHistoryAsJSON(
                     thread,
                     `chat-history_${
                       thread.title ? thread.title : new Date().toISOString()
                     }.json`,
-                  )
-                }
+                  );
+                  openUrl(link);
+                }}
               >
                 Export as JSON
-              </Text>
-              {" I "}
-              <Text size="1" onClick={() => viewRawJSON(thread)}>
-                View raw
-              </Text>
-            </Flex>
+              </Text> */}
+                {" I "}
+                <Link size="1" onClick={handleViewRawJSON}>
+                  View raw
+                </Link>
+              </Flex>
+            )}
           </Flex>
         )}
       </Flex>

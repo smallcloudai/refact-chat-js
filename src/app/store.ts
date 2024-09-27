@@ -41,6 +41,7 @@ import { warningSlice } from "../features/Errors/warningSlice";
 import { pagesSlice } from "../features/Pages/pagesSlice";
 import mergeInitialState from "redux-persist/lib/stateReconciler/autoMergeLevel2";
 import { listenerMiddleware } from "./middleware";
+import { informationSlice } from "../features/Errors/informationSlice";
 
 // https://redux-toolkit.js.org/api/combineSlices
 // `combineSlices` automatically combines the reducers using
@@ -67,6 +68,7 @@ const rootReducer = combineSlices(
   historySlice,
   errorSlice,
   warningSlice,
+  informationSlice,
   pagesSlice,
 );
 
