@@ -86,9 +86,9 @@ const MaybePinButton: React.FC<{
   }, [handleShow, onSubmit, openFiles, patch.data]);
 
   // TODO: ui, handle small screens
-  if (isPin && markdown && patch.data) {
+  if (isPin) {
     return (
-      <Flex my="2" gap="2" justify="between">
+      <Flex my="2" gap="2" wrap="wrap">
         <Text
           as="p"
           wrap="wrap"
@@ -96,20 +96,21 @@ const MaybePinButton: React.FC<{
         >
           {children}
         </Text>
-        <Flex gap="2" justify="end">
+        <Flex gap="2" justify="end" ml="auto">
           <Button
             size="1"
-            // loading={!patch.data}
+            loading={!patch.data}
             onClick={handleShow}
             title={"Show Patch"}
+            disabled={!!patch.error}
           >
             Open
           </Button>
           <Button
             size="1"
-            // loading={!patch.data}
+            loading={!patch.data}
             onClick={handleApply}
-            // disabled={!!patch.error}
+            disabled={!!patch.error}
             title={patch.error ? "Patch applied" : "Apply patch"}
           >
             Apply
