@@ -137,18 +137,17 @@ export const ToolContent: React.FC<{
                 )}
               </Text>
               {hiddenFiles > 0 && (
-                <Text weight="light" size="1">
-                  {`<${hiddenFiles} files hidden>`}
+                <Text weight="light" size="1" ml="4">
+                  {`🔎 <${hiddenFiles} files hidden>`}
                 </Text>
               )}
               {shownAttachedFiles.map((file, index) => (
-                <Text weight="light" size="1" key={index}>
-                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🔎 {file}
+                <Text weight="light" size="1" key={index} ml="4">
+                  🔎 {file}
                 </Text>
               ))}
               {subchat && (
-                <Flex>
-                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <Flex ml="4">
                   <Spinner />
                   <Text weight="light" size="1" ml="4px">
                     {subchat}
