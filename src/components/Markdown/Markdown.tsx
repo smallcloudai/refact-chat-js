@@ -132,17 +132,6 @@ const MaybePinButton: React.FC<{
   if (isPin) {
     return (
       <Box>
-        {errorMessage && (
-          <Callout.Root
-            color={errorMessage.type === "error" ? "red" : "yellow"}
-            onClick={() => setErrorMessage(null)}
-          >
-            <Callout.Icon>
-              <InfoCircledIcon />
-            </Callout.Icon>
-            <Callout.Text>{errorMessage.text}</Callout.Text>
-          </Callout.Root>
-        )}
         <Flex my="2" gap="2" wrap="wrap-reverse">
           <Text
             as="p"
@@ -174,6 +163,17 @@ const MaybePinButton: React.FC<{
             </Button>
           </Flex>
         </Flex>
+        {errorMessage && (
+          <Callout.Root
+            color={errorMessage.type === "error" ? "red" : "yellow"}
+            onClick={() => setErrorMessage(null)}
+          >
+            <Callout.Icon>
+              <InfoCircledIcon />
+            </Callout.Icon>
+            <Callout.Text>{errorMessage.text}</Callout.Text>
+          </Callout.Root>
+        )}
       </Box>
     );
   }
