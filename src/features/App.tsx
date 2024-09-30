@@ -28,6 +28,7 @@ import { Tour } from "../components/Tour";
 import { TourEnd } from "../components/Tour/TourEnd";
 import { useEventBusForApp } from "../hooks/useEventBusForApp";
 import { BringYourOwnKey } from "../components/BringYourOwnKey/BringYourOwnKey";
+import { AbortControllerProvider } from "../contexts/AbortControllers";
 
 export interface AppProps {
   style?: React.CSSProperties;
@@ -190,7 +191,9 @@ export const App = () => {
       <PersistGate persistor={persistor}>
         <Theme>
           <TourProvider>
-            <InnerApp />
+            <AbortControllerProvider>
+              <InnerApp />
+            </AbortControllerProvider>
           </TourProvider>
         </Theme>
       </PersistGate>
