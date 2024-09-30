@@ -1,4 +1,4 @@
-import React, { Key, useCallback, useMemo } from "react";
+import React, { Key, useCallback, useEffect, useMemo, useState } from "react";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import classNames from "classnames";
@@ -20,6 +20,8 @@ import {
   Strong,
   Button,
   Flex,
+  Box,
+  Callout,
 } from "@radix-ui/themes";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
@@ -32,6 +34,7 @@ import {
 } from "../../hooks";
 import { selectOpenFiles } from "../../features/OpenFiles/openFilesSlice";
 import { useSelector } from "react-redux";
+import { InfoCircledIcon } from "@radix-ui/react-icons";
 
 export type MarkdownProps = Pick<
   React.ComponentProps<typeof ReactMarkdown>,
@@ -49,78 +52,129 @@ const MaybePinButton: React.FC<{
   getMarkdown: (pin: string) => string | undefined;
 }> = ({ children, getMarkdown }) => {
   const { host } = useConfig();
+
   const { diffPreview } = useEventsBusForIDE();
   const { onSubmit, result: _result } = useDiffApplyMutation();
   const openFiles = useSelector(selectOpenFiles);
   const isPin = typeof children === "string" && children.startsWith("📍");
   const markdown = getMarkdown(String(children));
 
-  const patch = diffApi.usePatchSingleFileFromTicketQuery(
-    { pin: String(children), markdown: String(markdown) },
-    { skip: !isPin || !markdown },
-  );
+  const [errorMessage, setErrorMessage] = useState<{
+    type: "warning" | "error";
+    text: string;
+  } | null>(null);
+
+  const [getPatch, _patchResult] =
+    diffApi.useLazyPatchSingleFileFromTicketQuery();
 
   const handleShow = useCallback(() => {
     if (typeof children !== "string") return;
     if (!markdown) return;
-    if (!patch.data) return;
-    diffPreview(patch.data);
-  }, [children, diffPreview, markdown, patch.data]);
+
+    getPatch({ pin: children, markdown })
+      .unwrap()
+      .then((patch) => {
+        if (patch.chunks.length === 0) {
+          throw new Error("No Chunks to show");
+        }
+        diffPreview(patch);
+      })
+      .catch(() => {
+        setErrorMessage({ type: "warning", text: "No patch to show" });
+      });
+  }, [children, diffPreview, getPatch, markdown]);
 
   const handleApply = useCallback(() => {
-    const results = patch.data?.results ?? [];
-    const files = results.reduce<string[]>((acc, cur) => {
-      const { file_name_add, file_name_delete, file_name_edit } = cur;
-      if (file_name_add) acc.push(file_name_add);
-      if (file_name_delete) acc.push(file_name_delete);
-      if (file_name_edit) acc.push(file_name_edit);
-      return acc;
-    }, []);
+    if (typeof children !== "string") return;
+    if (!markdown) return;
+    getPatch({ pin: children, markdown })
+      .unwrap()
+      .then((patch) => {
+        const files = patch.results.reduce<string[]>((acc, cur) => {
+          const { file_name_add, file_name_delete, file_name_edit } = cur;
+          if (file_name_add) acc.push(file_name_add);
+          if (file_name_delete) acc.push(file_name_delete);
+          if (file_name_edit) acc.push(file_name_edit);
+          return acc;
+        }, []);
 
-    const fileIsOpen = files.some((file) => openFiles.includes(file));
+        if (files.length === 0) {
+          setErrorMessage({ type: "warning", text: "No chunks to apply" });
+          return;
+        }
 
-    if (fileIsOpen) {
-      handleShow();
-    } else if (patch.data) {
-      const chunks = patch.data.chunks;
-      const toApply = chunks.map(() => true);
-      void onSubmit({ chunks, toApply });
+        const fileIsOpen = files.some((file) => openFiles.includes(file));
+
+        if (fileIsOpen) {
+          diffPreview(patch);
+        } else {
+          const chunks = patch.chunks;
+          const toApply = chunks.map(() => true);
+          void onSubmit({ chunks, toApply });
+        }
+      })
+      .catch((error: Error) => {
+        setErrorMessage({
+          type: "error",
+          text: error.message
+            ? "Failed to apply patch: " + error.message
+            : "Failed to apply patch.",
+        });
+      });
+  }, [children, diffPreview, getPatch, markdown, onSubmit, openFiles]);
+
+  useEffect(() => {
+    if (errorMessage) {
+      setTimeout(() => setErrorMessage(null), 3000);
     }
-  }, [handleShow, onSubmit, openFiles, patch.data]);
+  }, [errorMessage]);
 
   if (isPin) {
     return (
-      <Flex my="2" gap="2" wrap="wrap">
-        <Text
-          as="p"
-          wrap="wrap"
-          style={{ lineBreak: "anywhere", wordBreak: "break-all" }}
-        >
-          {children}
-        </Text>
-        <Flex gap="2" justify="end" ml="auto">
-          {host !== "web" && (
+      <Box>
+        {errorMessage && (
+          <Callout.Root
+            color={errorMessage.type === "error" ? "red" : "yellow"}
+            onClick={() => setErrorMessage(null)}
+          >
+            <Callout.Icon>
+              <InfoCircledIcon />
+            </Callout.Icon>
+            <Callout.Text>{errorMessage.text}</Callout.Text>
+          </Callout.Root>
+        )}
+        <Flex my="2" gap="2" wrap="wrap-reverse">
+          <Text
+            as="p"
+            wrap="wrap"
+            style={{ lineBreak: "anywhere", wordBreak: "break-all" }}
+          >
+            {children}
+          </Text>
+          <Flex gap="2" justify="end" ml="auto">
+            {host !== "web" && (
+              <Button
+                size="1"
+                // loading={patchResult.isFetching}
+                onClick={handleShow}
+                title="Show Patch"
+                disabled={!!errorMessage}
+              >
+                Open
+              </Button>
+            )}
             <Button
               size="1"
-              loading={!patch.data}
-              onClick={handleShow}
-              title={"Show Patch"}
-              disabled={!!patch.error}
+              // loading={patchResult.isFetching}
+              onClick={handleApply}
+              disabled={!!errorMessage}
+              title="Apply patch"
             >
-              Open
+              Apply
             </Button>
-          )}
-          <Button
-            size="1"
-            loading={!patch.data}
-            onClick={handleApply}
-            disabled={!!patch.error}
-            title={patch.error ? "Patch applied" : "Apply patch"}
-          >
-            Apply
-          </Button>
+          </Flex>
         </Flex>
-      </Flex>
+      </Box>
     );
   }
 
