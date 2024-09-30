@@ -119,7 +119,7 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
     const isStreaming = useAppSelector(selectIsStreaming);
     const isWaiting = useAppSelector(selectIsWaiting);
 
-    const { innerRef, handleScroll } = useAutoScroll({
+    const { innerRef, handleScroll, handleWheel } = useAutoScroll({
       ref,
       messages,
       isStreaming,
@@ -130,6 +130,7 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
         style={{ flexGrow: 1, height: "auto" }}
         scrollbars="vertical"
         onScroll={handleScroll}
+        onWheel={handleWheel}
       >
         <Flex direction="column" className={styles.content} p="2" gap="1">
           {messages.length === 0 && <PlaceHolderText />}
