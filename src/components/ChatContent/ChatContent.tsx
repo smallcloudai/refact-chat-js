@@ -132,6 +132,11 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
       isStreaming,
     });
 
+    const onRetryWrapper = (index: number, question: string) => {
+      props.onRetry(index, question);
+      handleScrollButtonClick();
+    };
+
     return (
       <ScrollArea
         style={{ flexGrow: 1, height: "auto", position: "relative" }}
@@ -141,7 +146,7 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
       >
         <Flex direction="column" className={styles.content} p="2" gap="1">
           {messages.length === 0 && <PlaceHolderText />}
-          {renderMessages(messages, props.onRetry)}
+          {renderMessages(messages, onRetryWrapper)}
           {isWaiting && (
             <Container py="4">
               <Spinner />
