@@ -21,7 +21,6 @@ import {
   Button,
   Flex,
   Box,
-  Callout,
 } from "@radix-ui/themes";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
@@ -34,7 +33,7 @@ import {
 } from "../../hooks";
 import { selectOpenFiles } from "../../features/OpenFiles/openFilesSlice";
 import { useSelector } from "react-redux";
-import { InfoCircledIcon } from "@radix-ui/react-icons";
+import { ErrorCallout, DiffWarningCallout } from "../Callout";
 
 export type MarkdownProps = Pick<
   React.ComponentProps<typeof ReactMarkdown>,
@@ -163,16 +162,11 @@ const MaybePinButton: React.FC<{
             </Button>
           </Flex>
         </Flex>
-        {errorMessage && (
-          <Callout.Root
-            color={errorMessage.type === "error" ? "red" : "yellow"}
-            onClick={() => setErrorMessage(null)}
-          >
-            <Callout.Icon>
-              <InfoCircledIcon />
-            </Callout.Icon>
-            <Callout.Text>{errorMessage.text}</Callout.Text>
-          </Callout.Root>
+        {errorMessage && errorMessage.type === "error" && (
+          <ErrorCallout>{errorMessage.text}</ErrorCallout>
+        )}
+        {errorMessage && errorMessage.type === "warning" && (
+          <DiffWarningCallout message={errorMessage.text} />
         )}
       </Box>
     );
