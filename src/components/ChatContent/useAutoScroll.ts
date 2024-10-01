@@ -20,6 +20,12 @@ export function useAutoScroll({
   const [lastScrollHeight, setLastScrollHeight] = useState(0);
   const [isScrolledTillBottom, setIsScrolledTillBottom] = useState(true);
   const [currentScrollHeight, setCurrentScrollHeight] = useState(0);
+
+  /*
+    Parent state is needed to calculate new scroll height of scroll area, if user clicks the button instead of scrolling down.
+    Since the event is not giving us parent (click event is not giving a parent within `currentTarget`), 
+    we need to save it to state to get updated scrollHeight later on
+  */
   const [parent, setParent] = useState<(EventTarget & HTMLDivElement) | null>(
     null,
   );
