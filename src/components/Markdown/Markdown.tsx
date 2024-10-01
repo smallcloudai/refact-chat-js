@@ -1,4 +1,4 @@
-import React, { Key, useCallback, useEffect, useMemo, useState } from "react";
+import React, { Key, useCallback, useMemo, useState } from "react";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import classNames from "classnames";
@@ -122,11 +122,9 @@ const MaybePinButton: React.FC<{
       });
   }, [children, diffPreview, getPatch, markdown, onSubmit, openFiles]);
 
-  useEffect(() => {
-    if (errorMessage) {
-      setTimeout(() => setErrorMessage(null), 3000);
-    }
-  }, [errorMessage]);
+  const handleCalloutClick = useCallback(() => {
+    setErrorMessage(null);
+  }, []);
 
   if (isPin) {
     return (
@@ -163,10 +161,16 @@ const MaybePinButton: React.FC<{
           </Flex>
         </Flex>
         {errorMessage && errorMessage.type === "error" && (
-          <ErrorCallout>{errorMessage.text}</ErrorCallout>
+          <ErrorCallout onClick={handleCalloutClick} timeout={3000}>
+            {errorMessage.text}
+          </ErrorCallout>
         )}
         {errorMessage && errorMessage.type === "warning" && (
-          <DiffWarningCallout message={errorMessage.text} />
+          <DiffWarningCallout
+            timeout={3000}
+            onClick={handleCalloutClick}
+            message={errorMessage.text}
+          />
         )}
       </Box>
     );
