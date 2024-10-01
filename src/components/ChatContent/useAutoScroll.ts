@@ -43,6 +43,7 @@ export function useAutoScroll({
   useEffect(() => {
     return () => {
       setAutoScroll(true);
+      setCurrentScrollHeight(0);
     };
   }, []);
 
@@ -56,11 +57,18 @@ export function useAutoScroll({
       setLastScrollHeight(scrollHeight);
     }
 
-    setCurrentScrollHeight(
-      lastScrollHeight === 0
-        ? lastScrollHeight
-        : scrollHeight - lastScrollHeight,
-    );
+    if (lastScrollHeight < scrollHeight) {
+      setCurrentScrollHeight(
+        lastScrollHeight === 0
+          ? lastScrollHeight
+          : scrollHeight - lastScrollHeight,
+      );
+    } else {
+      setLastScrollHeight(scrollHeight);
+      setCurrentScrollHeight(0);
+      setIsScrolledTillBottom(true);
+      setAutoScroll(true);
+    }
 
     setParent(currentTarget);
 
@@ -74,8 +82,7 @@ export function useAutoScroll({
 
     setIsScrolledTillBottom(isBottomScrolled);
     setAutoScroll(isBottomScrolled);
-
-    if (currentScrollHeight > window.innerHeight * 0.6) {
+    if (currentScrollHeight > 630) {
       setAutoScroll(false);
       setIsScrolledTillBottom(false);
     }
