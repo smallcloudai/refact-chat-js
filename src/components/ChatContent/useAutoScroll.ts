@@ -18,6 +18,11 @@ export function useAutoScroll({
 
   const [autoScroll, setAutoScroll] = useState(true);
   const [lastScrollHeight, setLastScrollHeight] = useState(0);
+  const [isScrolledTillBottom, setIsScrolledTillBottom] = useState(true);
+  const [currentScrollHeight, setCurrentScrollHeight] = useState(0);
+  const [parent, setParent] = useState<(EventTarget & HTMLDivElement) | null>(
+    null,
+  );
 
   useEffect(() => {
     setAutoScroll(isStreaming);
@@ -37,22 +42,36 @@ export function useAutoScroll({
 
   const handleScroll: React.UIEventHandler<HTMLDivElement> = (event) => {
     if (!innerRef.current) return;
+
+    const currentTarget = event.currentTarget;
+    const scrollHeight = parent?.scrollHeight ?? currentTarget.scrollHeight;
+
     if (!isStreaming) {
-      setLastScrollHeight(event.currentTarget.scrollTop);
+      setLastScrollHeight(scrollHeight);
     }
-    const currentScrollHeight =
-      event.currentTarget.scrollTop - lastScrollHeight;
-    const parent = event.currentTarget.getBoundingClientRect();
+
+    setCurrentScrollHeight(
+      lastScrollHeight === 0
+        ? lastScrollHeight
+        : scrollHeight - lastScrollHeight,
+    );
+
+    setParent(currentTarget);
+
+    const parentRect = currentTarget.getBoundingClientRect();
     const { bottom, height, top } = innerRef.current.getBoundingClientRect();
 
-    const nextIsVisable =
-      top <= parent.top
-        ? parent.top - top <= height + 20
-        : bottom - parent.bottom <= height + 20;
-    setAutoScroll(nextIsVisable);
+    const isBottomScrolled =
+      top <= parentRect.top
+        ? parentRect.top - top <= height + 20
+        : bottom - parentRect.bottom <= height + 20;
+
+    setIsScrolledTillBottom(isBottomScrolled);
+    setAutoScroll(isBottomScrolled);
 
     if (currentScrollHeight > window.innerHeight * 0.6) {
       setAutoScroll(false);
+      setIsScrolledTillBottom(false);
     }
   };
 
@@ -62,10 +81,26 @@ export function useAutoScroll({
     if (event.deltaY < 0) {
       setAutoScroll(false);
     } else {
-      setLastScrollHeight(event.currentTarget.scrollTop);
-      setAutoScroll(true);
+      setLastScrollHeight(event.currentTarget.scrollHeight);
+      setAutoScroll(isScrolledTillBottom);
     }
   };
 
-  return { handleScroll, handleWheel, innerRef };
+  const handleScrollButtonClick = () => {
+    if (!innerRef.current || !parent) return;
+
+    innerRef.current.scrollIntoView({ behavior: "instant", block: "end" });
+    setAutoScroll(true);
+    setIsScrolledTillBottom(true);
+    setCurrentScrollHeight(0);
+    setLastScrollHeight(parent.scrollHeight);
+  };
+
+  return {
+    handleScroll,
+    handleWheel,
+    innerRef,
+    isScrolledTillBottom,
+    handleScrollButtonClick,
+  };
 }

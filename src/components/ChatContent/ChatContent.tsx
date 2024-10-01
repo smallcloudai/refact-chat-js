@@ -26,6 +26,7 @@ import {
 } from "../../features/Chat/Thread/selectors";
 import { takeWhile } from "../../utils";
 import { GroupedDiffs } from "./DiffContent";
+import { ScrollToBottomButton } from "./ScrollToBottomButton";
 
 export const TipOfTheDay: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -119,7 +120,13 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
     const isStreaming = useAppSelector(selectIsStreaming);
     const isWaiting = useAppSelector(selectIsWaiting);
 
-    const { innerRef, handleScroll, handleWheel } = useAutoScroll({
+    const {
+      innerRef,
+      handleScroll,
+      handleWheel,
+      handleScrollButtonClick,
+      isScrolledTillBottom,
+    } = useAutoScroll({
       ref,
       messages,
       isStreaming,
@@ -127,7 +134,7 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
 
     return (
       <ScrollArea
-        style={{ flexGrow: 1, height: "auto" }}
+        style={{ flexGrow: 1, height: "auto", position: "relative" }}
         scrollbars="vertical"
         onScroll={handleScroll}
         onWheel={handleWheel}
@@ -142,6 +149,9 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
           )}
           <div ref={innerRef} />
         </Flex>
+        {!isScrolledTillBottom && (
+          <ScrollToBottomButton onClick={handleScrollButtonClick} />
+        )}
       </ScrollArea>
     );
   },
