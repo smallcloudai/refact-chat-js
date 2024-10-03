@@ -6,7 +6,7 @@ type CopyChatHistoryToClipboardResponse = {
 };
 
 export const copyChatHistoryToClipboard = async (
-  chatThread: RootState["chat"]["thread"],
+  chatThread: RootState["history"]["thread"],
 ): Promise<CopyChatHistoryToClipboardResponse> => {
   const jsonString = JSON.stringify(chatThread, null, 2);
 

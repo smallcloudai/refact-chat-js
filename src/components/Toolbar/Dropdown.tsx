@@ -20,6 +20,7 @@ export type DropdownNavigationOptions =
   | "hot keys"
   | "restart tour"
   | "cloud login"
+  | "chat history"
   | "";
 
 type DropdownProps = {

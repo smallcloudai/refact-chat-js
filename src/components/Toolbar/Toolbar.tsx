@@ -7,13 +7,18 @@ import {
   Text,
 } from "@radix-ui/themes";
 import { Dropdown, DropdownNavigationOptions } from "./Dropdown";
-import { DotFilledIcon, HomeIcon, PlusIcon } from "@radix-ui/react-icons";
+import {
+  DotFilledIcon,
+  FileTextIcon,
+  HomeIcon,
+  PlusIcon,
+} from "@radix-ui/react-icons";
 import { newChatAction } from "../../events";
 import { restart, useTourRefs } from "../../features/Tour";
 import { popBackTo, push } from "../../features/Pages/pagesSlice";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getHistory } from "../../features/History/historySlice";
-import { restoreChat } from "../../features/Chat";
+import { restoreChat, selectChatId } from "../../features/Chat";
 import { TruncateLeft } from "../Text";
 import {
   useAppDispatch,
@@ -61,6 +66,8 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
   const cache = useAppSelector((app) => app.chat.cache);
   const { openSettings, openHotKeys } = useEventsBusForIDE();
 
+  const chatId = useAppSelector(selectChatId);
+
   const handleNavigation = (to: DropdownNavigationOptions | "chat") => {
     if (to === "settings") {
       openSettings();
@@ -70,6 +77,8 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
       dispatch(push({ name: "fill in the middle debug page" }));
     } else if (to === "stats") {
       dispatch(push({ name: "statistics page" }));
+    } else if (to === "chat history") {
+      dispatch(push({ name: "chat history page", chatId }));
     } else if (to === "restart tour") {
       dispatch(restart());
       dispatch(popBackTo("initial setup"));
@@ -191,6 +200,14 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
           <PlusIcon />
           <Text>New chat</Text>
         </Button>
+      )}
+      {activeTab.type === "chat" && (
+        <IconButton
+          variant="outline"
+          onClick={() => handleNavigation("chat history")}
+        >
+          <FileTextIcon />
+        </IconButton>
       )}
       <Dropdown handleNavigation={handleNavigation} />
     </Flex>

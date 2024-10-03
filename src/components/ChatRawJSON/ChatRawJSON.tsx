@@ -1,65 +1,52 @@
-import { Box, Button, Card, Container, Flex } from "@radix-ui/themes";
+import { Box, Button, Flex, Heading } from "@radix-ui/themes";
 import { ScrollArea } from "../ScrollArea";
-import { MarkdownCodeBlock } from "../Markdown/CodeBlock";
 import { RootState } from "../../app/store";
-import { useEffect, useState } from "react";
-import styles from "./ChatRawJSON.module.css";
-import classNames from "classnames";
+import { MarkdownCodeBlock } from "../Markdown/CodeBlock";
 
-type ChatHistoryProps = {
+type ChatRawJSONProps = {
   thread: RootState["chat"]["thread"];
   copyHandler: () => void;
-  handleClose: () => void;
 };
 
-export const ChatRawJSON = ({
-  thread,
-  copyHandler,
-  handleClose,
-}: ChatHistoryProps) => {
-  const [isOpened, setIsOpened] = useState(false);
-
-  const handleAnimatedClose = () => {
-    if (isOpened) {
-      setIsOpened(false);
-      const timeoutId = setTimeout(() => {
-        handleClose();
-        clearTimeout(timeoutId);
-      }, 600);
-    }
-  };
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => setIsOpened(true), 200);
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, []);
-
+export const ChatRawJSON = ({ thread, copyHandler }: ChatRawJSONProps) => {
   return (
-    <Container
-      py="2"
-      bottom="0"
-      className={classNames(styles.container, { [styles.opened]: isOpened })}
+    <Box
+      style={{
+        width: "100%",
+      }}
     >
-      <Card>
-        <Flex direction="column" align="center" gap="2">
-          <ScrollArea scrollbars="both" asChild>
-            <Box py="0" style={{ maxHeight: "35dvh" }}>
+      <Flex
+        direction="column"
+        align={"start"}
+        style={{
+          width: "100%",
+        }}
+      >
+        <Heading as="h3" align="center" mb="5">
+          Chat History
+        </Heading>
+        <Flex
+          align="start"
+          justify="center"
+          direction="column"
+          style={{ maxWidth: "70.8dvw" }} // TODO: think about this better
+        >
+          {/* TODO: Place here all raw json code */}
+          <ScrollArea
+            scrollbars="horizontal"
+            style={{ maxWidth: "100%", maxHeight: "60dvh" }}
+          >
+            <Box style={{ height: "100%" }}>
               <MarkdownCodeBlock>
                 {JSON.stringify(thread, null, 2)}
               </MarkdownCodeBlock>
             </Box>
           </ScrollArea>
-          <Flex gap="3" align="center" justify="center">
+          <Flex mt="5" gap="3" align="center" justify="center">
             <Button onClick={copyHandler}>Copy to clipboard</Button>
-            <Button variant="outline" onClick={handleAnimatedClose}>
-              Close
-            </Button>
           </Flex>
         </Flex>
-      </Card>
-    </Container>
+      </Flex>
+    </Box>
   );
 };

@@ -2,29 +2,29 @@ import React, { useCallback, useRef, useEffect, useState } from "react";
 import { ChatForm, ChatFormProps } from "../ChatForm";
 import { ChatContent } from "../ChatContent";
 import { Flex, Button, Text, Container, Card } from "@radix-ui/themes";
-import { Link } from "../Link";
+// import { Link } from "../Link";
 import {
   useAppSelector,
   useAppDispatch,
   useSendChatRequest,
 } from "../../hooks";
 import type { Config } from "../../features/Config/configSlice";
-import { ChatRawJSON } from "../ChatRawJSON";
+// import { ChatRawJSON } from "../ChatRawJSON";
 import {
   enableSend,
   getSelectedChatModel,
   selectIsStreaming,
   selectIsWaiting,
   setChatModel,
-  selectThread,
+  // selectThread,
   selectPreventSend,
   selectChatId,
   selectMessages,
   getSelectedToolUse,
 } from "../../features/Chat/Thread";
-import { copyChatHistoryToClipboard } from "../../utils/copyChatHistoryToClipboard";
-import { setError } from "../../features/Errors/errorsSlice";
-import { setInformation } from "../../features/Errors/informationSlice";
+// import { copyChatHistoryToClipboard } from "../../utils/copyChatHistoryToClipboard";
+// import { setError } from "../../features/Errors/errorsSlice";
+// import { setInformation } from "../../features/Errors/informationSlice";
 
 export type ChatProps = {
   host: Config["host"];
@@ -60,7 +60,7 @@ export const Chat: React.FC<ChatProps> = ({
   const chatToolUse = useAppSelector(getSelectedToolUse);
   const dispatch = useAppDispatch();
   const messages = useAppSelector(selectMessages);
-  const thread = useAppSelector(selectThread);
+  // const thread = useAppSelector(selectThread);
   const onSetChatModel = useCallback(
     (value: string) => {
       const model = caps.default_cap === value ? "" : value;
@@ -101,22 +101,22 @@ export const Chat: React.FC<ChatProps> = ({
     }
   }, []);
 
-  const handleCopyToClipboardJSON = useCallback(() => {
-    const currentChatThread = {
-      ...thread,
-      model: thread.model || caps.default_cap,
-    };
-    copyChatHistoryToClipboard(currentChatThread)
-      .then((response) => {
-        if (response.error) {
-          dispatch(setError(response.error));
-        }
-        dispatch(setInformation("Chat history copied to clipboard"));
-      })
-      .catch(() => {
-        dispatch(setError("Unknown error occured while copying to clipboard"));
-      });
-  }, [dispatch, thread, caps.default_cap]);
+  // const handleCopyToClipboardJSON = useCallback(() => {
+  //   const currentChatThread = {
+  //     ...thread,
+  //     model: thread.model || caps.default_cap,
+  //   };
+  //   copyChatHistoryToClipboard(currentChatThread)
+  //     .then((response) => {
+  //       if (response.error) {
+  //         dispatch(setError(response.error));
+  //       }
+  //       dispatch(setInformation("Chat history copied to clipboard"));
+  //     })
+  //     .catch(() => {
+  //       dispatch(setError("Unknown error occured while copying to clipboard"));
+  //     });
+  // }, [dispatch, thread, caps.default_cap]);
 
   useEffect(() => {
     if (!isWaiting && !isStreaming) {
@@ -139,13 +139,13 @@ export const Chat: React.FC<ChatProps> = ({
         ref={chatContentRef}
         onRetry={retryFromIndex}
       />
-      {isViewingRawJSON && (
+      {/* {isViewingRawJSON && (
         <ChatRawJSON
           thread={{ ...thread, model: thread.model || caps.default_cap }}
           copyHandler={handleCopyToClipboardJSON}
           handleClose={() => setIsViewingRawJSON(false)}
         />
-      )}
+      )} */}
 
       {!isStreaming && preventSend && unCalledTools && (
         <Container py="4" bottom="0" style={{ justifyContent: "flex-end" }}>
@@ -181,13 +181,13 @@ export const Chat: React.FC<ChatProps> = ({
               <Text size="1">model: {chatModel || caps.default_cap} </Text> •{" "}
               <Text size="1">mode: {chatToolUse} </Text>
             </Flex>
-            {!isStreaming && (
+            {/* {!isStreaming && (
               <Flex align="center" gap="1">
                 <Link size="1" onClick={() => setIsViewingRawJSON(true)}>
                   View chat history
                 </Link>
               </Flex>
-            )}
+            )} */}
           </Flex>
         )}
       </Flex>

@@ -32,6 +32,7 @@ import { AbortControllerProvider } from "../contexts/AbortControllers";
 import { Toolbar } from "../components/Toolbar";
 import { Tab } from "../components/Toolbar/Toolbar";
 import { PageWrapper } from "../components/PageWrapper";
+import { ChatHistory } from "./ChatHistory";
 
 export interface AppProps {
   style?: React.CSSProperties;
@@ -185,6 +186,15 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
             tabbed={config.tabbed}
             host={config.host}
             onCloseStatistic={goBack}
+          />
+        )}
+        {page.name === "chat history page" && (
+          <ChatHistory
+            backFromChatHistory={goBack}
+            tabbed={config.tabbed}
+            host={config.host}
+            onCloseChatHistory={goBack}
+            chatId={page.chatId}
           />
         )}
       </PageWrapper>
