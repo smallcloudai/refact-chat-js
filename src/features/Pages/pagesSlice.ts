@@ -49,7 +49,7 @@ export interface DocumentationSettingsPage {
 }
 
 export interface ChatThreadHistoryPage {
-  name: "chat history page";
+  name: "thread history page";
   chatId: string;
 }
 

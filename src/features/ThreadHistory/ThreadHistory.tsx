@@ -7,32 +7,28 @@ import { ChatRawJSON } from "../../components/ChatRawJSON";
 import { useAppDispatch, useAppSelector } from "../../hooks";
 import { getChatById } from "../History/historySlice";
 import { copyChatHistoryToClipboard } from "../../utils/copyChatHistoryToClipboard";
-import {
-  clearError,
-  getErrorMessage,
-  setError,
-} from "../../features/Errors/errorsSlice";
+import { clearError, getErrorMessage, setError } from "../Errors/errorsSlice";
 import {
   clearInformation,
   getInformationMessage,
   setInformation,
-} from "../../features/Errors/informationSlice";
+} from "../Errors/informationSlice";
 import {
   ErrorCallout,
   InformationCallout,
 } from "../../components/Callout/Callout";
 
-type ChatHistoryProps = {
-  onCloseChatHistory: () => void;
-  backFromChatHistory: () => void;
+type ThreadHistoryProps = {
+  onCloseThreadHistory: () => void;
+  backFromThreadHistory: () => void;
   host: Config["host"];
   tabbed: Config["tabbed"];
   chatId: string;
 };
 
-export const ChatHistory: FC<ChatHistoryProps> = ({
-  onCloseChatHistory,
-  backFromChatHistory,
+export const ThreadHistory: FC<ThreadHistoryProps> = ({
+  onCloseThreadHistory,
+  backFromThreadHistory,
   host,
   tabbed,
   chatId,
@@ -82,7 +78,7 @@ export const ChatHistory: FC<ChatHistoryProps> = ({
       });
   }, [dispatch, historyThread]);
 
-  const handleBackFromChatHistory = useCallback(
+  const handleBackFromThreadHistory = useCallback(
     (customBackFunction: () => void) => {
       if (information) {
         onClearInformation();
@@ -101,7 +97,7 @@ export const ChatHistory: FC<ChatHistoryProps> = ({
         <Flex gap="2" pb="3">
           <Button
             variant="surface"
-            onClick={() => handleBackFromChatHistory(backFromChatHistory)}
+            onClick={() => handleBackFromThreadHistory(backFromThreadHistory)}
           >
             <ArrowLeftIcon width="16" height="16" />
             Back
@@ -111,7 +107,7 @@ export const ChatHistory: FC<ChatHistoryProps> = ({
         <Button
           mr="auto"
           variant="outline"
-          onClick={() => handleBackFromChatHistory(onCloseChatHistory)}
+          onClick={() => handleBackFromThreadHistory(onCloseThreadHistory)}
           mb="4"
         >
           Back

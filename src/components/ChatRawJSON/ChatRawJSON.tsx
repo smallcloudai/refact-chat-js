@@ -23,7 +23,7 @@ export const ChatRawJSON = ({ thread, copyHandler }: ChatRawJSONProps) => {
         }}
       >
         <Heading as="h3" align="center" mb="5">
-          Chat History
+          Thread History
         </Heading>
         <Flex
           align="start"

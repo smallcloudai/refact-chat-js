@@ -78,7 +78,7 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
     } else if (to === "stats") {
       dispatch(push({ name: "statistics page" }));
     } else if (to === "chat history") {
-      dispatch(push({ name: "chat history page", chatId }));
+      dispatch(push({ name: "thread history page", chatId }));
     } else if (to === "restart tour") {
       dispatch(restart());
       dispatch(popBackTo("initial setup"));
