@@ -4,8 +4,7 @@ import { Markdown } from "../Markdown";
 import { Container, Box } from "@radix-ui/themes";
 import { ToolCall } from "../../services/refact";
 import { ToolContent } from "./ToolsContent";
-import { useAppSelector, useEventsBusForIDE } from "../../hooks";
-import { selectActiveFile } from "../../features/Chat/activeFile";
+import { useEventsBusForIDE } from "../../hooks";
 
 type ChatInputProps = {
   message: string | null;
@@ -32,8 +31,7 @@ export const AssistantInput: React.FC<ChatInputProps> = ({
   message,
   toolCalls,
 }) => {
-  const activeFile = useAppSelector(selectActiveFile);
-  const { newFile, diffPasteBack } = useEventsBusForIDE();
+  const { newFile } = useEventsBusForIDE();
   const handleCopy = useCallback((text: string) => {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (window.navigator?.clipboard?.writeText) {
@@ -53,8 +51,6 @@ export const AssistantInput: React.FC<ChatInputProps> = ({
           <Markdown
             onCopyClick={handleCopy}
             onNewFileClick={newFile}
-            onPasteClick={diffPasteBack}
-            canPaste={activeFile.can_paste}
             canHavePins={true}
           >
             {message}
