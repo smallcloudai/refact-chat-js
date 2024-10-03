@@ -261,43 +261,56 @@ function handleSubchatResponse(
   messages: ChatMessages,
   response: SubchatResponse,
 ): ChatMessages {
-  for (let i = 0; i < messages.length; i++) {
-    const message = messages[i];
-    if (!isAssistantMessage(message)) {
-      continue;
+  function iter(
+    msgs: ChatMessages,
+    resp: SubchatResponse,
+    accumulator: ChatMessages = [],
+  ) {
+    if (msgs.length === 0) return accumulator;
+
+    const [head, ...tail] = msgs;
+
+    if (!isAssistantMessage(head) || !head.tool_calls) {
+      return iter(tail, response, accumulator.concat(head));
     }
-    if (!message.tool_calls) {
-      continue;
-    }
-    for (let j = 0; j < message.tool_calls.length; j++) {
-      const tool_call = message.tool_calls[j];
-      if (tool_call.id !== response.tool_call_id) {
-        continue;
-      }
 
-      const newMessage = { ...message };
-      const tool_calls = [...message.tool_calls];
-      newMessage.tool_calls = tool_calls;
+    const maybeToolCall = head.tool_calls.find(
+      (toolCall) => toolCall.id === resp.tool_call_id,
+    );
 
-      tool_calls[j] = { ...tool_call };
-      tool_calls[j].subchat = response.subchat_id;
+    if (!maybeToolCall) return iter(tail, response, accumulator.concat(head));
 
-      const { add_message } = response;
-      if (isSubchatContextFileResponse(add_message)) {
-        const content = parseOrElse<ChatContextFile[]>(add_message.content, []);
-        const attached_files = tool_calls[j].attached_files ?? [];
-        tool_calls[j].attached_files = [...attached_files];
-        for (const file of content) {
-          tool_calls[j].attached_files?.push(file.file_name);
-        }
-      }
+    const addMessageFiles = isSubchatContextFileResponse(resp.add_message)
+      ? parseOrElse<ChatContextFile[]>(resp.add_message.content, []).map(
+          (file) => file.file_name,
+        )
+      : [];
 
-      const res = [...messages];
-      res[i] = newMessage;
-      return res;
-    }
+    const attachedFiles = maybeToolCall.attached_files
+      ? [...maybeToolCall.attached_files, ...addMessageFiles]
+      : addMessageFiles;
+
+    const toolCallWithCubChat: ToolCall = {
+      ...maybeToolCall,
+      subchat: response.subchat_id,
+      attached_files: attachedFiles,
+    };
+
+    const toolCalls = head.tool_calls.map((toolCall) => {
+      if (toolCall.id === toolCallWithCubChat.id) return toolCallWithCubChat;
+      return toolCall;
+    });
+
+    const message: AssistantMessage = {
+      ...head,
+      tool_calls: toolCalls,
+    };
+
+    const nextAccumulator = [...accumulator, message];
+    return iter(tail, response, nextAccumulator);
   }
-  return messages;
+
+  return iter(messages, response);
 }
 
 function finishToolCallInMessages(
