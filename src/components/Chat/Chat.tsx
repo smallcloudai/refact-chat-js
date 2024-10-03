@@ -3,7 +3,6 @@ import { ChatForm, ChatFormProps } from "../ChatForm";
 import { ChatContent } from "../ChatContent";
 import { Flex, Button, Text, Container, Card } from "@radix-ui/themes";
 import { Link } from "../Link";
-import { PageWrapper } from "../PageWrapper";
 import {
   useAppSelector,
   useAppDispatch,
@@ -23,7 +22,6 @@ import {
   selectMessages,
   getSelectedToolUse,
 } from "../../features/Chat/Thread";
-import { Toolbar } from "../Toolbar";
 import { copyChatHistoryToClipboard } from "../../utils/copyChatHistoryToClipboard";
 import { setError } from "../../features/Errors/errorsSlice";
 import { setInformation } from "../../features/Errors/informationSlice";
@@ -44,7 +42,6 @@ export type ChatProps = {
 
 export const Chat: React.FC<ChatProps> = ({
   style,
-  host,
   unCalledTools,
   caps,
   maybeSendToSidebar,
@@ -128,9 +125,15 @@ export const Chat: React.FC<ChatProps> = ({
   }, [isWaiting, isStreaming, focusTextarea]);
 
   return (
-    <PageWrapper host={host} style={style}>
-      <Toolbar activeTab={{ type: "chat", id: chatId }} />
-
+    <Flex
+      style={style}
+      direction="column"
+      flexGrow="1"
+      width="100%"
+      overflowY="scroll"
+      justify="between"
+      px="1"
+    >
       <ChatContent
         key={`chat-content-${chatId}`}
         ref={chatContentRef}
@@ -156,6 +159,7 @@ export const Chat: React.FC<ChatProps> = ({
       )}
 
       <ChatForm
+        key={chatId} // TODO: think of how can we not trigger re-render on chatId change (checkboxes)
         chatId={chatId}
         isStreaming={isStreaming}
         showControls={messages.length === 0 && !isStreaming}
@@ -187,6 +191,6 @@ export const Chat: React.FC<ChatProps> = ({
           </Flex>
         )}
       </Flex>
-    </PageWrapper>
+    </Flex>
   );
 };

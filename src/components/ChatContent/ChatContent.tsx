@@ -13,7 +13,6 @@ import { Flex, Text, Container, Link } from "@radix-ui/themes";
 import styles from "./ChatContent.module.css";
 import { ContextFiles } from "./ContextFiles";
 import { AssistantInput } from "./AssistantInput";
-import { MemoryContent } from "./MemoryContent";
 import { useAutoScroll } from "./useAutoScroll";
 import { PlainText } from "./PlainText";
 import { useConfig, useEventsBusForIDE } from "../../hooks";
@@ -27,6 +26,7 @@ import {
 } from "../../features/Chat/Thread/selectors";
 import { takeWhile } from "../../utils";
 import { GroupedDiffs } from "./DiffContent";
+import { ScrollToBottomButton } from "./ScrollToBottomButton";
 
 export const TipOfTheDay: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -120,21 +120,33 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
     const isStreaming = useAppSelector(selectIsStreaming);
     const isWaiting = useAppSelector(selectIsWaiting);
 
-    const { innerRef, handleScroll } = useAutoScroll({
+    const {
+      innerRef,
+      handleScroll,
+      handleWheel,
+      handleScrollButtonClick,
+      isScrolledTillBottom,
+    } = useAutoScroll({
       ref,
       messages,
       isStreaming,
     });
 
+    const onRetryWrapper = (index: number, question: string) => {
+      props.onRetry(index, question);
+      handleScrollButtonClick();
+    };
+
     return (
       <ScrollArea
-        style={{ flexGrow: 1, height: "auto" }}
+        style={{ flexGrow: 1, height: "auto", position: "relative" }}
         scrollbars="vertical"
         onScroll={handleScroll}
+        onWheel={handleWheel}
       >
         <Flex direction="column" className={styles.content} p="2" gap="1">
           {messages.length === 0 && <PlaceHolderText />}
-          {renderMessages(messages, props.onRetry)}
+          {renderMessages(messages, onRetryWrapper)}
           {isWaiting && (
             <Container py="4">
               <Spinner />
@@ -142,6 +154,9 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
           )}
           <div ref={innerRef} />
         </Flex>
+        {!isScrolledTillBottom && (
+          <ScrollToBottomButton onClick={handleScrollButtonClick} />
+        )}
       </ScrollArea>
     );
   },
@@ -159,15 +174,6 @@ function renderMessages(
   const [head, ...tail] = messages;
   if (head.role === "tool") {
     return renderMessages(tail, onRetry, memo, index + 1);
-  }
-
-  if (head.role === "context_memory") {
-    const key = "context-memory-" + index;
-    const nextMemo = [
-      ...memo,
-      <MemoryContent key={key} items={head.content} />,
-    ];
-    return renderMessages(tail, onRetry, nextMemo, index + 1);
   }
 
   if (head.role === "plain_text") {
