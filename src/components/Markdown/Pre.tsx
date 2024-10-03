@@ -8,17 +8,8 @@ const PreTagWithButtons: React.FC<
   React.PropsWithChildren<{
     onCopyClick: () => void;
     onNewFileClick: () => void;
-    onPasteClick: () => void;
-    canPaste: boolean;
   }>
-> = ({
-  children,
-  onCopyClick,
-  onNewFileClick,
-  onPasteClick,
-  canPaste,
-  ...props
-}) => {
+> = ({ children, onCopyClick, onNewFileClick, ...props }) => {
   const config = useConfig();
 
   return (
@@ -53,7 +44,7 @@ const PreTagWithButtons: React.FC<
             gap="1"
             justify="end"
             style={{ position: "absolute", right: "0" }}
-            pr="4"
+            pr="2"
           >
             <Button variant="surface" size="1" onClick={onNewFileClick}>
               New File
@@ -61,11 +52,6 @@ const PreTagWithButtons: React.FC<
             <Button size="1" variant="surface" onClick={onCopyClick}>
               Copy
             </Button>
-            {canPaste && (
-              <Button variant="surface" size="1" onClick={onPasteClick}>
-                ➕ Diff
-              </Button>
-            )}
           </Flex>
         </RightButtonGroup>
       )}
@@ -84,25 +70,19 @@ const PreTagWithoutButtons: React.FC<React.PropsWithChildren> = ({
 export type PreTagProps = {
   onCopyClick?: () => void;
   onNewFileClick?: () => void;
-  onPasteClick?: () => void;
-  canPaste?: boolean;
 };
 
 export const PreTag: React.FC<React.PropsWithChildren<PreTagProps>> = ({
   onCopyClick,
   onNewFileClick,
-  onPasteClick,
-  canPaste,
   ...props
 }) => {
-  if (onCopyClick && onNewFileClick && onPasteClick) {
+  if (onCopyClick && onNewFileClick) {
     return (
       <PreTagWithButtons
         {...props}
         onCopyClick={onCopyClick}
         onNewFileClick={onNewFileClick}
-        onPasteClick={onPasteClick}
-        canPaste={!!canPaste}
       />
     );
   }
