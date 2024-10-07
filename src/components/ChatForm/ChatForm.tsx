@@ -29,7 +29,7 @@ import {
 } from "../../features/Errors/informationSlice";
 import { InformationCallout } from "../Callout/Callout";
 import { push } from "../../features/Pages/pagesSlice";
-import { selectChatId } from "../../features/Chat";
+import { selectChatId, selectMessages } from "../../features/Chat";
 
 export type ChatFormProps = {
   onSubmit: (str: string) => void;
@@ -79,6 +79,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     () => dispatch(clearInformation()),
     [dispatch],
   );
+  const messages = useAppSelector(selectMessages);
   const [value, setValue] = React.useState("");
 
   const { checkboxes, onToggleCheckbox, setInteracted, unCheckAll } =
@@ -251,7 +252,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
                 onClick={onClose}
               />
             )}
-            {!isStreaming && (
+            {messages.length !== 0 && !isStreaming && (
               <ThreadHistoryButton
                 title="View chat thread history"
                 size="1"
