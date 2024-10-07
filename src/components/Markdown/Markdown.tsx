@@ -25,7 +25,7 @@ import {
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
 import "katex/dist/katex.min.css";
-import { diffApi } from "../../services/refact";
+import { diffApi, isDetailMessage } from "../../services/refact";
 import {
   useConfig,
   useDiffApplyMutation,
@@ -34,6 +34,11 @@ import {
 import { selectOpenFiles } from "../../features/OpenFiles/openFilesSlice";
 import { useSelector } from "react-redux";
 import { ErrorCallout, DiffWarningCallout } from "../Callout";
+import {
+  selectIsStreaming,
+  selectIsWaiting,
+  selectMessages,
+} from "../../features/Chat";
 
 export type MarkdownProps = Pick<
   React.ComponentProps<typeof ReactMarkdown>,
@@ -45,88 +50,158 @@ export type MarkdownProps = Pick<
     "startingLineNumber" | "showLineNumbers" | "useInlineStyles" | "style"
   > & { canHavePins?: boolean };
 
-const MaybePinButton: React.FC<{
-  key?: Key | null;
-  children?: React.ReactNode;
-  getMarkdown: (pin: string) => string | undefined;
-}> = ({ children, getMarkdown }) => {
-  const { host } = useConfig();
-
-  const { diffPreview } = useEventsBusForIDE();
+const usePinActions = () => {
+  const { diffPreview, startFileAnimation, stopFileAnimation } =
+    useEventsBusForIDE();
   const { onSubmit, result: _result } = useDiffApplyMutation();
   const openFiles = useSelector(selectOpenFiles);
-  const isPin = typeof children === "string" && children.startsWith("📍");
-  const markdown = getMarkdown(String(children));
+  const messages = useSelector(selectMessages);
+  const isStreaming = useSelector(selectIsStreaming);
+  const isWaiting = useSelector(selectIsWaiting);
 
   const [errorMessage, setErrorMessage] = useState<{
     type: "warning" | "error";
     text: string;
   } | null>(null);
 
-  const [getPatch, _patchResult] =
-    diffApi.useLazyPatchSingleFileFromTicketQuery();
-
-  const handleShow = useCallback(() => {
-    if (typeof children !== "string") return;
-    if (!markdown) return;
-
-    getPatch({ pin: children, markdown })
-      .unwrap()
-      .then((patch) => {
-        if (patch.chunks.length === 0) {
-          throw new Error("No Chunks to show");
-        }
-        diffPreview(patch);
-      })
-      .catch(() => {
-        setErrorMessage({ type: "warning", text: "No patch to show" });
-      });
-  }, [children, diffPreview, getPatch, markdown]);
-
-  const handleApply = useCallback(() => {
-    if (typeof children !== "string") return;
-    if (!markdown) return;
-    getPatch({ pin: children, markdown })
-      .unwrap()
-      .then((patch) => {
-        const files = patch.results.reduce<string[]>((acc, cur) => {
-          const { file_name_add, file_name_delete, file_name_edit } = cur;
-          if (file_name_add) acc.push(file_name_add);
-          if (file_name_delete) acc.push(file_name_delete);
-          if (file_name_edit) acc.push(file_name_edit);
-          return acc;
-        }, []);
-
-        if (files.length === 0) {
-          setErrorMessage({ type: "warning", text: "No chunks to apply" });
-          return;
-        }
-
-        const fileIsOpen = files.some((file) => openFiles.includes(file));
-
-        if (fileIsOpen) {
-          diffPreview(patch);
-        } else {
-          const chunks = patch.chunks;
-          const toApply = chunks.map(() => true);
-          void onSubmit({ chunks, toApply });
-        }
-      })
-      .catch((error: Error) => {
-        setErrorMessage({
-          type: "error",
-          text: error.message
-            ? "Failed to apply patch: " + error.message
-            : "Failed to apply patch.",
-        });
-      });
-  }, [children, diffPreview, getPatch, markdown, onSubmit, openFiles]);
-
-  const handleCalloutClick = useCallback(() => {
+  const resetErrorMessage = useCallback(() => {
     setErrorMessage(null);
   }, []);
 
+  const [getPatch, patchResult] =
+    diffApi.useLazyPatchSingleFileFromTicketQuery();
+
+  const disable = useMemo(() => {
+    return !!errorMessage || isStreaming || isWaiting || patchResult.isFetching;
+  }, [errorMessage, isStreaming, isWaiting, patchResult.isFetching]);
+
+  const handleShow = useCallback(
+    (pin: string) => {
+      const [, , fileName] = pin.split(" ");
+      startFileAnimation(fileName);
+      getPatch({ pin, messages })
+        .unwrap()
+        .then((maybeDetail) => {
+          if (isDetailMessage(maybeDetail)) {
+            const error = new Error(maybeDetail.detail);
+            throw error;
+          }
+          return maybeDetail;
+        })
+        .then((patch) => {
+          stopFileAnimation(fileName);
+          if (patch.chunks.length === 0) {
+            setErrorMessage({ type: "warning", text: "No Chunks to show." });
+          } else {
+            diffPreview(patch);
+          }
+        })
+        .catch((error: Error | { data: { detail: string } }) => {
+          stopFileAnimation(fileName);
+          if ("message" in error) {
+            setErrorMessage({
+              type: "error",
+              text: "Failed to open patch: " + error.message,
+            });
+          } else {
+            setErrorMessage({
+              type: "error",
+              text: "Failed to open patch: " + error.data.detail,
+            });
+          }
+        });
+    },
+    [diffPreview, getPatch, messages, startFileAnimation, stopFileAnimation],
+  );
+
+  const handleApply = useCallback(
+    (pin: string) => {
+      const [, , fileName] = pin.split(" ");
+      startFileAnimation(fileName);
+
+      getPatch({ pin, messages })
+        .unwrap()
+        .then((maybeDetail) => {
+          if (isDetailMessage(maybeDetail)) {
+            const error = new Error(maybeDetail.detail);
+            throw error;
+          }
+          return maybeDetail;
+        })
+        .then((patch) => {
+          stopFileAnimation(fileName);
+          const files = patch.results.reduce<string[]>((acc, cur) => {
+            const { file_name_add, file_name_delete, file_name_edit } = cur;
+            if (file_name_add) acc.push(file_name_add);
+            if (file_name_delete) acc.push(file_name_delete);
+            if (file_name_edit) acc.push(file_name_edit);
+            return acc;
+          }, []);
+
+          if (files.length === 0) {
+            setErrorMessage({ type: "warning", text: "No chunks to apply" });
+            return;
+          }
+
+          const fileIsOpen = files.some((file) => openFiles.includes(file));
+
+          if (fileIsOpen) {
+            diffPreview(patch);
+          } else {
+            const chunks = patch.chunks;
+            const toApply = chunks.map(() => true);
+            void onSubmit({ chunks, toApply });
+          }
+        })
+        .catch((error: Error | { data: { detail: string } }) => {
+          stopFileAnimation(fileName);
+          if ("message" in error) {
+            setErrorMessage({
+              type: "error",
+              text: "Failed to apply patch: " + error.message,
+            });
+          } else {
+            setErrorMessage({
+              type: "error",
+              text: "Failed to apply patch: " + error.data.detail,
+            });
+          }
+        });
+    },
+    [
+      diffPreview,
+      getPatch,
+      messages,
+      onSubmit,
+      openFiles,
+      startFileAnimation,
+      stopFileAnimation,
+    ],
+  );
+
+  return {
+    errorMessage,
+    handleShow,
+    patchResult,
+    handleApply,
+    resetErrorMessage,
+    disable,
+  };
+};
+
+const MaybePinButton: React.FC<{
+  key?: Key | null;
+  children?: React.ReactNode;
+}> = ({ children }) => {
+  const { host } = useConfig();
+
+  const isPin = typeof children === "string" && children.startsWith("📍");
+
+  const { handleApply, handleShow, errorMessage, resetErrorMessage, disable } =
+    usePinActions();
+
   if (isPin) {
+    const [cmd, ticket, filePath] = children.split(" ");
     return (
       <Box>
         <Flex my="2" gap="2" wrap="wrap-reverse">
@@ -135,25 +210,29 @@ const MaybePinButton: React.FC<{
             wrap="wrap"
             style={{ lineBreak: "anywhere", wordBreak: "break-all" }}
           >
-            {children}
+            {cmd} {ticket}{" "}
+            {host !== "web" || import.meta.env.MODE === "development" ? (
+              <Link
+                wrap="wrap"
+                href=""
+                // TODO: button that looks like a link
+                // disabled={disable}
+                onClick={(event) => {
+                  event.preventDefault();
+                  handleShow(children);
+                }}
+              >
+                {filePath}
+              </Link>
+            ) : (
+              filePath
+            )}
           </Text>
           <Flex gap="2" justify="end" ml="auto">
-            {host !== "web" && (
-              <Button
-                size="1"
-                // loading={patchResult.isFetching}
-                onClick={handleShow}
-                title="Show Patch"
-                disabled={!!errorMessage}
-              >
-                Open
-              </Button>
-            )}
             <Button
               size="1"
-              // loading={patchResult.isFetching}
-              onClick={handleApply}
-              disabled={!!errorMessage}
+              onClick={() => handleApply(children)}
+              disabled={disable}
               title="Apply patch"
             >
               Apply
@@ -161,14 +240,14 @@ const MaybePinButton: React.FC<{
           </Flex>
         </Flex>
         {errorMessage && errorMessage.type === "error" && (
-          <ErrorCallout onClick={handleCalloutClick} timeout={3000}>
+          <ErrorCallout onClick={resetErrorMessage} timeout={5000}>
             {errorMessage.text}
           </ErrorCallout>
         )}
         {errorMessage && errorMessage.type === "warning" && (
           <DiffWarningCallout
-            timeout={3000}
-            onClick={handleCalloutClick}
+            timeout={5000}
+            onClick={resetErrorMessage}
             message={errorMessage.text}
           />
         )}
@@ -183,25 +262,6 @@ const MaybePinButton: React.FC<{
   );
 };
 
-function processPinAndMarkdown(message?: string | null): Map<string, string> {
-  if (!message) return new Map<string, string>();
-
-  const regexp = /📍[\s\S]*?\n```\n/g;
-
-  const results = message.match(regexp) ?? [];
-
-  const pinsAndMarkdown = results.map<[string, string]>((result) => {
-    const firstNewLine = result.indexOf("\n");
-    const pin = result.slice(0, firstNewLine);
-    const markdown = result.slice(firstNewLine + 1);
-    return [pin, markdown];
-  });
-
-  const hashMap = new Map(pinsAndMarkdown);
-
-  return hashMap;
-}
-
 const _Markdown: React.FC<MarkdownProps> = ({
   children,
   allowedElements,
@@ -209,18 +269,6 @@ const _Markdown: React.FC<MarkdownProps> = ({
   canHavePins,
   ...rest
 }) => {
-  const pinsAndMarkdown = useMemo<Map<string, string>>(
-    () => processPinAndMarkdown(children),
-    [children],
-  );
-
-  const getMarkDownForPin = useCallback(
-    (pin: string) => {
-      return pinsAndMarkdown.get(pin);
-    },
-    [pinsAndMarkdown],
-  );
-
   const components: Partial<Components> = useMemo(() => {
     return {
       ol(props) {
@@ -238,7 +286,7 @@ const _Markdown: React.FC<MarkdownProps> = ({
       },
       p({ color: _color, ref: _ref, node: _node, ...props }) {
         if (canHavePins) {
-          return <MaybePinButton {...props} getMarkdown={getMarkDownForPin} />;
+          return <MaybePinButton {...props} />;
         }
         return <Text my="2" as="p" {...props} />;
       },
@@ -285,7 +333,7 @@ const _Markdown: React.FC<MarkdownProps> = ({
         return <Em {...props} />;
       },
     };
-  }, [getMarkDownForPin, rest, canHavePins]);
+  }, [rest, canHavePins]);
   return (
     <ReactMarkdown
       className={styles.markdown}
