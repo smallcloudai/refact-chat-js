@@ -7,12 +7,7 @@ import {
   Text,
 } from "@radix-ui/themes";
 import { Dropdown, DropdownNavigationOptions } from "./Dropdown";
-import {
-  DotFilledIcon,
-  FileTextIcon,
-  HomeIcon,
-  PlusIcon,
-} from "@radix-ui/react-icons";
+import { DotFilledIcon, HomeIcon, PlusIcon } from "@radix-ui/react-icons";
 import { newChatAction } from "../../events";
 import { restart, useTourRefs } from "../../features/Tour";
 import { popBackTo, push } from "../../features/Pages/pagesSlice";
@@ -200,14 +195,6 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
           <PlusIcon />
           <Text>New chat</Text>
         </Button>
-      )}
-      {activeTab.type === "chat" && (
-        <IconButton
-          variant="outline"
-          onClick={() => handleNavigation("chat history")}
-        >
-          <FileTextIcon />
-        </IconButton>
       )}
       <Dropdown handleNavigation={handleNavigation} />
     </Flex>

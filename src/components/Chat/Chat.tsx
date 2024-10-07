@@ -175,19 +175,13 @@ export const Chat: React.FC<ChatProps> = ({
         selectedSystemPrompt={selectedSystemPrompt}
       />
       <Flex justify="between" pl="1" pr="1" pt="1">
+        {/* Two flexboxes are left for the future UI element on the right side */}
         {messages.length > 0 && (
           <Flex align="center" justify="between" width="100%">
             <Flex align="center" gap="1">
               <Text size="1">model: {chatModel || caps.default_cap} </Text> •{" "}
               <Text size="1">mode: {chatToolUse} </Text>
             </Flex>
-            {/* {!isStreaming && (
-              <Flex align="center" gap="1">
-                <Link size="1" onClick={() => setIsViewingRawJSON(true)}>
-                  View chat history
-                </Link>
-              </Flex>
-            )} */}
           </Flex>
         )}
       </Flex>

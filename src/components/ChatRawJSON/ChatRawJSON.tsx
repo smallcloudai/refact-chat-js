@@ -13,6 +13,9 @@ export const ChatRawJSON = ({ thread, copyHandler }: ChatRawJSONProps) => {
     <Box
       style={{
         width: "100%",
+        height: "100%",
+        maxHeight: "92%",
+        flexGrow: 1,
       }}
     >
       <Flex
@@ -20,31 +23,36 @@ export const ChatRawJSON = ({ thread, copyHandler }: ChatRawJSONProps) => {
         align={"start"}
         style={{
           width: "100%",
+          maxWidth: "100%",
+          height: "100%",
+          maxHeight: "97%",
         }}
       >
-        <Heading as="h3" align="center" mb="5">
+        <Heading as="h3" align="center" mb="2">
           Thread History
         </Heading>
+        {thread.title && (
+          <Heading as="h6" size="2" align="center" mb="5">
+            {thread.title}
+          </Heading>
+        )}
         <Flex
           align="start"
           justify="center"
           direction="column"
-          style={{ maxWidth: "70.8dvw" }} // TODO: think about this better
+          width="100%"
+          maxHeight="75%"
         >
-          {/* TODO: Place here all raw json code */}
-          <ScrollArea
-            scrollbars="horizontal"
-            style={{ maxWidth: "100%", maxHeight: "60dvh" }}
-          >
-            <Box style={{ height: "100%" }}>
+          <ScrollArea scrollbars="horizontal" style={{ width: "100%" }} asChild>
+            <Box>
               <MarkdownCodeBlock>
                 {JSON.stringify(thread, null, 2)}
               </MarkdownCodeBlock>
             </Box>
           </ScrollArea>
-          <Flex mt="5" gap="3" align="center" justify="center">
-            <Button onClick={copyHandler}>Copy to clipboard</Button>
-          </Flex>
+        </Flex>
+        <Flex mt="5" gap="3" align="center" justify="center">
+          <Button onClick={copyHandler}>Copy to clipboard</Button>
         </Flex>
       </Flex>
     </Box>

@@ -3,7 +3,11 @@ import React, { useCallback } from "react";
 import { Flex, Card, Text } from "@radix-ui/themes";
 import styles from "./ChatForm.module.css";
 
-import { PaperPlaneButton, BackToSideBarButton } from "../Buttons/Buttons";
+import {
+  PaperPlaneButton,
+  BackToSideBarButton,
+  ThreadHistoryButton,
+} from "../Buttons/Buttons";
 import { TextArea, TextAreaProps } from "../TextArea";
 import { Form } from "./Form";
 import { useOnPressedEnter, useIsOnline, useConfig } from "../../hooks";
@@ -24,6 +28,8 @@ import {
   getInformationMessage,
 } from "../../features/Errors/informationSlice";
 import { InformationCallout } from "../Callout/Callout";
+import { push } from "../../features/Pages/pagesSlice";
+import { selectChatId } from "../../features/Chat";
 
 export type ChatFormProps = {
   onSubmit: (str: string) => void;
@@ -68,6 +74,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   const information = useAppSelector(getInformationMessage);
   const [helpInfo, setHelpInfo] = React.useState<React.ReactNode | null>(null);
   const onClearError = useCallback(() => dispatch(clearError()), [dispatch]);
+  const chatId = useAppSelector(selectChatId);
   const onClearInformation = useCallback(
     () => dispatch(clearInformation()),
     [dispatch],
@@ -150,6 +157,10 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     },
     [setInteracted, handleHelpInfo],
   );
+
+  const handleThreadHistoryPage = useCallback(() => {
+    dispatch(push({ name: "thread history page", chatId }));
+  }, [chatId, dispatch]);
 
   if (error) {
     return (
@@ -238,6 +249,13 @@ export const ChatForm: React.FC<ChatFormProps> = ({
                 title="return to sidebar"
                 size="1"
                 onClick={onClose}
+              />
+            )}
+            {!isStreaming && (
+              <ThreadHistoryButton
+                title="View chat thread history"
+                size="1"
+                onClick={handleThreadHistoryPage}
               />
             )}
             <PaperPlaneButton

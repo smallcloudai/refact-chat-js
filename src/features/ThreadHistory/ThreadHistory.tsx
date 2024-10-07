@@ -1,7 +1,6 @@
 import { FC, useCallback } from "react";
 import { Config } from "../Config/configSlice";
-import { PageWrapper } from "../../components/PageWrapper";
-import { Button, Flex, ScrollArea } from "@radix-ui/themes";
+import { Button, Flex } from "@radix-ui/themes";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { ChatRawJSON } from "../../components/ChatRawJSON";
 import { useAppDispatch, useAppSelector } from "../../hooks";
@@ -17,6 +16,7 @@ import {
   ErrorCallout,
   InformationCallout,
 } from "../../components/Callout/Callout";
+import styles from "./ThreadHistory.module.css";
 
 type ThreadHistoryProps = {
   onCloseThreadHistory: () => void;
@@ -33,23 +33,16 @@ export const ThreadHistory: FC<ThreadHistoryProps> = ({
   tabbed,
   chatId,
 }) => {
-  const LeftRightPadding =
-    host === "web"
-      ? { initial: "2", xl: "9" }
-      : {
-          initial: "2",
-          xs: "2",
-          sm: "4",
-          md: "8",
-          lg: "8",
-          xl: "9",
-        };
-
   const dispatch = useAppDispatch();
 
   const historyThread = useAppSelector((state) => getChatById(state, chatId), {
     devModeChecks: { stabilityCheck: "never" },
   });
+
+  const historyThreadToPass = historyThread && {
+    ...historyThread,
+    model: historyThread.model || "gpt-4o-mini",
+  };
 
   const error = useAppSelector(getErrorMessage);
   const information = useAppSelector(getInformationMessage);
@@ -92,7 +85,7 @@ export const ThreadHistory: FC<ThreadHistoryProps> = ({
   );
 
   return (
-    <PageWrapper host={host}>
+    <>
       {host === "vscode" && !tabbed ? (
         <Flex gap="2" pb="3">
           <Button
@@ -113,34 +106,30 @@ export const ThreadHistory: FC<ThreadHistoryProps> = ({
           Back
         </Button>
       )}
-      <ScrollArea scrollbars="vertical">
-        {historyThread && (
-          <Flex
-            direction="column"
-            justify="between"
-            flexGrow="1"
-            mr={LeftRightPadding}
-            style={{
-              width: "inherit",
-            }}
-          >
-            <ChatRawJSON
-              thread={historyThread}
-              copyHandler={handleCopyToClipboardJSON}
-            />
-          </Flex>
-        )}
-      </ScrollArea>
+      {historyThreadToPass && (
+        <ChatRawJSON
+          thread={historyThreadToPass}
+          copyHandler={handleCopyToClipboardJSON}
+        />
+      )}
       {information && (
-        <InformationCallout onClick={onClearInformation} timeout={3000}>
+        <InformationCallout
+          className={styles.calloutContainer}
+          onClick={onClearInformation}
+          timeout={3000}
+        >
           {information}
         </InformationCallout>
       )}
       {error && (
-        <ErrorCallout onClick={onClearError} timeout={3000}>
+        <ErrorCallout
+          className={styles.calloutContainer}
+          onClick={onClearError}
+          timeout={3000}
+        >
           {error}
         </ErrorCallout>
       )}
-    </PageWrapper>
+    </>
   );
 };

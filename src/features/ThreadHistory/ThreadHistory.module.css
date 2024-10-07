@@ -1,0 +1,10 @@
+.calloutContainer {
+  position: absolute;
+  left: 50%;
+  top: 30px;
+  transform: translateX(-50%);
+  width: fit-content;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+}
