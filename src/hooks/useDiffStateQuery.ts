@@ -1,5 +1,5 @@
-import { diffApi, type DiffAppliedStateArgs } from "../services/refact/diffs";
+// import { diffApi, type DiffAppliedStateArgs } from "../services/refact/diffs";
 
-export const useDiffStateQuery = (args: DiffAppliedStateArgs) => {
-  return diffApi.useDiffStateQuery(args);
-};
+// export const useDiffStateQuery = (args: DiffAppliedStateArgs) => {
+//   return diffApi.useDiffStateQuery(args);
+// };
