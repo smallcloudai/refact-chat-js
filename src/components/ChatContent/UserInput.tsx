@@ -1,8 +1,9 @@
 import React, { useCallback, useState } from "react";
-import { Text, Container, Button } from "@radix-ui/themes";
+import { Text, Container, Button, Flex, IconButton } from "@radix-ui/themes";
 import { Markdown } from "../Markdown";
 import { RetryForm } from "../ChatForm";
 import styles from "./ChatContent.module.css";
+import { Pencil2Icon } from "@radix-ui/react-icons";
 
 function processLines(
   lines: string[],
@@ -86,17 +87,27 @@ export const UserInput: React.FC<UserInputProps> = ({
           onClose={() => handleShowTextArea(false)}
         />
       ) : (
-        <Button
-          ref={ref}
-          variant="soft"
-          size="4"
-          onClick={handleEditClick}
-          className={styles.userInput}
-          my="1"
-          asChild
-        >
-          <div>{elements}</div>
-        </Button>
+        <Flex direction="row" gap="2" align="end" my="1">
+          <Button
+            ref={ref}
+            variant="soft"
+            size="4"
+            className={styles.userInput}
+            asChild
+          >
+            <div>{elements}</div>
+          </Button>
+          <IconButton
+            title="Edit message"
+            variant="ghost"
+            size="4"
+            onClick={handleEditClick}
+            mx="2"
+            my="3"
+          >
+            <Pencil2Icon width={15} height={15} />
+          </IconButton>
+        </Flex>
       )}
     </Container>
   );
