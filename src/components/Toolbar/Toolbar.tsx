@@ -13,7 +13,7 @@ import { restart, useTourRefs } from "../../features/Tour";
 import { popBackTo, push } from "../../features/Pages/pagesSlice";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getHistory } from "../../features/History/historySlice";
-import { restoreChat, selectChatId } from "../../features/Chat";
+import { restoreChat } from "../../features/Chat";
 import { TruncateLeft } from "../Text";
 import {
   useAppDispatch,
@@ -61,8 +61,6 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
   const cache = useAppSelector((app) => app.chat.cache);
   const { openSettings, openHotKeys } = useEventsBusForIDE();
 
-  const chatId = useAppSelector(selectChatId);
-
   const handleNavigation = (to: DropdownNavigationOptions | "chat") => {
     if (to === "settings") {
       openSettings();
@@ -72,8 +70,6 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
       dispatch(push({ name: "fill in the middle debug page" }));
     } else if (to === "stats") {
       dispatch(push({ name: "statistics page" }));
-    } else if (to === "chat history") {
-      dispatch(push({ name: "thread history page", chatId }));
     } else if (to === "restart tour") {
       dispatch(restart());
       dispatch(popBackTo("initial setup"));

@@ -2,29 +2,25 @@ import React, { useCallback, useRef, useEffect, useState } from "react";
 import { ChatForm, ChatFormProps } from "../ChatForm";
 import { ChatContent } from "../ChatContent";
 import { Flex, Button, Text, Container, Card } from "@radix-ui/themes";
-// import { Link } from "../Link";
 import {
   useAppSelector,
   useAppDispatch,
   useSendChatRequest,
 } from "../../hooks";
 import type { Config } from "../../features/Config/configSlice";
-// import { ChatRawJSON } from "../ChatRawJSON";
 import {
   enableSend,
   getSelectedChatModel,
   selectIsStreaming,
   selectIsWaiting,
   setChatModel,
-  // selectThread,
   selectPreventSend,
   selectChatId,
   selectMessages,
   getSelectedToolUse,
 } from "../../features/Chat/Thread";
-// import { copyChatHistoryToClipboard } from "../../utils/copyChatHistoryToClipboard";
-// import { setError } from "../../features/Errors/errorsSlice";
-// import { setInformation } from "../../features/Errors/informationSlice";
+import { ThreadHistoryButton } from "../Buttons";
+import { push } from "../../features/Pages/pagesSlice";
 
 export type ChatProps = {
   host: Config["host"];
@@ -60,7 +56,10 @@ export const Chat: React.FC<ChatProps> = ({
   const chatToolUse = useAppSelector(getSelectedToolUse);
   const dispatch = useAppDispatch();
   const messages = useAppSelector(selectMessages);
-  // const thread = useAppSelector(selectThread);
+
+  const [isDebugChatHistoryVisible, setIsDebugChatHistoryVisible] =
+    useState(false);
+
   const onSetChatModel = useCallback(
     (value: string) => {
       const model = caps.default_cap === value ? "" : value;
@@ -101,22 +100,9 @@ export const Chat: React.FC<ChatProps> = ({
     }
   }, []);
 
-  // const handleCopyToClipboardJSON = useCallback(() => {
-  //   const currentChatThread = {
-  //     ...thread,
-  //     model: thread.model || caps.default_cap,
-  //   };
-  //   copyChatHistoryToClipboard(currentChatThread)
-  //     .then((response) => {
-  //       if (response.error) {
-  //         dispatch(setError(response.error));
-  //       }
-  //       dispatch(setInformation("Chat history copied to clipboard"));
-  //     })
-  //     .catch(() => {
-  //       dispatch(setError("Unknown error occured while copying to clipboard"));
-  //     });
-  // }, [dispatch, thread, caps.default_cap]);
+  const handleThreadHistoryPage = useCallback(() => {
+    dispatch(push({ name: "thread history page", chatId }));
+  }, [chatId, dispatch]);
 
   useEffect(() => {
     if (!isWaiting && !isStreaming) {
@@ -139,14 +125,6 @@ export const Chat: React.FC<ChatProps> = ({
         ref={chatContentRef}
         onRetry={retryFromIndex}
       />
-      {/* {isViewingRawJSON && (
-        <ChatRawJSON
-          thread={{ ...thread, model: thread.model || caps.default_cap }}
-          copyHandler={handleCopyToClipboardJSON}
-          handleClose={() => setIsViewingRawJSON(false)}
-        />
-      )} */}
-
       {!isStreaming && preventSend && unCalledTools && (
         <Container py="4" bottom="0" style={{ justifyContent: "flex-end" }}>
           <Card>
@@ -180,8 +158,22 @@ export const Chat: React.FC<ChatProps> = ({
           <Flex align="center" justify="between" width="100%">
             <Flex align="center" gap="1">
               <Text size="1">model: {chatModel || caps.default_cap} </Text> •{" "}
-              <Text size="1">mode: {chatToolUse} </Text>
+              <Text
+                size="1"
+                onClick={() => setIsDebugChatHistoryVisible((prev) => !prev)}
+              >
+                mode: {chatToolUse}{" "}
+              </Text>
             </Flex>
+            {messages.length !== 0 &&
+              !isStreaming &&
+              isDebugChatHistoryVisible && (
+                <ThreadHistoryButton
+                  title="View history of current thread"
+                  size="1"
+                  onClick={handleThreadHistoryPage}
+                />
+              )}
           </Flex>
         )}
       </Flex>
