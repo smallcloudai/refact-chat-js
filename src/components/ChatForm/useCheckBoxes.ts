@@ -128,6 +128,8 @@ const useAttachSelectedSnippet = (
     });
 
   useEffect(() => {
+    // removing unnecessary check for checked state and interacted state
+    // and excluding attachedSelectedSnippet.checked from dependency array
     setAttachedSelectedSnippet((prev) => {
       return {
         ...prev,
@@ -209,6 +211,7 @@ export type Checkboxes = {
 };
 
 export const useCheckboxes = () => {
+  // creating 2 different states instead of only one being used for both checkboxes
   const [lineSelectionInteracted, setLineSelectionInteracted] = useState(false);
   const [fileInteracted, setFileInteracted] = useState(false);
 
