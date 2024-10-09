@@ -64,8 +64,13 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   const onClearError = useCallback(() => dispatch(clearError()), [dispatch]);
   const [value, setValue] = React.useState("");
 
-  const { checkboxes, onToggleCheckbox, setInteracted, unCheckAll } =
-    useCheckboxes();
+  const {
+    checkboxes,
+    onToggleCheckbox,
+    setFileInteracted,
+    setLineSelectionInteracted,
+    unCheckAll,
+  } = useCheckboxes();
 
   const { previewFiles, commands, requestCompletion } =
     useCommandCompletionAndPreviewFiles(checkboxes);
@@ -130,7 +135,8 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   const handleChange = useCallback(
     (command: string) => {
       setValue(command);
-      setInteracted(true);
+      setFileInteracted(true);
+      setLineSelectionInteracted(true);
       const trimmedCommand = command.trim();
       if (trimmedCommand === "@help") {
         handleHelpInfo(helpText()); // This line has been fixed
@@ -138,7 +144,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
         handleHelpInfo(null);
       }
     },
-    [setInteracted, handleHelpInfo],
+    [setFileInteracted, setLineSelectionInteracted, handleHelpInfo],
   );
 
   if (error) {

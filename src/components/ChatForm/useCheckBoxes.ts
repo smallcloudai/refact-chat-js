@@ -128,18 +128,16 @@ const useAttachSelectedSnippet = (
     });
 
   useEffect(() => {
-    if (!attachedSelectedSnippet.checked || !interacted) {
-      setAttachedSelectedSnippet((prev) => {
-        return {
-          ...prev,
-          label: label,
-          value: markdown,
-          disabled: !snippet.code,
-          hide: host === "web",
-          checked: !!snippet.code && !interacted,
-        };
-      });
-    }
+    setAttachedSelectedSnippet((prev) => {
+      return {
+        ...prev,
+        label: label,
+        value: markdown,
+        disabled: !snippet.code,
+        hide: host === "web",
+        checked: !!snippet.code && !interacted,
+      };
+    });
   }, [
     snippet.code,
     host,
@@ -218,14 +216,15 @@ export type Checkboxes = {
 };
 
 export const useCheckboxes = () => {
-  const [interacted, setInteracted] = useState(false);
+  const [lineSelectionInteracted, setLineSelectionInteracted] = useState(false);
+  const [fileInteracted, setFileInteracted] = useState(false);
 
   const [attachedSelectedSnippet, onToggleAttachedSelectedSnippet] =
-    useAttachSelectedSnippet(interacted);
+    useAttachSelectedSnippet(lineSelectionInteracted);
   const [searchWorkspace, onToggleSearchWorkspace] = useSearchWorkSpace();
 
   const [attachFileCheckboxData, onToggleAttachFile] = useAttachActiveFile(
-    interacted,
+    fileInteracted,
     attachedSelectedSnippet.checked,
   );
 
@@ -246,13 +245,14 @@ export const useCheckboxes = () => {
           break;
         case "file_upload":
           onToggleAttachFile();
+          setFileInteracted(true);
           break;
         case "selected_lines":
           onToggleAttachedSelectedSnippet();
+          setFileInteracted(true);
+          setLineSelectionInteracted(true);
           break;
       }
-
-      setInteracted(true);
     },
     [
       onToggleAttachFile,
@@ -280,5 +280,11 @@ export const useCheckboxes = () => {
     searchWorkspace.checked,
   ]);
 
-  return { checkboxes, onToggleCheckbox, setInteracted, unCheckAll };
+  return {
+    checkboxes,
+    onToggleCheckbox,
+    setFileInteracted,
+    setLineSelectionInteracted,
+    unCheckAll,
+  };
 };
