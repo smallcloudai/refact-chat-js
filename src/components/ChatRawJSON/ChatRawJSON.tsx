@@ -32,7 +32,7 @@ export const ChatRawJSON = ({ thread, copyHandler }: ChatRawJSONProps) => {
           Thread History
         </Heading>
         {thread.title && (
-          <Heading as="h6" size="2" align="center" mb="5">
+          <Heading as="h6" size="2" align="center" mb="4">
             {thread.title}
           </Heading>
         )}
@@ -45,7 +45,7 @@ export const ChatRawJSON = ({ thread, copyHandler }: ChatRawJSONProps) => {
         >
           <ScrollArea scrollbars="horizontal" style={{ width: "100%" }} asChild>
             <Box>
-              <MarkdownCodeBlock>
+              <MarkdownCodeBlock useInlineStyles={true}>
                 {JSON.stringify(thread, null, 2)}
               </MarkdownCodeBlock>
             </Box>
