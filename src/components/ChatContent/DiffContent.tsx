@@ -144,6 +144,50 @@ export const Diff: React.FC<DiffProps> = ({ diff }) => {
   );
 };
 
+const GranularDiff: React.FC<DiffProps> = ({ diff }) => {
+  const { host } = useConfig();
+  const status = useDiffStateQuery({ chunks: [diff] });
+  const { onSubmit, result: _result } = useDiffApplyMutation();
+  const { onPreview, previewResult: _previewResult } = useDiffPreview();
+
+  // TODO: add loading state
+  return status.data?.map((stat, index) => {
+    return (
+      <Flex key={`granular-diff-${index}`} direction="column" gap="2">
+        <Flex justify="end" align="center" pr="2" pt="2" gap="2">
+          {/* TODO: does this only work in vscode? */}
+          {host === "vscode" && (
+            <Button
+              size="1"
+              onClick={() => {
+                void onPreview([stat.chunk], [!stat.state]);
+              }}
+            >
+              Show
+            </Button>
+          )}
+          <Button
+            size="1"
+            onClick={() => {
+              void onSubmit({ chunks: [diff], toApply: [!stat.state] });
+            }}
+          >
+            {stat.state ? "Unapply" : "Apply"}
+          </Button>
+        </Flex>
+        <Box
+          style={{
+            background: "rgb(51, 51, 51)",
+            minWidth: "min-content",
+          }}
+        >
+          <Diff diff={diff} />
+        </Box>
+      </Flex>
+    );
+  });
+};
+
 export type DiffChunkWithTypeAndApply = DiffChunk & {
   type: DiffType;
   apply: boolean;
@@ -229,9 +273,11 @@ export type DiffWithStatus = DiffChunk & {
   index: number;
 };
 
-export const DiffForm: React.FC<{
-  diffs: Record<string, DiffStateResponse[]>;
-}> = ({ diffs }) => {
+const DiffForFile: React.FC<{
+  fileName: string;
+  diffsForFile: DiffStateResponse[];
+}> = ({ fileName, diffsForFile }) => {
+  const [showMore, setShowMore] = React.useState(false);
   const { onSubmit, result: _result } = useDiffApplyMutation();
   const { onPreview, previewResult: _previewResult } = useDiffPreview();
   const { openFile } = useEventsBusForIDE();
@@ -244,6 +290,7 @@ export const DiffForm: React.FC<{
 
   const { host } = useConfig();
 
+  const applied = diffsForFile.every((diff) => diff.state || !diff.can_apply);
   const handleDiffApplySubmit = React.useCallback(
     (chunks: DiffChunk[], toApply: boolean[]) => {
       onSubmit({ chunks, toApply })
@@ -302,87 +349,102 @@ export const DiffForm: React.FC<{
   );
 
   return (
+    <Box my="2">
+      <Flex justify="between" align="center" p="1">
+        <TruncateLeft size="1">
+          <Link
+            // TODO: check how ides treat this being "", undefined, or "#"
+            href=""
+            onClick={(event) => {
+              event.preventDefault();
+              const startLine = Math.min(
+                ...diffsForFile.map((diff) => diff.chunk.line1),
+              );
+              openFile({
+                file_name: fileName,
+                line: startLine,
+              });
+            }}
+          >
+            {fileName}
+          </Link>
+        </TruncateLeft>
+
+        <Text size="1" as="label">
+          <Flex align="center" gap="2" pl="2">
+            {/* {errored && "error"} */}
+            {/* TODO: does this only work in vscode? */}
+            {host === "vscode" && (
+              <Button size="1" onClick={() => handlePreview(diffsForFile)}>
+                Preview
+              </Button>
+            )}
+
+            {diffsForFile.length > 1 && (
+              <Button size="1" onClick={() => setShowMore((prev) => !prev)}>
+                {showMore ? "Collapse" : "Expand"}
+              </Button>
+            )}
+            <Button
+              size="1"
+              onClick={() => handleToggle(diffsForFile, !applied)}
+            >
+              {applied ? "Unapply" : "Apply"}
+            </Button>
+          </Flex>
+        </Text>
+      </Flex>
+      <ScrollArea scrollbars="horizontal" asChild>
+        <Box style={{ minWidth: "100%" }} position="relative">
+          {warning && warning.length !== 0 && (
+            <DiffWarningCallout
+              onClick={onClearWarning}
+              timeout={3000}
+              itemType="warning"
+              message={warning}
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 0,
+              }}
+            />
+          )}
+          <Box
+            style={{
+              background: "rgb(51, 51, 51)",
+              minWidth: "min-content",
+            }}
+          >
+            {diffsForFile.map((diff, i) => {
+              if (showMore && diffsForFile.length > 1)
+                return (
+                  <GranularDiff
+                    key={`granular-diff-${fileName}-${i}`}
+                    diff={diff.chunk}
+                  />
+                );
+              return <Diff key={`${fileName}-${i}`} diff={diff.chunk} />;
+            })}
+          </Box>
+        </Box>
+      </ScrollArea>
+    </Box>
+  );
+};
+
+export const DiffForm: React.FC<{
+  diffs: Record<string, DiffStateResponse[]>;
+}> = ({ diffs }) => {
+  return (
     <Flex direction="column" maxWidth="100%" py="2" gap="2">
       {Object.entries(diffs).map(([fullFileName, diffsForFile], index) => {
         const key = fullFileName + "-" + index;
-        const applied = diffsForFile.every(
-          (diff) => diff.state || !diff.can_apply,
-        );
-
         return (
-          <Box key={key} my="2">
-            <Flex justify="between" align="center" p="1">
-              <TruncateLeft size="1">
-                <Link
-                  // TODO: check how ides treat this being "", undefined, or "#"
-                  href=""
-                  onClick={(event) => {
-                    event.preventDefault();
-                    const startLine = Math.min(
-                      ...diffsForFile.map((diff) => diff.chunk.line1),
-                    );
-                    openFile({
-                      file_name: fullFileName,
-                      line: startLine,
-                    });
-                  }}
-                >
-                  {fullFileName}
-                </Link>
-              </TruncateLeft>
-
-              <Text size="1" as="label">
-                <Flex align="center" gap="2" pl="2">
-                  {/* {errored && "error"} */}
-                  {/* TODO: does this only work in vscode? */}
-                  {host === "vscode" && (
-                    <Button
-                      size="1"
-                      onClick={() => handlePreview(diffsForFile)}
-                    >
-                      Preview
-                    </Button>
-                  )}
-                  <Button
-                    size="1"
-                    onClick={() => handleToggle(diffsForFile, !applied)}
-                  >
-                    {applied ? "Unapply" : "Apply"}
-                  </Button>
-                </Flex>
-              </Text>
-            </Flex>
-            <ScrollArea scrollbars="horizontal" asChild>
-              <Box style={{ minWidth: "100%", position: "relative" }}>
-                {warning && warning.length !== 0 && (
-                  <DiffWarningCallout
-                    onClick={onClearWarning}
-                    timeout={3000}
-                    itemType="warning"
-                    message={warning}
-                    style={{
-                      position: "absolute",
-                      top: 10,
-                      right: 0,
-                    }}
-                  />
-                )}
-                <Box
-                  style={{
-                    background: "rgb(51, 51, 51)",
-                    minWidth: "min-content",
-                  }}
-                >
-                  {diffsForFile.map((diff, i) => (
-                    <Diff
-                      key={`${fullFileName}-${index}-${i}`}
-                      diff={diff.chunk}
-                    />
-                  ))}
-                </Box>
-              </Box>
-            </ScrollArea>
-          </Box>
+          <DiffForFile
+            key={key}
+            fileName={fullFileName}
+            diffsForFile={diffsForFile}
+          />
         );
       })}
     </Flex>
