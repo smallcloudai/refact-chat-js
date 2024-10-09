@@ -72,7 +72,7 @@ export const Chat: React.FC<ChatProps> = ({
 
   const handleSummit = useCallback(
     (value: string) => {
-      void submit(value);
+      submit(value);
       if (isViewingRawJSON) {
         setIsViewingRawJSON(false);
       }
