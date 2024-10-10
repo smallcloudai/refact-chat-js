@@ -13,8 +13,8 @@ import type { TipOfTheDayState } from "../features/TipOfTheDay";
 import type { PageSliceState } from "../features/Pages/pagesSlice";
 import type { TourState } from "../features/Tour";
 import type { FIMDebugState } from "../hooks";
+import { createAction } from "@reduxjs/toolkit";
 
-// import { rootReducer } from "../app/store";
 export { updateConfig, type Config } from "../features/Config/configSlice";
 export { type FileInfo, setFileInfo } from "../features/Chat/activeFile";
 export {
@@ -28,6 +28,9 @@ export {
   setInputValue,
 } from "../components/ChatForm/useInputValue";
 export { resetDiffApi } from "../services/refact/diffs";
+
+export const showPatchTicket = createAction<string>("showPatchTicket");
+
 // TODO: re-exporting from redux seems to break things :/
 export type InitialState = {
   fim: FIMDebugState;
