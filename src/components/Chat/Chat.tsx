@@ -2,7 +2,6 @@ import React, { useCallback, useRef, useEffect } from "react";
 import { ChatForm, ChatFormProps } from "../ChatForm";
 import { ChatContent } from "../ChatContent";
 import { Flex, Button, Text, Container, Card } from "@radix-ui/themes";
-import { PageWrapper } from "../PageWrapper";
 import {
   useAppSelector,
   useAppDispatch,
@@ -21,7 +20,6 @@ import {
   selectMessages,
   getSelectedToolUse,
 } from "../../features/Chat/Thread";
-import { Toolbar } from "../Toolbar";
 
 export type ChatProps = {
   host: Config["host"];
@@ -39,7 +37,6 @@ export type ChatProps = {
 
 export const Chat: React.FC<ChatProps> = ({
   style,
-  host,
   unCalledTools,
   caps,
   maybeSendToSidebar,
@@ -67,12 +64,7 @@ export const Chat: React.FC<ChatProps> = ({
   const preventSend = useAppSelector(selectPreventSend);
   const onEnableSend = () => dispatch(enableSend({ id: chatId }));
 
-  const handleSummit = useCallback(
-    (value: string) => {
-      void submit(value);
-    },
-    [submit],
-  );
+  const handleSummit = useCallback(submit, [submit]);
 
   const onTextAreaHeightChange = useCallback(() => {
     if (!chatContentRef.current) return;
@@ -101,9 +93,15 @@ export const Chat: React.FC<ChatProps> = ({
   }, [isWaiting, isStreaming, focusTextarea]);
 
   return (
-    <PageWrapper host={host} style={style}>
-      <Toolbar activeTab={{ type: "chat", id: chatId }} />
-
+    <Flex
+      style={style}
+      direction="column"
+      flexGrow="1"
+      width="100%"
+      overflowY="auto"
+      justify="between"
+      px="1"
+    >
       <ChatContent
         key={`chat-content-${chatId}`}
         ref={chatContentRef}
@@ -122,6 +120,7 @@ export const Chat: React.FC<ChatProps> = ({
       )}
 
       <ChatForm
+        key={chatId} // TODO: think of how can we not trigger re-render on chatId change (checkboxes)
         chatId={chatId}
         isStreaming={isStreaming}
         showControls={messages.length === 0 && !isStreaming}
@@ -144,6 +143,6 @@ export const Chat: React.FC<ChatProps> = ({
           </Flex>
         )}
       </Flex>
-    </PageWrapper>
+    </Flex>
   );
 };

@@ -1,5 +1,4 @@
 import { GetChatTitleActionPayload, GetChatTitleResponse } from "./chat";
-import { DiffApplyErrorResponse } from "./diffs";
 
 export type ChatRole =
   | "user"
@@ -7,22 +6,18 @@ export type ChatRole =
   | "context_file"
   | "system"
   | "tool"
-  | "context_memory"
   | "diff"
-  | "plain_text";
+  | "plain_text"
+  | "cd_instruction";
 
 export type ChatContextFile = {
   file_name: string;
   file_content: string;
   line1: number;
   line2: number;
+  cursor?: number;
   usefulness?: number;
   usefullness?: number;
-};
-
-export type ContextMemory = {
-  memo_id: string;
-  memo_text: string;
 };
 
 export type ToolCall = {
@@ -33,6 +28,8 @@ export type ToolCall = {
   index: number;
   type?: "function";
   id?: string;
+  attached_files?: string[];
+  subchat?: string;
 };
 
 export type ToolUsage = {
@@ -56,13 +53,7 @@ export type ToolResult = {
 
 interface BaseMessage {
   role: ChatRole;
-  content:
-    | string
-    | ChatContextFile[]
-    | ToolResult
-    | ContextMemory[]
-    | DiffChunk[]
-    | null;
+  content: string | ChatContextFile[] | ToolResult | DiffChunk[] | null;
 }
 
 export interface ChatContextFileMessage extends BaseMessage {
@@ -95,11 +86,6 @@ export interface ToolMessage extends BaseMessage {
   content: ToolResult;
 }
 
-export interface MemoryMessage extends BaseMessage {
-  role: "context_memory";
-  content: ContextMemory[];
-}
-
 // TODO: There maybe sub-types for this
 export type DiffChunk = {
   file_name: string;
@@ -111,6 +97,34 @@ export type DiffChunk = {
   // apply?: boolean;
   // chunk_id?: number;
 };
+
+export function isDiffChunk(json: unknown) {
+  if (!json) {
+    return false;
+  }
+  if (typeof json !== "object") {
+    return false;
+  }
+  if (!("file_name" in json) || typeof json.file_name !== "string") {
+    return false;
+  }
+  if (!("file_action" in json) || typeof json.file_action !== "string") {
+    return false;
+  }
+  if (!("line1" in json) || typeof json.line1 !== "number") {
+    return false;
+  }
+  if (!("line2" in json) || typeof json.line2 !== "number") {
+    return false;
+  }
+  if (!("lines_remove" in json) || typeof json.lines_remove !== "string") {
+    return false;
+  }
+  if (!("lines_add" in json) || typeof json.lines_add !== "string") {
+    return false;
+  }
+  return true;
+}
 export interface DiffMessage extends BaseMessage {
   role: "diff";
   content: DiffChunk[];
@@ -132,7 +146,6 @@ export type ChatMessage =
   | ChatContextFileMessage
   | SystemMessage
   | ToolMessage
-  | MemoryMessage
   | DiffMessage
   | PlainTextMessage;
 
@@ -304,6 +317,21 @@ export function isContextFileResponse(
   return json.role === "context_file";
 }
 
+export type SubchatContextFileResponse = {
+  content: string;
+  role: "context_file";
+};
+
+export function isSubchatContextFileResponse(
+  json: unknown,
+): json is SubchatContextFileResponse {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  if (!("content" in json)) return false;
+  if (!("role" in json)) return false;
+  return json.role === "context_file";
+}
+
 export type ContextMemoryResponse = ChatUserMessageResponse & {
   role: "context_memory";
 };
@@ -352,6 +380,21 @@ export function isPlainTextResponse(json: unknown): json is PlainTextResponse {
   return json.role === "plain_text";
 }
 
+export type SubchatResponse = {
+  add_message: ChatResponse;
+  subchat_id: string;
+  tool_call_id: string;
+};
+
+export function isSubchatResponse(json: unknown): json is SubchatResponse {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  if (!("add_message" in json)) return false;
+  if (!("subchat_id" in json)) return false;
+  if (!("tool_call_id" in json)) return false;
+  return true;
+}
+
 type ChatResponseChoice = {
   choices: ChatChoice[];
   created: number;
@@ -371,16 +414,3 @@ export type ChatResponse =
   | ChatUserMessageResponse
   | ToolResponse
   | PlainTextResponse;
-
-export function isDiffErrorResponseData(
-  json: unknown,
-): json is DiffApplyErrorResponse {
-  if (!json || typeof json !== "object") return false;
-  if (!("chunk_id" in json)) return false;
-  if (!("applied" in json)) return false;
-  if (!("can_unapply" in json)) return false;
-  if (!("success" in json)) return false;
-  if (!("detail" in json)) return false;
-  if (json.success === true) return false;
-  return true;
-}

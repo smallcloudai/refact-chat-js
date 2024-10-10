@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useAppDispatch } from "./useAppDispatch";
 import { useAppSelector } from "./useAppSelector";
 import {
@@ -6,7 +6,6 @@ import {
   selectChatError,
   selectChatId,
   selectIsStreaming,
-  selectIsWaiting,
   selectMessages,
   selectPreventSend,
   selectSendImmediately,
@@ -16,10 +15,7 @@ import { useGetToolsQuery } from "./useGetToolsQuery";
 import {
   ChatMessage,
   ChatMessages,
-  DiffChunk,
   isAssistantMessage,
-  isDiffMessage,
-  isUserMessage,
 } from "../services/refact/types";
 import {
   backUpMessages,
@@ -27,22 +23,18 @@ import {
   chatAskedQuestion,
   setToolUse,
 } from "../features/Chat/Thread/actions";
-import { takeFromLast } from "../utils/takeFromLast";
-import { diffApi, DiffStateResponse } from "../services/refact/diffs";
 import { isToolUse } from "../features/Chat";
+import { useAbortControllers } from "./useAbortControllers";
 
 export const useSendChatRequest = () => {
   const dispatch = useAppDispatch();
-  const abortRef = useRef<null | ((reason?: string | undefined) => void)>(null);
   const hasError = useAppSelector(selectChatError);
-
-  const [getDiffState] = diffApi.useLazyDiffStateQuery();
+  const abortControllers = useAbortControllers();
 
   const toolsRequest = useGetToolsQuery();
 
   const chatId = useAppSelector(selectChatId);
   const streaming = useAppSelector(selectIsStreaming);
-  const isWaiting = useAppSelector(selectIsWaiting);
   const chatError = useAppSelector(selectChatError);
 
   const errored: boolean = !!hasError || !!chatError;
@@ -91,56 +83,18 @@ export const useSendChatRequest = () => {
       });
 
       const dispatchedAction = dispatch(action);
-      abortRef.current = dispatchedAction.abort;
+      abortControllers.addAbortController(chatId, dispatchedAction.abort);
     },
-    [chatId, dispatch, toolsRequest.data, toolUse],
+    [toolsRequest.data, toolUse, dispatch, chatId, abortControllers],
   );
 
   const submit = useCallback(
-    async (question: string) => {
-      const lastDiffs = takeFromLast(
-        messagesWithSystemPrompt,
-        isUserMessage,
-      ).filter(isDiffMessage);
-
-      if (lastDiffs.length === 0) {
-        const message: ChatMessage = { role: "user", content: question };
-
-        const messages = messagesWithSystemPrompt.concat(message);
-        sendMessages(messages);
-        return;
-      }
-
-      const chunks = lastDiffs.reduce<DiffChunk[]>((acc, cur) => {
-        return [...acc, ...cur.content];
-      }, []);
-
-      const status = await getDiffState({ chunks }, true)
-        .unwrap()
-        .catch(() => [] as DiffStateResponse[]);
-
-      const appliedChunks = status.filter((chunk) => chunk.state);
-
-      const diffInfo = appliedChunks.map((diff) => {
-        return `Preformed ${diff.chunk.file_action} on ${diff.chunk.file_name} at line ${diff.chunk.line1} to line ${diff.chunk.line2}.`;
-      });
-
-      const notAppliedMessage = "💿 user didn't accept the changes in the UI.";
-      const appliedMessage =
-        "💿 user accepted the following changes in the UI.\n" +
-        diffInfo.join("\n");
-
-      const diffMessage =
-        appliedChunks.length === 0 ? notAppliedMessage : appliedMessage;
-
-      const message: ChatMessage = {
-        role: "user",
-        content: diffMessage + "\n\n" + question,
-      };
+    (question: string) => {
+      const message: ChatMessage = { role: "user", content: question };
       const messages = messagesWithSystemPrompt.concat(message);
       sendMessages(messages);
     },
-    [getDiffState, messagesWithSystemPrompt, sendMessages],
+    [messagesWithSystemPrompt, sendMessages],
   );
 
   useEffect(() => {
@@ -150,7 +104,6 @@ export const useSendChatRequest = () => {
   }, [sendImmediately, sendMessages, messagesWithSystemPrompt]);
 
   // TODO: Automatically calls tool calls. This means that this hook can only be used once :/
-  // making this middle ware may solve the issue
   useEffect(() => {
     if (!streaming && currentMessages.length > 0 && !errored && !preventSend) {
       const lastMessage = currentMessages.slice(-1)[0];
@@ -164,24 +117,28 @@ export const useSendChatRequest = () => {
     }
   }, [errored, currentMessages, preventSend, sendMessages, streaming]);
 
-  const abort = () => {
-    if (abortRef.current && (streaming || isWaiting)) {
-      abortRef.current();
-    }
-  };
+  const abort = useCallback(() => {
+    abortControllers.abort(chatId);
+  }, [abortControllers, chatId]);
 
-  const retry = (messages: ChatMessages) => {
-    abort();
-    sendMessages(messages);
-  };
+  const retry = useCallback(
+    (messages: ChatMessages) => {
+      abort();
+      sendMessages(messages);
+    },
+    [abort, sendMessages],
+  );
 
-  const retryFromIndex = (index: number, question: string) => {
-    const messagesToKeep = currentMessages.slice(0, index);
-    const messagesToSend = messagesToKeep.concat([
-      { role: "user", content: question },
-    ]);
-    retry(messagesToSend);
-  };
+  const retryFromIndex = useCallback(
+    (index: number, question: string) => {
+      const messagesToKeep = currentMessages.slice(0, index);
+      const messagesToSend = messagesToKeep.concat([
+        { role: "user", content: question },
+      ]);
+      retry(messagesToSend);
+    },
+    [currentMessages, retry],
+  );
 
   return {
     submit,
