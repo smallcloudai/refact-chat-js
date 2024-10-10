@@ -20,6 +20,11 @@ import { getErrorMessage, clearError } from "../../features/Errors/errorsSlice";
 import { useTourRefs } from "../../features/Tour";
 import { useCheckboxes } from "./useCheckBoxes";
 import { useInputValue } from "./useInputValue";
+import {
+  clearInformation,
+  getInformationMessage,
+} from "../../features/Errors/informationSlice";
+import { InformationCallout } from "../Callout/Callout";
 
 export type ChatFormProps = {
   onSubmit: (str: string) => void;
@@ -61,12 +66,16 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   const dispatch = useAppDispatch();
   const config = useConfig();
   const error = useAppSelector(getErrorMessage);
+  const information = useAppSelector(getInformationMessage);
   const [helpInfo, setHelpInfo] = React.useState<React.ReactNode | null>(null);
   const onClearError = useCallback(() => dispatch(clearError()), [dispatch]);
   const [value, setValue] = useInputValue();
+  const onClearInformation = useCallback(
+    () => dispatch(clearInformation()),
+    [dispatch],
+  );
 
-  const { checkboxes, onToggleCheckbox, setInteracted, unCheckAll } =
-    useCheckboxes();
+  const { checkboxes, onToggleCheckbox, unCheckAll } = useCheckboxes();
 
   const { previewFiles, commands, requestCompletion } =
     useCommandCompletionAndPreviewFiles(checkboxes);
@@ -132,7 +141,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   const handleChange = useCallback(
     (command: string) => {
       setValue(command);
-      setInteracted(true);
       const trimmedCommand = command.trim();
       if (trimmedCommand === "@help") {
         handleHelpInfo(helpText()); // This line has been fixed
@@ -140,7 +148,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
         handleHelpInfo(null);
       }
     },
-    [setValue, setInteracted, handleHelpInfo],
+    [handleHelpInfo, setValue],
   );
 
   if (error) {
@@ -154,7 +162,13 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     );
   }
 
-  // return <div></div>;
+  if (information) {
+    return (
+      <InformationCallout mt="2" onClick={onClearInformation} timeout={2000}>
+        {information}
+      </InformationCallout>
+    );
+  }
 
   return (
     <Card mt="1" style={{ flexShrink: 0, position: "static" }}>
@@ -226,6 +240,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
                 onClick={onClose}
               />
             )}
+            {/* TODO: Reserved space for microphone button coming later on */}
             <PaperPlaneButton
               disabled={isStreaming || !isOnline}
               title="send"
