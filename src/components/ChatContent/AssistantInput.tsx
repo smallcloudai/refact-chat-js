@@ -1,17 +1,16 @@
-import React, { useCallback } from "react";
-import { Markdown, MarkdownProps } from "../Markdown";
+import React, { useCallback, useMemo } from "react";
+import { Markdown } from "../Markdown";
 
 import { Container, Box } from "@radix-ui/themes";
-import { ToolCall, ToolResult } from "../../services/refact";
+import { ToolCall } from "../../services/refact";
 import { ToolContent } from "./ToolsContent";
+import { useAppSelector, useEventsBusForIDE } from "../../hooks";
+import { selectActiveFile } from "../../features/Chat/activeFile";
+import { selectSelectedSnippet } from "../../features/Chat";
 
-type ChatInputProps = Pick<
-  MarkdownProps,
-  "onNewFileClick" | "onPasteClick" | "canPaste"
-> & {
+type ChatInputProps = {
   message: string | null;
   toolCalls?: ToolCall[] | null;
-  toolResults: Record<string, ToolResult>;
 };
 
 function fallbackCopying(text: string) {
@@ -30,7 +29,20 @@ function fallbackCopying(text: string) {
   document.body.removeChild(textArea);
 }
 
-export const AssistantInput: React.FC<ChatInputProps> = (props) => {
+export const AssistantInput: React.FC<ChatInputProps> = ({
+  message,
+  toolCalls,
+}) => {
+  const activeFile = useAppSelector(selectActiveFile);
+
+  const snippet = useAppSelector(selectSelectedSnippet);
+
+  const codeLineCount = useMemo(() => {
+    if (snippet.code.length === 0) return 0;
+    return snippet.code.split("\n").filter((str) => str).length;
+  }, [snippet.code]);
+
+  const { newFile, diffPasteBack } = useEventsBusForIDE();
   const handleCopy = useCallback((text: string) => {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (window.navigator?.clipboard?.writeText) {
@@ -45,21 +57,20 @@ export const AssistantInput: React.FC<ChatInputProps> = (props) => {
 
   return (
     <Container position="relative">
-      {props.message && (
+      {message && (
         <Box py="4">
           <Markdown
             onCopyClick={handleCopy}
-            onNewFileClick={props.onNewFileClick}
-            onPasteClick={props.onPasteClick}
-            canPaste={props.canPaste}
+            onNewFileClick={newFile}
+            onPasteClick={diffPasteBack}
+            canPaste={activeFile.can_paste && codeLineCount > 0}
+            canHavePins={true}
           >
-            {props.message}
+            {message}
           </Markdown>
         </Box>
       )}
-      {props.toolCalls && (
-        <ToolContent toolCalls={props.toolCalls} results={props.toolResults} />
-      )}
+      {toolCalls && <ToolContent toolCalls={toolCalls} />}
     </Container>
   );
 };

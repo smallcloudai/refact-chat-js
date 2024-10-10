@@ -5,12 +5,13 @@ import { useConfig } from "./useConfig";
 import { updateConfig } from "../features/Config/configSlice";
 import { setFileInfo } from "../features/Chat/activeFile";
 import { setSelectedSnippet } from "../features/Chat/selectedSnippet";
-import { newChatAction } from "../events";
+import { newChatAction } from "../features/Chat/Thread/actions";
 import {
   isPageInHistory,
   push,
   selectPages,
 } from "../features/Pages/pagesSlice";
+import { diffApi, resetDiffApi } from "../services/refact/diffs";
 
 export function useEventBusForApp() {
   const config = useConfig();
@@ -36,6 +37,10 @@ export function useEventBusForApp() {
           dispatch(push({ name: "chat" }));
         }
         dispatch(newChatAction(event.data.payload));
+      }
+
+      if (resetDiffApi.match(event.data)) {
+        dispatch(diffApi.util.resetApiState());
       }
     };
 
