@@ -48,7 +48,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
     [pages],
   );
 
-  const { setupHost } = useEventsBusForIDE();
+  const { setupHost, chatPageChange } = useEventsBusForIDE();
   const tourState = useAppSelector((state: RootState) => state.tour);
   const historyState = useAppSelector((state: RootState) => state.history);
   const chatId = useAppSelector(selectChatId);
@@ -85,6 +85,15 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
     tourState,
     historyState,
   ]);
+
+  useEffect(() => {
+    if (pages.length > 1) {
+      console.log(`[DEBUG CHAT-JS]: pages: `, pages);
+      const currentPage = pages.slice(-1)[0];
+      console.log(`[DEBUG CHAT-JS]: currentPage: `, currentPage);
+      chatPageChange(currentPage.name);
+    }
+  }, [pages, chatPageChange]);
 
   const onPressNext = (host: Host) => {
     if (host === "cloud") {
