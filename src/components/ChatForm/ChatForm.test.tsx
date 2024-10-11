@@ -168,4 +168,20 @@ describe("ChatForm", () => {
     const expected = `@file foo.txt:0-0\n${markdown}\nfoo\n`;
     expect(fakeOnSubmit).toHaveBeenCalledWith(expected);
   });
+
+  test.each([
+    "{Shift>}{enter>}{/enter}{/Shift}", // hold shift, hold enter, release enter, release shift,
+    "{Shift>}{enter>}{/Shift}{/enter}", // hold shift,  hold enter, release enter, release shift,
+  ])("when pressing %s, it should not submit", async (a) => {
+    const fakeOnSubmit = vi.fn();
+
+    const { user, ...app } = render(<App onSubmit={fakeOnSubmit} />);
+    const textarea = app.container.querySelector("textarea");
+    expect(textarea).not.toBeNull();
+    if (textarea) {
+      await user.type(textarea, "hello");
+      await user.type(textarea, a);
+    }
+    expect(fakeOnSubmit).not.toHaveBeenCalled();
+  });
 });
