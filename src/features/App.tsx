@@ -88,9 +88,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
 
   useEffect(() => {
     if (pages.length > 1) {
-      console.log(`[DEBUG CHAT-JS]: pages: `, pages);
       const currentPage = pages.slice(-1)[0];
-      console.log(`[DEBUG CHAT-JS]: currentPage: `, currentPage);
       chatPageChange(currentPage.name);
     }
   }, [pages, chatPageChange]);
