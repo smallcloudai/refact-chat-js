@@ -4,25 +4,17 @@ import SyntaxHighlighter, {
 } from "react-syntax-highlighter";
 import { Code, Text } from "@radix-ui/themes";
 import classNames from "classnames";
-import { PreTag, type PreTagProps } from "./Pre";
+import { PreTag } from "./Pre";
 // import "./highlightjs.css";
 import styles from "./Markdown.module.css";
 import type { Element } from "hast";
 import hljsStyle from "react-syntax-highlighter/dist/esm/styles/hljs/agate";
 import { trimIndent } from "../../utils";
 
-export type MarkdownControls = {
-  onCopyClick: (str: string) => void;
-  onNewFileClick: (str: string) => void;
-  onPasteClick: (str: string) => void;
-  canPaste: boolean;
-};
-
-export type MarkdownCodeBlockProps = React.JSX.IntrinsicElements["code"] &
-  Partial<MarkdownControls> & {
-    node?: Element | undefined;
-    style?: Record<string, CSSProperties> | SyntaxHighlighterProps["style"];
-  } & Pick<
+export type MarkdownCodeBlockProps = React.JSX.IntrinsicElements["code"] & {
+  node?: Element | undefined;
+  style?: Record<string, CSSProperties> | SyntaxHighlighterProps["style"];
+} & Pick<
     SyntaxHighlighterProps,
     "showLineNumbers" | "startingLineNumber" | "useInlineStyles"
   >;
@@ -30,38 +22,12 @@ export type MarkdownCodeBlockProps = React.JSX.IntrinsicElements["code"] &
 const _MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
   children,
   className,
-  onCopyClick,
-  onNewFileClick,
-  onPasteClick,
-  canPaste,
   style = hljsStyle,
 }) => {
   const codeRef = React.useRef<HTMLElement | null>(null);
   const match = /language-(\w+)/.exec(className ?? "");
   const textWithOutTrailingNewLine = String(children); //.replace(/\n$/, "");
   const textWithOutIndent = trimIndent(textWithOutTrailingNewLine);
-
-  const preTagProps: PreTagProps =
-    onCopyClick && onNewFileClick && onPasteClick
-      ? {
-          onCopyClick: () => {
-            if (codeRef.current?.textContent) {
-              onCopyClick(codeRef.current.textContent);
-            }
-          },
-          onNewFileClick: () => {
-            if (codeRef.current?.textContent) {
-              onNewFileClick(codeRef.current.textContent);
-            }
-          },
-          onPasteClick: () => {
-            if (codeRef.current?.textContent) {
-              onPasteClick(codeRef.current.textContent);
-            }
-          },
-          canPaste: !!canPaste,
-        }
-      : {};
 
   if (match ?? String(children).includes("\n")) {
     const language: string = match && match.length > 0 ? match[1] : "text";
@@ -70,7 +36,7 @@ const _MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
         <SyntaxHighlighter
           style={style}
           className={className}
-          PreTag={(props) => <PreTag {...props} {...preTagProps} />}
+          PreTag={PreTag}
           CodeTag={(props) => (
             <Code
               {...props}
