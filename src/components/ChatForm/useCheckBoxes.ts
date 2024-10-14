@@ -35,8 +35,10 @@ const useAttachActiveFile = (
     const hasLines = activeFile.line1 !== null && activeFile.line2 !== null;
 
     if (!hasLines) return activeFile.path;
-    return `${activeFile.path}:${activeFile.line1}-${activeFile.line2}`;
-  }, [activeFile.path, activeFile.line1, activeFile.line2]);
+    return `${activeFile.path}:${
+      activeFile.cursor ? activeFile.cursor + 1 : activeFile.line1
+    }`;
+  }, [activeFile.path, activeFile.cursor, activeFile.line1, activeFile.line2]);
 
   const [attachFileCheckboxData, setAttachFile] = useState<Checkbox>({
     name: "file_upload",
@@ -54,26 +56,17 @@ const useAttachActiveFile = (
   });
 
   useEffect(() => {
-    if (!attachFileCheckboxData.checked || !interacted) {
-      setAttachFile((prev) => {
-        return {
-          ...prev,
-          hide: !shouldShow,
-          value: filePathWithLines,
-          disabled: !activeFile.name,
-          fileName: activeFile.name,
-          checked: !!activeFile.name && shouldShow && hasSnippet && !interacted,
-        };
-      });
-    }
-  }, [
-    activeFile.name,
-    attachFileCheckboxData.checked,
-    filePathWithLines,
-    hasSnippet,
-    interacted,
-    shouldShow,
-  ]);
+    setAttachFile((prev) => {
+      return {
+        ...prev,
+        hide: !shouldShow,
+        value: filePathWithLines,
+        disabled: !activeFile.name,
+        fileName: activeFile.name,
+        checked: interacted ? prev.checked : !!activeFile.name && shouldShow,
+      };
+    });
+  }, [activeFile.name, filePathWithLines, hasSnippet, interacted, shouldShow]);
 
   useEffect(() => {
     if (messageLength > 0 && attachFileCheckboxData.hide === false) {
