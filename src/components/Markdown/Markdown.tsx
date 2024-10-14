@@ -115,23 +115,20 @@ const MaybePinButton: React.FC<{
         mt="4"
         ref={ref}
       >
-        <Flex gap="2" py="2" pl="2" wrap="wrap-reverse">
-          <Flex minWidth="50%">
-            <TruncateLeft>
-              <Link
-                href=""
-                title="Open file"
-                onClick={(event) => {
-                  event.preventDefault();
-                  openFile({ file_name: filePath });
-                }}
-              >
-                {filePath}
-              </Link>
-            </TruncateLeft>{" "}
-          </Flex>
-
-          <Flex gap="2" justify="end" ml="auto">
+        <Flex gap="2" py="2" pl="2" wrap="wrap-reverse" justify="between">
+          <TruncateLeft>
+            <Link
+              href=""
+              title="Open file"
+              onClick={(event) => {
+                event.preventDefault();
+                openFile({ file_name: filePath });
+              }}
+            >
+              {filePath}
+            </Link>
+          </TruncateLeft>{" "}
+          <Flex gap="2" ml="auto">
             <Button
               size="1"
               onClick={() => handleShow(children)}
