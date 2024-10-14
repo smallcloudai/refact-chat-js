@@ -132,7 +132,7 @@ describe("ChatForm", () => {
     expect(fakeOnSubmit).toHaveBeenCalledWith(expected);
   });
 
-  test.only("checkbox snippet", async () => {
+  test("checkbox snippet", async () => {
     const fakeOnSubmit = vi.fn();
     const snippet = {
       language: "python",
