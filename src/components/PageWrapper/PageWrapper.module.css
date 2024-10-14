@@ -4,4 +4,5 @@
   /* Fallback height for JB */
   max-height: 100vh;
   max-height: 100dvh;
+  height: 100%;
 }
