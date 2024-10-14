@@ -103,7 +103,7 @@ const MaybePinButton: React.FC<{
     return null;
   }
 
-  // TODO: fin the next sibling and get the text from it
+  // TODO: check this on small screens with long file names
 
   if (isPin) {
     const [_cmd, _ticket, filePath, ..._rest] = children.split(" ");
@@ -115,19 +115,22 @@ const MaybePinButton: React.FC<{
         mt="4"
         ref={ref}
       >
-        <Flex gap="2" py="2" pl="2">
-          <TruncateLeft>
-            <Link
-              href=""
-              title="Open file"
-              onClick={(event) => {
-                event.preventDefault();
-                openFile({ file_name: filePath });
-              }}
-            >
-              {filePath}
-            </Link>
-          </TruncateLeft>{" "}
+        <Flex gap="2" py="2" pl="2" wrap="wrap-reverse">
+          <Flex minWidth="50%">
+            <TruncateLeft>
+              <Link
+                href=""
+                title="Open file"
+                onClick={(event) => {
+                  event.preventDefault();
+                  openFile({ file_name: filePath });
+                }}
+              >
+                {filePath}
+              </Link>
+            </TruncateLeft>{" "}
+          </Flex>
+
           <Flex gap="2" justify="end" ml="auto">
             <Button
               size="1"
