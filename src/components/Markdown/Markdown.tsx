@@ -98,8 +98,6 @@ const MaybePinButton: React.FC<{
     return null;
   }
 
-  // TODO: check this on small screens with long file names
-
   if (isPin) {
     const [_cmd, _ticket, filePath, ..._rest] = children.split(" ");
     return (
@@ -140,16 +138,22 @@ const MaybePinButton: React.FC<{
             >
               Apply
             </Button>
-            {hasMarkdown && (
-              <Button size="1" onClick={onCopyClick}>
-                Copy
-              </Button>
-            )}
-            {hasMarkdown && canPaste && (
-              <Button size="1" onClick={onDiffClick}>
-                ➕ Diff
-              </Button>
-            )}
+
+            <Button
+              size="1"
+              onClick={onCopyClick}
+              disabled={disable || !hasMarkdown}
+            >
+              Copy
+            </Button>
+
+            <Button
+              size="1"
+              onClick={onDiffClick}
+              disabled={disable || !hasMarkdown || !canPaste}
+            >
+              ➕ Diff
+            </Button>
           </Flex>
         </Flex>
         {errorMessage && errorMessage.type === "error" && (
