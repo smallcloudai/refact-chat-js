@@ -88,6 +88,7 @@ export type PreTagProps = {
   canPaste?: boolean;
 };
 
+// TODO: remove the click props
 export const PreTag: React.FC<React.PropsWithChildren<PreTagProps>> = ({
   onCopyClick,
   onNewFileClick,

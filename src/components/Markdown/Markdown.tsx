@@ -1,4 +1,11 @@
-import React, { Key, useMemo } from "react";
+import React, {
+  Key,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import classNames from "classnames";
@@ -46,6 +53,7 @@ const MaybePinButton: React.FC<{
   children?: React.ReactNode;
 }> = ({ children }) => {
   const isPin = typeof children === "string" && children.startsWith("📍");
+  const ref = useRef<HTMLDivElement>(null);
 
   const {
     handleApply,
@@ -54,16 +62,59 @@ const MaybePinButton: React.FC<{
     resetErrorMessage,
     disable,
     openFile,
+    handleCopy,
+    handlePaste,
+    canPaste,
   } = usePatchActions();
+
+  const getMarkdown = useCallback(() => {
+    return (
+      ref.current?.nextElementSibling?.querySelector("code")?.textContent ??
+      null
+    );
+  }, []);
+
+  const onCopyClick = useCallback(() => {
+    const markdown = getMarkdown();
+    if (markdown) {
+      handleCopy(markdown);
+    }
+  }, [getMarkdown, handleCopy]);
+
+  const onDiffClick = useCallback(() => {
+    const markdown = getMarkdown();
+    if (markdown) {
+      handlePaste(markdown);
+    }
+  }, [getMarkdown, handlePaste]);
+
+  const [hasMarkdown, setHasMarkdown] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!ref.current) {
+      setHasMarkdown(false);
+    } else {
+      const markdown = !!getMarkdown();
+      setHasMarkdown(markdown);
+    }
+  }, [getMarkdown]);
 
   if (isPin && children.startsWith("📍OTHER")) {
     return null;
   }
 
+  // TODO: fin the next sibling and get the text from it
+
   if (isPin) {
     const [_cmd, _ticket, filePath, ..._rest] = children.split(" ");
     return (
-      <Card className={styles.patch_title} size="1" variant="surface" mt="4">
+      <Card
+        className={styles.patch_title}
+        size="1"
+        variant="surface"
+        mt="4"
+        ref={ref}
+      >
         <Flex gap="2" py="2" pl="2">
           <TruncateLeft>
             <Link
@@ -94,6 +145,16 @@ const MaybePinButton: React.FC<{
             >
               Apply
             </Button>
+            {hasMarkdown && (
+              <Button size="1" onClick={onCopyClick}>
+                Copy
+              </Button>
+            )}
+            {hasMarkdown && canPaste && (
+              <Button size="1" onClick={onDiffClick}>
+                ➕ Diff
+              </Button>
+            )}
           </Flex>
         </Flex>
         {errorMessage && errorMessage.type === "error" && (

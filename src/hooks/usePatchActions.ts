@@ -10,8 +10,27 @@ import {
   selectMessages,
   selectIsStreaming,
   selectIsWaiting,
+  selectActiveFile,
+  selectSelectedSnippet,
 } from "../features/Chat";
 import { useEventsBusForIDE } from "./useEventBusForIDE";
+import { useAppSelector } from "./useAppSelector";
+
+function fallbackCopying(text: string) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+
+  textArea.style.top = "0";
+  textArea.style.left = "0";
+  textArea.style.position = "fixed";
+
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+
+  document.execCommand("copy");
+  document.body.removeChild(textArea);
+}
 
 export const usePatchActions = () => {
   const {
@@ -20,10 +39,25 @@ export const usePatchActions = () => {
     stopFileAnimation,
     openFile,
     writeResultsToFile,
+    diffPasteBack,
   } = useEventsBusForIDE();
   const messages = useSelector(selectMessages);
   const isStreaming = useSelector(selectIsStreaming);
   const isWaiting = useSelector(selectIsWaiting);
+
+  const activeFile = useAppSelector(selectActiveFile);
+
+  const snippet = useAppSelector(selectSelectedSnippet);
+
+  const codeLineCount = useMemo(() => {
+    if (snippet.code.length === 0) return 0;
+    return snippet.code.split("\n").filter((str) => str).length;
+  }, [snippet.code]);
+
+  const canPaste = useMemo(
+    () => activeFile.can_paste && codeLineCount > 0,
+    [activeFile.can_paste, codeLineCount],
+  );
 
   const [errorMessage, setErrorMessage] = useState<{
     type: "warning" | "error";
@@ -137,6 +171,18 @@ export const usePatchActions = () => {
     ],
   );
 
+  const handleCopy = useCallback((text: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (window.navigator?.clipboard?.writeText) {
+      window.navigator.clipboard.writeText(text).catch(() => {
+        // eslint-disable-next-line no-console
+        console.log("failed to copy to clipboard");
+      });
+    } else {
+      fallbackCopying(text);
+    }
+  }, []);
+
   return {
     errorMessage,
     handleShow,
@@ -145,5 +191,8 @@ export const usePatchActions = () => {
     resetErrorMessage,
     disable,
     openFile,
+    handleCopy,
+    handlePaste: diffPasteBack,
+    canPaste,
   };
 };
