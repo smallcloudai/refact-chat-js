@@ -55,7 +55,6 @@ const MaybePinButton: React.FC<{
   const ref = useRef<HTMLDivElement>(null);
 
   const {
-    handleApply,
     handleShow,
     errorMessage,
     resetErrorMessage,
@@ -125,14 +124,6 @@ const MaybePinButton: React.FC<{
               title={`Show: ${children}`}
             >
               Show
-            </Button>
-            <Button
-              size="1"
-              onClick={() => handleApply(children)}
-              disabled={disable}
-              title={`Apply: ${children}`}
-            >
-              Apply
             </Button>
 
             <Button
