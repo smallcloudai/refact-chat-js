@@ -11,7 +11,11 @@ import remarkBreaks from "remark-breaks";
 import classNames from "classnames";
 // import "./highlightjs.css";
 import styles from "./Markdown.module.css";
-import { MarkdownCodeBlock, type MarkdownCodeBlockProps } from "./CodeBlock";
+import {
+  MarkdownCodeBlock,
+  type MarkdownCodeBlockProps,
+  type MarkdownControls,
+} from "./CodeBlock";
 import {
   Text,
   Heading,
@@ -41,7 +45,7 @@ export type MarkdownProps = Pick<
   Pick<
     MarkdownCodeBlockProps,
     "startingLineNumber" | "showLineNumbers" | "useInlineStyles" | "style"
-  > & { canHavePins?: boolean };
+  > & { canHavePins?: boolean } & Partial<MarkdownControls>;
 
 const MaybePinButton: React.FC<{
   key?: Key | null;
@@ -57,7 +61,6 @@ const MaybePinButton: React.FC<{
     resetErrorMessage,
     disable,
     openFile,
-    handleCopy,
     handlePaste,
     canPaste,
   } = usePatchActions();
@@ -68,13 +71,6 @@ const MaybePinButton: React.FC<{
       null
     );
   }, []);
-
-  const onCopyClick = useCallback(() => {
-    const markdown = getMarkdown();
-    if (markdown) {
-      handleCopy(markdown);
-    }
-  }, [getMarkdown, handleCopy]);
 
   const onDiffClick = useCallback(() => {
     const markdown = getMarkdown();
@@ -137,14 +133,6 @@ const MaybePinButton: React.FC<{
               title={`Apply: ${children}`}
             >
               Apply
-            </Button>
-
-            <Button
-              size="1"
-              onClick={onCopyClick}
-              disabled={disable || !hasMarkdown}
-            >
-              Copy
             </Button>
 
             <Button
