@@ -56,16 +56,19 @@ const useAttachActiveFile = (
   });
 
   useEffect(() => {
-    setAttachFile((prev) => {
-      return {
-        ...prev,
-        hide: !shouldShow,
-        value: filePathWithLines,
-        disabled: !activeFile.name,
-        fileName: activeFile.name,
-        checked: interacted ? prev.checked : !!activeFile.name && shouldShow,
-      };
-    });
+    if (!interacted) {
+      setAttachFile((prev) => {
+        return {
+          ...prev,
+          hide: !shouldShow,
+          value: filePathWithLines,
+          disabled: !activeFile.name,
+          fileName: activeFile.name,
+          // checked: interacted ? prev.checked : !!activeFile.name && shouldShow,
+          checked: !!activeFile.name && shouldShow && hasSnippet,
+        };
+      });
+    }
   }, [activeFile.name, filePathWithLines, hasSnippet, interacted, shouldShow]);
 
   useEffect(() => {
