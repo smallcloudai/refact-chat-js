@@ -130,8 +130,9 @@ const MaybePinButton: React.FC<{
               size="1"
               onClick={onDiffClick}
               disabled={disable || !hasMarkdown || !canPaste}
+              title="Replace the current selection in the ide."
             >
-              ➕ Diff
+              Replace
             </Button>
           </Flex>
         </Flex>
