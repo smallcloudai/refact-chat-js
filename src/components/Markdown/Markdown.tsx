@@ -103,7 +103,7 @@ const MaybePinButton: React.FC<{
         mt="4"
         ref={ref}
       >
-        <Flex gap="2" py="2" pl="2" wrap="wrap-reverse" justify="between">
+        <Flex gap="2" py="2" pl="2" justify="between">
           <TruncateLeft>
             <Link
               href=""
