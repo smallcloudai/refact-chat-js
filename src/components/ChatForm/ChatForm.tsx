@@ -158,7 +158,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
         handleHelpInfo(null);
       }
     },
-    [handleHelpInfo, setValue],
+    [handleHelpInfo, setValue, setFileInteracted, setLineSelectionInteracted],
   );
 
   useEffect(() => {
