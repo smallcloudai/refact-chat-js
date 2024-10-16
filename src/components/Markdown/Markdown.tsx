@@ -116,25 +116,23 @@ const MaybePinButton: React.FC<{
               {filePath}
             </Link>
           </TruncateLeft>{" "}
-          <Flex gap="2" ml="auto">
-            <Button
-              size="1"
-              onClick={() => handleShow(children)}
-              disabled={disable}
-              title={`Show: ${children}`}
-            >
-              ➕ Auto Apply
-            </Button>
-
-            <Button
-              size="1"
-              onClick={onDiffClick}
-              disabled={disable || !hasMarkdown || !canPaste}
-              title="Replace the current selection in the ide."
-            >
-              ➕ Replace Selection
-            </Button>
-          </Flex>
+          <div style={{ flexGrow: 1 }} />
+          <Button
+            size="1"
+            onClick={() => handleShow(children)}
+            disabled={disable}
+            title={`Show: ${children}`}
+          >
+            ➕ Auto Apply
+          </Button>
+          <Button
+            size="1"
+            onClick={onDiffClick}
+            disabled={disable || !hasMarkdown || !canPaste}
+            title="Replace the current selection in the ide."
+          >
+            ➕ Replace Selection
+          </Button>
         </Flex>
         {errorMessage && errorMessage.type === "error" && (
           <ErrorCallout onClick={resetErrorMessage} timeout={5000}>
