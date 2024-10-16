@@ -123,7 +123,7 @@ const MaybePinButton: React.FC<{
               disabled={disable}
               title={`Show: ${children}`}
             >
-              Show
+              ➕ Auto Apply
             </Button>
 
             <Button
@@ -132,7 +132,7 @@ const MaybePinButton: React.FC<{
               disabled={disable || !hasMarkdown || !canPaste}
               title="Replace the current selection in the ide."
             >
-              Replace
+              ➕ Replace Selection
             </Button>
           </Flex>
         </Flex>

@@ -46,7 +46,7 @@ const PreTagWithButtons: React.FC<
             pr="2"
           >
             <Button size="1" variant="surface" onClick={onCopyClick}>
-              Copy
+              ⿻ Copy
             </Button>
           </Flex>
         </RightButtonGroup>
