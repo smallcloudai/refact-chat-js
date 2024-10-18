@@ -100,6 +100,7 @@ export const diffApi = createApi({
         const url = `http://127.0.0.1:${port}${PATCH_URL}`;
 
         const ticket = args.pin.split(" ")[1] ?? "";
+        console.log(`[DEBUG PIN NOTATION]: messages: `, args.messages);
         const messages = formatMessagesForLsp(args.messages);
 
         const result = await baseQuery({

@@ -119,7 +119,11 @@ const MaybePinButton: React.FC<{
           <div style={{ flexGrow: 1 }} />
           <Button
             size="1"
-            onClick={() => handleShow(children)}
+            onClick={(event) => {
+              event.preventDefault();
+              openFile({ file_name: filePath });
+              handleShow(children);
+            }}
             disabled={disable}
             title={`Show: ${children}`}
           >
