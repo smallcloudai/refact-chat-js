@@ -75,7 +75,7 @@ export const usePatchActions = () => {
     (pin: string) => {
       const [, , fileName] = pin.split(" ");
       const cleanedFileName = fileName.replace(/\\\?\\|^\\+/g, "");
-      console.log(`[DEBUG]: cleanedFileName: `, cleanedFileName);
+
       startFileAnimation(cleanedFileName);
       getPatch({ pin, messages })
         .unwrap()
