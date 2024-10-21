@@ -63,8 +63,8 @@ const PinMessages: React.FC<{
 
   const getMarkdown = useCallback(() => {
     return (
-      ref.current?.nextElementSibling?.querySelector("code")?.textContent ??
-      null
+      ref.current?.parentElement?.nextElementSibling?.querySelector("code")
+        ?.textContent ?? null
     );
   }, []);
 
@@ -158,7 +158,11 @@ const MaybePinButton: React.FC<{
     return child;
   });
 
-  return <Text my="2">{processed}</Text>;
+  return (
+    <Text className={styles.maybe_pin} my="2">
+      {processed}
+    </Text>
+  );
 };
 
 const _Markdown: React.FC<MarkdownProps> = ({
