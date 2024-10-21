@@ -102,7 +102,6 @@ const PinMessages: React.FC<{
       <Flex gap="2" py="2" pl="2" justify="between">
         <TruncateLeft>
           <Link
-            href=""
             title="Open file"
             onClick={(event) => {
               event.preventDefault();
