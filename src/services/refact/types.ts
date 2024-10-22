@@ -67,10 +67,12 @@ export interface ChatContextFileMessage extends BaseMessage {
   content: ChatContextFile[];
 }
 
-export type UserMessageContentWithImage = {
-  content_type: string;
-  content: string;
-};
+export type UserMessageContentWithImage =
+  | {
+      type: "text";
+      text: string;
+    }
+  | { type: "image_url"; image_url: { url: string } };
 export interface UserMessage extends BaseMessage {
   role: "user";
   content: string | UserMessageContentWithImage[];

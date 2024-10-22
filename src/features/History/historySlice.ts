@@ -34,16 +34,18 @@ export type HistoryState = Record<string, ChatHistoryItem>;
 
 const initialState: HistoryState = {};
 
-function getFirstUserContentFromChat(messages: ChatThread["messages"]) {
+function getFirstUserContentFromChat(messages: ChatThread["messages"]): string {
   const message = messages.find(isUserMessage);
   if (!message) return "New Chat";
-  if (typeof message.content === "string")
+  if (typeof message.content === "string") {
     return message.content.replace(/^\s+/, "");
+  }
 
-  const text =
-    message.content.find((item) => item.content_type === "text")?.content ??
-    "New Chat";
-  return text.replace(/^\s+/, "");
+  const firstUserInput = message.content.find(
+    (message) => message.type === "text",
+  );
+  if (!firstUserInput || !("text" in firstUserInput)) return "New Chat";
+  return firstUserInput.text.replace(/^\s+/, "");
 }
 
 export const historySlice = createSlice({

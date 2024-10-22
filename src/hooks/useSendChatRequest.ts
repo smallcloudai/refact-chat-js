@@ -93,7 +93,6 @@ export const useSendChatRequest = () => {
 
   const maybeAddImagesToQuestion = useCallback(
     (question: string): UserMessage => {
-      console.log({ attachedImages });
       if (attachedImages.length === 0)
         return { role: "user" as const, content: question };
 
@@ -101,20 +100,18 @@ export const useSendChatRequest = () => {
         (acc, image) => {
           if (typeof image.content !== "string") return acc;
           return acc.concat({
-            content_type: "image_url",
-            content: image.content,
+            type: "image_url",
+            image_url: { url: image.content },
           });
         },
         [],
       );
 
-      console.log({ images });
-
       if (images.length === 0) return { role: "user", content: question };
 
       return {
         role: "user",
-        content: [{ content_type: "text", content: question }, ...images],
+        content: [{ type: "text", text: question }, ...images],
       };
     },
     [attachedImages],
@@ -124,7 +121,6 @@ export const useSendChatRequest = () => {
     (question: string) => {
       // const message: ChatMessage = { role: "user", content: question };
       const message: UserMessage = maybeAddImagesToQuestion(question);
-      console.log({ message });
       const messages = messagesWithSystemPrompt.concat(message);
       void sendMessages(messages);
     },
