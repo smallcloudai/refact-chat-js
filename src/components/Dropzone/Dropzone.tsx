@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useState } from "react";
-import { Button, Slot } from "@radix-ui/themes";
-import { useDropzone } from "react-dropzone";
+import { Button, Slot, IconButton } from "@radix-ui/themes";
+import { CameraIcon } from "@radix-ui/react-icons";
+import { DropzoneInputProps, useDropzone } from "react-dropzone";
 
 type FileForChat = {
   name: string;
@@ -12,7 +13,13 @@ export const FileUploadContext = createContext<{
   files: FileForChat[];
   open: () => void;
   setFiles: React.Dispatch<React.SetStateAction<FileForChat[]>>;
-}>({ files: [], open: () => ({}), setFiles: () => ({}) });
+  getInputProps: (props?: DropzoneInputProps) => DropzoneInputProps;
+}>({
+  files: [],
+  open: () => ({}),
+  setFiles: () => ({}),
+  getInputProps: () => ({}),
+});
 
 export const DropzoneProvider: React.FC<
   React.PropsWithChildren<{ asChild?: boolean }>
@@ -45,6 +52,8 @@ export const DropzoneProvider: React.FC<
   // TODO: disable when chat is busy
   const dropzone = useDropzone({
     disabled: false,
+    noClick: true,
+    noKeyboard: true,
     // onDrop: (files) => console.log(files),
     onDrop,
   });
@@ -54,7 +63,12 @@ export const DropzoneProvider: React.FC<
   // TODO: dropzone.input props
   return (
     <FileUploadContext.Provider
-      value={{ files: attachedFiles, open: dropzone.open, setFiles }}
+      value={{
+        files: attachedFiles,
+        open: dropzone.open,
+        setFiles,
+        getInputProps: dropzone.getInputProps,
+      }}
     >
       <Comp {...dropzone.getRootProps()} {...props} />
     </FileUploadContext.Provider>
@@ -63,11 +77,29 @@ export const DropzoneProvider: React.FC<
 
 export const DropzoneConsumer = FileUploadContext.Consumer;
 
-export const OpenButton = () => {
+export const AttachFileButton = () => {
   // TODO: use an icon
   return (
     <DropzoneConsumer>
-      {({ open }) => <Button onClick={open}>Add images</Button>}
+      {({ open, getInputProps }) => {
+        const inputProps = getInputProps();
+        return (
+          <>
+            <input {...inputProps} style={{ display: "none" }} />
+            <IconButton
+              variant="ghost"
+              size="1"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                open();
+              }}
+            >
+              <CameraIcon />
+            </IconButton>
+          </>
+        );
+      }}
     </DropzoneConsumer>
   );
 };
