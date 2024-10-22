@@ -24,7 +24,7 @@ export const FileUploadContext = createContext<{
 export const DropzoneProvider: React.FC<
   React.PropsWithChildren<{ asChild?: boolean }>
 > = ({ asChild, ...props }) => {
-  // TODO: could be in redux
+  // TODO: could be in redux, this will allow emptying the attachments on successful submit or switching chat.
   const [attachedFiles, setFiles] = useState<FileForChat[]>([]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -40,27 +40,25 @@ export const DropzoneProvider: React.FC<
           content: reader.result,
           type: file.type,
         };
-        // TODO: how are multiple uploads handled
         setFiles((prev) => [...prev, fileForChat]);
       };
       reader.readAsDataURL(file);
     });
   }, []);
 
-  // TODO: remove files
-
   // TODO: disable when chat is busy
   const dropzone = useDropzone({
     disabled: false,
     noClick: true,
     noKeyboard: true,
-    // onDrop: (files) => console.log(files),
+    accept: {
+      "image/*": [],
+    },
     onDrop,
   });
 
   const Comp = asChild ? Slot : "div";
 
-  // TODO: dropzone.input props
   return (
     <FileUploadContext.Provider
       value={{
@@ -78,7 +76,6 @@ export const DropzoneProvider: React.FC<
 export const DropzoneConsumer = FileUploadContext.Consumer;
 
 export const AttachFileButton = () => {
-  // TODO: use an icon
   return (
     <DropzoneConsumer>
       {({ open, getInputProps }) => {
@@ -89,6 +86,7 @@ export const AttachFileButton = () => {
             <IconButton
               variant="ghost"
               size="1"
+              disabled={inputProps.disabled}
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -105,7 +103,6 @@ export const AttachFileButton = () => {
 };
 
 export const FileList = () => {
-  // TODO: remove items
   return (
     <DropzoneConsumer>
       {({ files, setFiles }) => {
@@ -116,6 +113,7 @@ export const FileList = () => {
               return (
                 <Button
                   key={key}
+                  size="1"
                   onClick={() =>
                     setFiles((prev) =>
                       prev.filter((_file, idx) => idx !== index),
