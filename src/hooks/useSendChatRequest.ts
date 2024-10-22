@@ -16,6 +16,8 @@ import {
   ChatMessage,
   ChatMessages,
   isAssistantMessage,
+  UserMessage,
+  UserMessageContentWithImage,
 } from "../services/refact/types";
 import {
   backUpMessages,
@@ -25,6 +27,7 @@ import {
 } from "../features/Chat/Thread/actions";
 import { isToolUse } from "../features/Chat";
 import { useAbortControllers } from "./useAbortControllers";
+import { selectAllImages } from "../features/AttachedImages";
 
 export const useSendChatRequest = () => {
   const dispatch = useAppDispatch();
@@ -44,6 +47,7 @@ export const useSendChatRequest = () => {
   const systemPrompt = useAppSelector(getSelectedSystemPrompt);
   const sendImmediately = useAppSelector(selectSendImmediately);
   const toolUse = useAppSelector(selectToolUse);
+  const attachedImages = useAppSelector(selectAllImages);
 
   const messagesWithSystemPrompt = useMemo(() => {
     const prompts = Object.entries(systemPrompt);
@@ -87,13 +91,44 @@ export const useSendChatRequest = () => {
     [triggerGetTools, toolUse, dispatch, chatId, abortControllers],
   );
 
+  const maybeAddImagesToQuestion = useCallback(
+    (question: string): UserMessage => {
+      console.log({ attachedImages });
+      if (attachedImages.length === 0)
+        return { role: "user" as const, content: question };
+
+      const images = attachedImages.reduce<UserMessageContentWithImage[]>(
+        (acc, image) => {
+          if (typeof image.content !== "string") return acc;
+          return acc.concat({
+            content_type: "image_url",
+            content: image.content,
+          });
+        },
+        [],
+      );
+
+      console.log({ images });
+
+      if (images.length === 0) return { role: "user", content: question };
+
+      return {
+        role: "user",
+        content: [{ content_type: "text", content: question }, ...images],
+      };
+    },
+    [attachedImages],
+  );
+
   const submit = useCallback(
     (question: string) => {
-      const message: ChatMessage = { role: "user", content: question };
+      // const message: ChatMessage = { role: "user", content: question };
+      const message: UserMessage = maybeAddImagesToQuestion(question);
+      console.log({ message });
       const messages = messagesWithSystemPrompt.concat(message);
       void sendMessages(messages);
     },
-    [messagesWithSystemPrompt, sendMessages],
+    [maybeAddImagesToQuestion, messagesWithSystemPrompt, sendMessages],
   );
 
   useEffect(() => {

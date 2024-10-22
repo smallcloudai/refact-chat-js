@@ -196,8 +196,10 @@ function renderMessages(
     return renderMessages(tail, onRetry, nextMemo, index + 1);
   }
 
-  if (head.role === "user") {
+  // TODO: handle content being an array.
+  if (head.role === "user" && typeof head.content === "string") {
     const key = "user-input-" + index;
+
     const nextMemo = [
       ...memo,
       <UserInput onRetry={onRetry} key={key} messageIndex={index}>

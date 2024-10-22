@@ -34,6 +34,18 @@ export type HistoryState = Record<string, ChatHistoryItem>;
 
 const initialState: HistoryState = {};
 
+function getFirstUserContentFromChat(messages: ChatThread["messages"]) {
+  const message = messages.find(isUserMessage);
+  if (!message) return "New Chat";
+  if (typeof message.content === "string")
+    return message.content.replace(/^\s+/, "");
+
+  const text =
+    message.content.find((item) => item.content_type === "text")?.content ??
+    "New Chat";
+  return text.replace(/^\s+/, "");
+}
+
 export const historySlice = createSlice({
   name: "history",
   initialState,
@@ -46,9 +58,7 @@ export const historySlice = createSlice({
         ...action.payload,
         title: action.payload.title
           ? action.payload.title
-          : action.payload.messages
-              .find(isUserMessage)
-              ?.content.replace(/^\s+/, "") ?? "New Chat",
+          : getFirstUserContentFromChat(action.payload.messages),
         createdAt: action.payload.createdAt ?? now,
         updatedAt: now,
       };
@@ -154,10 +164,11 @@ startHistoryListening({
             })
             .catch(() => {
               // TODO: handle error in case if not generated, now returning user message as a title
+              const title = getFirstUserContentFromChat([firstUserMessage]);
               listenerApi.dispatch(
                 saveChat({
                   ...thread,
-                  title: firstUserMessage.content,
+                  title: title,
                 }),
               );
             });
