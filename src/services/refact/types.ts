@@ -59,7 +59,8 @@ interface BaseMessage {
     | ToolResult
     | DiffChunk[]
     | null
-    | UserMessageContentWithImage[];
+    | UserMessageContentWithImage[]
+    | ProcessedUserMessageContentWithImages[];
 }
 
 export interface ChatContextFileMessage extends BaseMessage {
@@ -75,9 +76,16 @@ export type UserMessageContentWithImage =
   | { type: "image_url"; image_url: { url: string } };
 export interface UserMessage extends BaseMessage {
   role: "user";
-  content: string | UserMessageContentWithImage[];
+  content:
+    | string
+    | UserMessageContentWithImage[]
+    | ProcessedUserMessageContentWithImages[];
 }
 
+export type ProcessedUserMessageContentWithImages = {
+  m_type: string;
+  m_content: string;
+};
 export interface AssistantMessage extends BaseMessage {
   role: "assistant";
   content: string | null;

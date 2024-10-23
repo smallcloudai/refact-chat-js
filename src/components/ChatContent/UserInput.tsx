@@ -4,6 +4,7 @@ import { Markdown } from "../Markdown";
 import { RetryForm } from "../ChatForm";
 import styles from "./ChatContent.module.css";
 import { Pencil2Icon } from "@radix-ui/react-icons";
+import { type UserMessage } from "../../services/refact";
 
 function processLines(
   lines: string[],
@@ -42,7 +43,7 @@ function processLines(
 }
 
 export type UserInputProps = {
-  children: string;
+  children: UserMessage["content"];
   messageIndex: number;
   onRetry: (index: number, question: string) => void;
   // disableRetry?: boolean;
@@ -74,6 +75,9 @@ export const UserInput: React.FC<UserInputProps> = ({
     },
     [isEditButtonVisible],
   );
+
+  // TODO: handle other types
+  if (typeof children !== "string") return null;
 
   const lines = children.split("\n");
   const elements = processLines(lines);

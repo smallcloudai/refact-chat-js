@@ -196,8 +196,7 @@ function renderMessages(
     return renderMessages(tail, onRetry, nextMemo, index + 1);
   }
 
-  // TODO: handle content being an array.
-  if (head.role === "user" && typeof head.content === "string") {
+  if (head.role === "user") {
     const key = "user-input-" + index;
 
     const nextMemo = [
