@@ -1,10 +1,23 @@
 import React, { useCallback, useState } from "react";
-import { Text, Container, Button, Flex, IconButton } from "@radix-ui/themes";
+import {
+  Text,
+  Container,
+  Button,
+  Flex,
+  IconButton,
+  // Inset,
+  // Card,
+  Avatar,
+} from "@radix-ui/themes";
 import { Markdown } from "../Markdown";
 import { RetryForm } from "../ChatForm";
 import styles from "./ChatContent.module.css";
 import { Pencil2Icon } from "@radix-ui/react-icons";
-import { type UserMessage } from "../../services/refact";
+import {
+  ProcessedUserMessageContentWithImages,
+  UserMessageContentWithImage,
+  type UserMessage,
+} from "../../services/refact";
 
 function processLines(
   lines: string[],
@@ -55,9 +68,27 @@ export const UserInput: React.FC<UserInputProps> = ({
   onRetry,
 }) => {
   // const { retryFromIndex } = useSendChatRequest();
+
+  // TODO: handle other types
+  if (typeof children !== "string") {
+    return <RenderUserInputArray>{children}</RenderUserInputArray>;
+  }
+
+  return (
+    <RenderUserInputString messageIndex={messageIndex} onRetry={onRetry}>
+      {children}
+    </RenderUserInputString>
+  );
+};
+
+const RenderUserInputString: React.FC<
+  Omit<UserInputProps, "children"> & { children: string }
+> = ({ messageIndex, children, onRetry }) => {
+  // const { retryFromIndex } = useSendChatRequest();
   const [showTextArea, setShowTextArea] = useState(false);
   const [isEditButtonVisible, setIsEditButtonVisible] = useState(false);
-  const ref = React.useRef<HTMLButtonElement>(null);
+  // const ref = React.useRef<HTMLButtonElement>(null);
+
   const handleSubmit = useCallback(
     (value: string) => {
       onRetry(messageIndex, value);
@@ -75,9 +106,6 @@ export const UserInput: React.FC<UserInputProps> = ({
     },
     [isEditButtonVisible],
   );
-
-  // TODO: handle other types
-  if (typeof children !== "string") return null;
 
   const lines = children.split("\n");
   const elements = processLines(lines);
@@ -101,10 +129,11 @@ export const UserInput: React.FC<UserInputProps> = ({
           onMouseLeave={() => setIsEditButtonVisible(false)}
         >
           <Button
-            ref={ref}
+            // ref={ref}
             variant="soft"
             size="4"
             className={styles.userInput}
+            // onClick={() => handleShowTextArea(true)}
             asChild
           >
             <div>{elements}</div>
@@ -124,6 +153,51 @@ export const UserInput: React.FC<UserInputProps> = ({
           </IconButton>
         </Flex>
       )}
+    </Container>
+  );
+};
+
+type UserInputArray =
+  | UserMessageContentWithImage[]
+  | ProcessedUserMessageContentWithImages[];
+
+const RenderUserInputArray: React.FC<{ children: UserInputArray }> = ({
+  children,
+}) => {
+  const items = children.map((child, index) => {
+    if ("type" in child && child.type === "text") {
+      const key = `user-input-${child.type}-${index}`;
+      return <div key={key}>{processLines(child.text.split("\n"))}</div>;
+    }
+
+    if ("m_type" in child && child.m_type === "text") {
+      const key = `user-input-${child.m_type}-${index}`;
+      return <div key={key}>{processLines(child.m_content.split("\n"))}</div>;
+    }
+
+    // TODO: use takeWhile to group images in a flex
+
+    if ("m_type" in child && child.m_type.startsWith("image/")) {
+      const key = `user-input-${child.m_type}-${index}`;
+      const base64string = `data:${child.m_type};base64,${child.m_content}`;
+      return <Avatar key={key} src={base64string} fallback="" size="8" />;
+    }
+
+    // TODO: there could be other types
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if ("type" in child && child.type === "image_url") {
+      const key = `user-input-${child.type}-${index}`;
+      const base64string = child.image_url.url;
+      return <Avatar key={key} src={base64string} fallback="" size="8" />;
+    }
+
+    // TODO: handle images
+
+    return null;
+  });
+  return (
+    <Container position="relative" pt="1">
+      <Flex direction="column">{items}</Flex>
     </Container>
   );
 };
