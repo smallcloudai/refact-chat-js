@@ -5,19 +5,18 @@ import {
   Button,
   Flex,
   IconButton,
-  // Inset,
-  // Card,
   Avatar,
 } from "@radix-ui/themes";
 import { Markdown } from "../Markdown";
 import { RetryForm } from "../ChatForm";
 import styles from "./ChatContent.module.css";
-import { Pencil2Icon } from "@radix-ui/react-icons";
+import { Pencil2Icon, ImageIcon } from "@radix-ui/react-icons";
 import {
   ProcessedUserMessageContentWithImages,
   UserMessageContentWithImage,
   type UserMessage,
 } from "../../services/refact";
+import { takeWhile } from "../../utils";
 
 function processLines(
   lines: string[],
@@ -133,6 +132,7 @@ const RenderUserInputString: React.FC<
             variant="soft"
             size="4"
             className={styles.userInput}
+            // TODO: should this work?
             // onClick={() => handleShowTextArea(true)}
             asChild
           >
@@ -157,47 +157,76 @@ const RenderUserInputString: React.FC<
   );
 };
 
-type UserInputArray =
-  | UserMessageContentWithImage[]
-  | ProcessedUserMessageContentWithImages[];
+type UserInputArray = (
+  | UserMessageContentWithImage
+  | ProcessedUserMessageContentWithImages
+)[];
 
 const RenderUserInputArray: React.FC<{ children: UserInputArray }> = ({
   children,
 }) => {
-  const items = children.map((child, index) => {
-    if ("type" in child && child.type === "text") {
-      const key = `user-input-${child.type}-${index}`;
-      return <div key={key}>{processLines(child.text.split("\n"))}</div>;
-    }
-
-    if ("m_type" in child && child.m_type === "text") {
-      const key = `user-input-${child.m_type}-${index}`;
-      return <div key={key}>{processLines(child.m_content.split("\n"))}</div>;
-    }
-
-    // TODO: use takeWhile to group images in a flex
-
-    if ("m_type" in child && child.m_type.startsWith("image/")) {
-      const key = `user-input-${child.m_type}-${index}`;
-      const base64string = `data:${child.m_type};base64,${child.m_content}`;
-      return <Avatar key={key} src={base64string} fallback="" size="8" />;
-    }
-
-    // TODO: there could be other types
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if ("type" in child && child.type === "image_url") {
-      const key = `user-input-${child.type}-${index}`;
-      const base64string = child.image_url.url;
-      return <Avatar key={key} src={base64string} fallback="" size="8" />;
-    }
-
-    // TODO: handle images
-
-    return null;
-  });
+  const items = processUserInputArray(children);
   return (
     <Container position="relative" pt="1">
       <Flex direction="column">{items}</Flex>
     </Container>
   );
 };
+
+function isUserContentImage(
+  item: UserMessageContentWithImage | ProcessedUserMessageContentWithImages,
+) {
+  return (
+    ("m_type" in item && item.m_type.startsWith("image/")) ||
+    ("type" in item && item.type === "image_url")
+  );
+}
+
+function processUserInputArray(
+  items: UserInputArray,
+  memo: JSX.Element[] = [],
+) {
+  if (items.length === 0) return memo;
+  const [head, ...tail] = items;
+
+  if ("type" in head && head.type === "text") {
+    const processedLines = processLines(head.text.split("\n"));
+    return processUserInputArray(tail, memo.concat(processedLines));
+  }
+
+  if ("m_type" in head && head.m_type === "text") {
+    const processedLines = processLines(head.m_content.split("\n"));
+    return processUserInputArray(tail, memo.concat(processedLines));
+  }
+
+  const isImage = isUserContentImage(head);
+
+  if (!isImage) return processUserInputArray(tail, memo);
+
+  const imagesInTail = takeWhile(tail, isUserContentImage);
+  const nextTail = tail.slice(imagesInTail.length);
+  const images = [head, ...imagesInTail];
+  const elem = (
+    <Flex gap="2" wrap="wrap">
+      {images.map((image, index) => {
+        if ("type" in image && image.type === "image_url") {
+          const key = `user-input${memo.length}-${image.type}-${index}`;
+          const content = image.image_url.url;
+          return (
+            <Avatar key={key} src={content} size="8" fallback={<ImageIcon />} />
+          );
+        }
+        if ("m_type" in image && image.m_type.startsWith("image/")) {
+          const key = `user-input${memo.length}-${image.m_type}-${index}`;
+          const content = `data:${image.m_type};base64,${image.m_content}`;
+          return (
+            <Avatar key={key} src={content} size="8" fallback={<ImageIcon />} />
+          );
+        }
+        return null;
+      })}
+    </Flex>
+  );
+
+  return processUserInputArray(nextTail, memo.concat(elem));
+}
