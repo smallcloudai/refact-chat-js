@@ -25,6 +25,7 @@ import {
   getInformationMessage,
 } from "../../features/Errors/informationSlice";
 import { InformationCallout } from "../Callout/Callout";
+import { AttachFileButton, FileList } from "../Dropzone";
 
 export type ChatFormProps = {
   onSubmit: (str: string) => void;
@@ -264,10 +265,12 @@ export const ChatForm: React.FC<ChatFormProps> = ({
               size="1"
               type="submit"
             />
+            {/** TODO: disabled prop, title and size props   */}
+            <AttachFileButton />
           </Flex>
         </Form>
       </Flex>
-
+      <FileList />
       <ChatControls
         host={config.host}
         checkboxes={checkboxes}

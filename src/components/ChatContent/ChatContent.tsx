@@ -198,6 +198,7 @@ function renderMessages(
 
   if (head.role === "user") {
     const key = "user-input-" + index;
+
     const nextMemo = [
       ...memo,
       <UserInput onRetry={onRetry} key={key} messageIndex={index}>

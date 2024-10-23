@@ -53,7 +53,14 @@ export type ToolResult = {
 
 interface BaseMessage {
   role: ChatRole;
-  content: string | ChatContextFile[] | ToolResult | DiffChunk[] | null;
+  content:
+    | string
+    | ChatContextFile[]
+    | ToolResult
+    | DiffChunk[]
+    | null
+    | UserMessageContentWithImage[]
+    | ProcessedUserMessageContentWithImages[];
 }
 
 export interface ChatContextFileMessage extends BaseMessage {
@@ -61,11 +68,24 @@ export interface ChatContextFileMessage extends BaseMessage {
   content: ChatContextFile[];
 }
 
+export type UserMessageContentWithImage =
+  | {
+      type: "text";
+      text: string;
+    }
+  | { type: "image_url"; image_url: { url: string } };
 export interface UserMessage extends BaseMessage {
   role: "user";
-  content: string;
+  content:
+    | string
+    | UserMessageContentWithImage[]
+    | ProcessedUserMessageContentWithImages[];
 }
 
+export type ProcessedUserMessageContentWithImages = {
+  m_type: string;
+  m_content: string;
+};
 export interface AssistantMessage extends BaseMessage {
   role: "assistant";
   content: string | null;
