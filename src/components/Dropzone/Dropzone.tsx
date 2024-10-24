@@ -1,6 +1,6 @@
 import React, { createContext, useCallback } from "react";
 import { Button, Slot, IconButton } from "@radix-ui/themes";
-import { CameraIcon } from "@radix-ui/react-icons";
+import { ImageIcon } from "@radix-ui/react-icons";
 import { DropzoneInputProps, useDropzone } from "react-dropzone";
 import { useAttachedImages } from "../../hooks/useAttachedImages";
 
@@ -76,6 +76,7 @@ export const AttachFileButton = () => {
             <IconButton
               variant="ghost"
               size="1"
+              title="add image"
               disabled={inputProps.disabled}
               onClick={(event) => {
                 event.preventDefault();
@@ -83,7 +84,7 @@ export const AttachFileButton = () => {
                 open();
               }}
             >
-              <CameraIcon />
+              <ImageIcon />
             </IconButton>
           </>
         );

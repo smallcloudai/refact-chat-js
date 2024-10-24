@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Avatar, Button, Flex, IconButton, Text } from "@radix-ui/themes";
+import { Avatar, Button, Flex, Box } from "@radix-ui/themes";
 import { useDropzone } from "react-dropzone";
 import { TextArea } from "../TextArea";
 import { useOnPressedEnter } from "../../hooks/useOnPressedEnter";
@@ -57,9 +57,7 @@ export const RetryForm: React.FC<{
   onClose: () => void;
 }> = (props) => {
   const shiftEnterToSubmit = useAppSelector(selectSubmitOption);
-  // TODO: get text value
   const inputText = getTextFromUserMessage(props.value);
-  console.log({ inputText, value: props.value });
   const inputImages = getImageFromUserMessage(props.value);
   const [textValue, onChangeTextValue] = useState(inputText);
   const [imageValue, onChangeImageValue] = useState(inputImages);
@@ -70,10 +68,7 @@ export const RetryForm: React.FC<{
     });
   }, []);
 
-  // TODO get Images from value
-
   const closeAndReset = () => {
-    // onChange(props.value);
     onChangeImageValue(inputImages);
     onChangeTextValue(inputText);
     props.onClose();
@@ -123,28 +118,38 @@ export const RetryForm: React.FC<{
         onChange={(event) => onChangeTextValue(event.target.value)}
         onKeyDown={handleOnKeyDown}
       />
-      {/**TODO: images */}
 
-      <Flex>
-        <MyDropzone addImage={addImage} />
-        {imageValue.map((image, index) => {
-          const content = getImageContent(image);
-          const key = `retry-image-${index}`;
-          return (
-            <MyImage
-              key={key}
-              image={content}
-              onRemove={() => handleRemove(index)}
-            />
-          );
-        })}
-      </Flex>
+      {imageValue.length > 0 && (
+        <Flex
+          px="2"
+          py="4"
+          wrap="wrap"
+          direction="row"
+          align="center"
+          justify="center"
+          style={{
+            backgroundColor: "var(--color-surface)",
+          }}
+        >
+          {imageValue.map((image, index) => {
+            return (
+              <MyImage
+                key={`retry-user-image-${index}`}
+                image={getImageContent(image)}
+                onRemove={() => handleRemove(index)}
+              />
+            );
+          })}
+        </Flex>
+      )}
+
       <Flex
         align="center"
         justify="center"
         gap="1"
         direction="row"
         p="2"
+        wrap="wrap"
         style={{
           backgroundColor: "var(--color-surface)",
         }}
@@ -160,42 +165,65 @@ export const RetryForm: React.FC<{
         >
           Cancel
         </Button>
+
+        <MyDropzone addImage={addImage} />
       </Flex>
     </Form>
   );
 };
 
-const MyDropzone: React.FC<{ addImage: (image: UserImage) => void }> = ({
-  addImage,
-}) => {
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    acceptedFiles.forEach((file) => {
-      const reader = new FileReader();
+const MyDropzone: React.FC<{
+  addImage: (image: UserImage) => void;
+}> = ({ addImage }) => {
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      acceptedFiles.forEach((file) => {
+        const reader = new FileReader();
 
-      // TODO: errors
-      reader.onabort = () => console.log("file reading was aborted");
-      reader.onerror = () => console.log("file reading has failed");
-      reader.onload = () => {
-        // Do whatever you want with the file contents
-        if (typeof reader.result === "string") {
-          const image: UserImage = {
-            type: "image_url",
-            image_url: { url: reader.result },
-          };
-          addImage(image);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-  }, []);
-  const { getRootProps, getInputProps } = useDropzone({ onDrop });
+        // TODO: errors
+        reader.onabort = () => console.log("file reading was aborted");
+        reader.onerror = () => console.log("file reading has failed");
+        reader.onload = () => {
+          // Do whatever you want with the file contents
+          if (typeof reader.result === "string") {
+            const image: UserImage = {
+              type: "image_url",
+              image_url: { url: reader.result },
+            };
+            addImage(image);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    },
+    [addImage],
+  );
+
+  const { getRootProps, getInputProps, open } = useDropzone({
+    onDrop,
+    disabled: false,
+    noClick: true,
+    noKeyboard: true,
+    accept: {
+      "image/*": [],
+    },
+  });
 
   return (
     <div {...getRootProps()}>
       <input {...getInputProps()} style={{ display: "none" }} />
-      <Text size="1">
-        Drag &apos;n&apos; drop some files here, or click to select files
-      </Text>
+      <Button
+        size="1"
+        variant="surface"
+        color="gray"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          open();
+        }}
+      >
+        Add images
+      </Button>
     </div>
   );
 };
@@ -205,9 +233,26 @@ const MyImage: React.FC<{ image: string; onRemove: () => void }> = ({
   onRemove,
 }) => {
   return (
-    <IconButton onClick={onRemove}>
-      <CrossCircledIcon />
-      <Avatar src={image} size="1" fallback={<ImageIcon />} />
-    </IconButton>
+    <Box position="relative">
+      <Button
+        variant="ghost"
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onRemove();
+        }}
+      >
+        <CrossCircledIcon
+          width="16"
+          color="gray"
+          style={{
+            position: "absolute",
+            right: "calc(var(--space-2) * -1)",
+            top: "calc(var(--space-2) * -1)",
+          }}
+        />
+        <Avatar src={image} size="4" fallback={<ImageIcon />} />
+      </Button>
+    </Box>
   );
 };
