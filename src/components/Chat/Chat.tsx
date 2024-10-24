@@ -1,28 +1,30 @@
-import React, { useCallback, useRef, useEffect } from "react";
+import React, { useCallback, useRef, useEffect, useState } from "react";
 import { ChatForm, ChatFormProps } from "../ChatForm";
 import { ChatContent } from "../ChatContent";
 import { Flex, Button, Text, Container, Card } from "@radix-ui/themes";
-import { PageWrapper } from "../PageWrapper";
 import {
   useAppSelector,
   useAppDispatch,
   useSendChatRequest,
+  useGetPromptsQuery,
 } from "../../hooks";
 import type { Config } from "../../features/Config/configSlice";
-import { useEventsBusForIDE } from "../../hooks";
 import {
   enableSend,
   getSelectedChatModel,
   selectIsStreaming,
   selectIsWaiting,
   setChatModel,
-  // selectThread,
   selectPreventSend,
   selectChatId,
   selectMessages,
+  getSelectedToolUse,
+  getSelectedSystemPrompt,
+  setSystemPrompt,
 } from "../../features/Chat/Thread";
-import { selectActiveFile } from "../../features/Chat/activeFile";
-import { Toolbar } from "../Toolbar";
+import { ThreadHistoryButton } from "../Buttons";
+import { push } from "../../features/Pages/pagesSlice";
+import { SystemPrompts } from "../../services/refact";
 
 export type ChatProps = {
   host: Config["host"];
@@ -33,32 +35,33 @@ export type ChatProps = {
   // TODO: update this
   caps: ChatFormProps["caps"];
   maybeSendToSidebar: ChatFormProps["onClose"];
-  prompts: ChatFormProps["prompts"];
-  onSetSystemPrompt: ChatFormProps["onSetSystemPrompt"];
-  selectedSystemPrompt: ChatFormProps["selectedSystemPrompt"];
 };
 
 export const Chat: React.FC<ChatProps> = ({
   style,
-  host,
   unCalledTools,
   caps,
   maybeSendToSidebar,
-  prompts,
-  onSetSystemPrompt,
-  selectedSystemPrompt,
 }) => {
+  const [isViewingRawJSON, setIsViewingRawJSON] = useState(false);
   const chatContentRef = useRef<HTMLDivElement>(null);
-  const activeFile = useAppSelector(selectActiveFile);
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
 
-  const canPaste = activeFile.can_paste;
   const chatId = useAppSelector(selectChatId);
-  const { submit, abort, retry } = useSendChatRequest();
+  const { submit, abort, retryFromIndex } = useSendChatRequest();
   const chatModel = useAppSelector(getSelectedChatModel);
+  const chatToolUse = useAppSelector(getSelectedToolUse);
   const dispatch = useAppDispatch();
   const messages = useAppSelector(selectMessages);
+
+  const promptsRequest = useGetPromptsQuery();
+  const selectedSystemPrompt = useAppSelector(getSelectedSystemPrompt);
+  const onSetSelectedSystemPrompt = (prompt: SystemPrompts) =>
+    dispatch(setSystemPrompt(prompt));
+  const [isDebugChatHistoryVisible, setIsDebugChatHistoryVisible] =
+    useState(false);
+
   const onSetChatModel = useCallback(
     (value: string) => {
       const model = caps.default_cap === value ? "" : value;
@@ -69,18 +72,14 @@ export const Chat: React.FC<ChatProps> = ({
   const preventSend = useAppSelector(selectPreventSend);
   const onEnableSend = () => dispatch(enableSend({ id: chatId }));
 
-  const {
-    diffPasteBack,
-    newFile,
-    openSettings,
-    // openChatInNewTab: _openChatInNewTab,
-  } = useEventsBusForIDE();
-
   const handleSummit = useCallback(
     (value: string) => {
       submit(value);
+      if (isViewingRawJSON) {
+        setIsViewingRawJSON(false);
+      }
     },
-    [submit],
+    [submit, isViewingRawJSON],
   );
 
   const onTextAreaHeightChange = useCallback(() => {
@@ -103,6 +102,10 @@ export const Chat: React.FC<ChatProps> = ({
     }
   }, []);
 
+  const handleThreadHistoryPage = useCallback(() => {
+    dispatch(push({ name: "thread history page", chatId }));
+  }, [chatId, dispatch]);
+
   useEffect(() => {
     if (!isWaiting && !isStreaming) {
       focusTextarea();
@@ -110,21 +113,19 @@ export const Chat: React.FC<ChatProps> = ({
   }, [isWaiting, isStreaming, focusTextarea]);
 
   return (
-    <PageWrapper host={host} style={style}>
-      <Toolbar activeTab={{ type: "chat", id: chatId }} />
+    <Flex
+      style={style}
+      direction="column"
+      flexGrow="1"
+      width="100%"
+      overflowY="auto"
+      justify="between"
+      px="1"
+    >
       <ChatContent
         key={`chat-content-${chatId}`}
-        chatKey={chatId}
-        // messages={chat.messages}
-        // could be moved down
-        onRetry={retry}
-        isWaiting={isWaiting}
-        isStreaming={isStreaming}
-        onNewFileClick={newFile}
-        onPasteClick={diffPasteBack}
-        canPaste={canPaste}
         ref={chatContentRef}
-        openSettings={openSettings}
+        onRetry={retryFromIndex}
       />
       {!isStreaming && preventSend && unCalledTools && (
         <Container py="4" bottom="0" style={{ justifyContent: "flex-end" }}>
@@ -136,10 +137,9 @@ export const Chat: React.FC<ChatProps> = ({
           </Card>
         </Container>
       )}
+
       <ChatForm
-        // todo: find a way to not have to stringify the whole caps object
-        // the reason is that otherwise the tour bubbles will be in the wrong position due to layout shifts
-        // key={`chat-form-${chatId}-${JSON.stringify(caps)}`}
+        key={chatId} // TODO: think of how can we not trigger re-render on chatId change (checkboxes)
         chatId={chatId}
         isStreaming={isStreaming}
         showControls={messages.length === 0 && !isStreaming}
@@ -150,15 +150,35 @@ export const Chat: React.FC<ChatProps> = ({
         onStopStreaming={abort}
         onClose={maybeSendToSidebar}
         onTextAreaHeightChange={onTextAreaHeightChange}
-        prompts={prompts}
-        onSetSystemPrompt={onSetSystemPrompt}
+        prompts={promptsRequest.data ?? {}}
+        onSetSystemPrompt={onSetSelectedSystemPrompt}
         selectedSystemPrompt={selectedSystemPrompt}
       />
       <Flex justify="between" pl="1" pr="1" pt="1">
+        {/* Two flexboxes are left for the future UI element on the right side */}
         {messages.length > 0 && (
-          <Text size="1">model: {chatModel || caps.default_cap} </Text>
+          <Flex align="center" justify="between" width="100%">
+            <Flex align="center" gap="1">
+              <Text size="1">model: {chatModel || caps.default_cap} </Text> •{" "}
+              <Text
+                size="1"
+                onClick={() => setIsDebugChatHistoryVisible((prev) => !prev)}
+              >
+                mode: {chatToolUse}{" "}
+              </Text>
+            </Flex>
+            {messages.length !== 0 &&
+              !isStreaming &&
+              isDebugChatHistoryVisible && (
+                <ThreadHistoryButton
+                  title="View history of current thread"
+                  size="1"
+                  onClick={handleThreadHistoryPage}
+                />
+              )}
+          </Flex>
         )}
       </Flex>
-    </PageWrapper>
+    </Flex>
   );
 };

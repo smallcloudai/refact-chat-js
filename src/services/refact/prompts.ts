@@ -27,7 +27,11 @@ export const promptsApi = createApi({
           credentials: "same-origin",
           redirect: "follow",
         });
-        if (result.error) return { error: result.error };
+        if (result.error) {
+          return {
+            error: result.error,
+          };
+        }
         if (!isCustomPromptsResponse(result.data)) {
           return {
             error: {

@@ -1,36 +1,20 @@
 import React, { useCallback } from "react";
-import { Markdown, MarkdownProps } from "../Markdown";
+import { Markdown } from "../Markdown";
 
 import { Container, Box } from "@radix-ui/themes";
-import { ToolCall, ToolResult } from "../../services/refact";
+import { ToolCall } from "../../services/refact";
 import { ToolContent } from "./ToolsContent";
+import { fallbackCopying } from "../../utils/fallbackCopying";
 
-type ChatInputProps = Pick<
-  MarkdownProps,
-  "onNewFileClick" | "onPasteClick" | "canPaste"
-> & {
+type ChatInputProps = {
   message: string | null;
   toolCalls?: ToolCall[] | null;
-  toolResults: Record<string, ToolResult>;
 };
 
-function fallbackCopying(text: string) {
-  const textArea = document.createElement("textarea");
-  textArea.value = text;
-
-  textArea.style.top = "0";
-  textArea.style.left = "0";
-  textArea.style.position = "fixed";
-
-  document.body.appendChild(textArea);
-  textArea.focus();
-  textArea.select();
-
-  document.execCommand("copy");
-  document.body.removeChild(textArea);
-}
-
-export const AssistantInput: React.FC<ChatInputProps> = (props) => {
+export const AssistantInput: React.FC<ChatInputProps> = ({
+  message,
+  toolCalls,
+}) => {
   const handleCopy = useCallback((text: string) => {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (window.navigator?.clipboard?.writeText) {
@@ -45,21 +29,14 @@ export const AssistantInput: React.FC<ChatInputProps> = (props) => {
 
   return (
     <Container position="relative">
-      {props.message && (
+      {message && (
         <Box py="4">
-          <Markdown
-            onCopyClick={handleCopy}
-            onNewFileClick={props.onNewFileClick}
-            onPasteClick={props.onPasteClick}
-            canPaste={props.canPaste}
-          >
-            {props.message}
+          <Markdown canHavePins={true} onCopyClick={handleCopy}>
+            {message}
           </Markdown>
         </Box>
       )}
-      {props.toolCalls && (
-        <ToolContent toolCalls={props.toolCalls} results={props.toolResults} />
-      )}
+      {toolCalls && <ToolContent toolCalls={toolCalls} />}
     </Container>
   );
 };
