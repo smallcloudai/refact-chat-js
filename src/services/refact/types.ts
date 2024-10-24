@@ -59,8 +59,7 @@ interface BaseMessage {
     | ToolResult
     | DiffChunk[]
     | null
-    | UserMessageContentWithImage[]
-    | ProcessedUserMessageContentWithImages[];
+    | (UserMessageContentWithImage | ProcessedUserMessageContentWithImages)[];
 }
 
 export interface ChatContextFileMessage extends BaseMessage {
@@ -68,18 +67,22 @@ export interface ChatContextFileMessage extends BaseMessage {
   content: ChatContextFile[];
 }
 
+export type UserImage = {
+  type: "image_url";
+  image_url: { url: string };
+};
+
 export type UserMessageContentWithImage =
   | {
       type: "text";
       text: string;
     }
-  | { type: "image_url"; image_url: { url: string } };
+  | UserImage;
 export interface UserMessage extends BaseMessage {
   role: "user";
   content:
     | string
-    | UserMessageContentWithImage[]
-    | ProcessedUserMessageContentWithImages[];
+    | (UserMessageContentWithImage | ProcessedUserMessageContentWithImages)[];
 }
 
 export type ProcessedUserMessageContentWithImages = {
@@ -261,11 +264,22 @@ export type ChatChoice = {
   index: number;
 };
 
-export type ChatUserMessageResponse = {
-  id: string;
-  role: "user" | "context_file" | "context_memory";
-  content: string;
-};
+export type ChatUserMessageResponse =
+  | {
+      id: string;
+      role: "user" | "context_file" | "context_memory";
+      content: string;
+    }
+  | {
+      id: string;
+      role: "user";
+      content:
+        | string
+        | (
+            | UserMessageContentWithImage
+            | ProcessedUserMessageContentWithImages
+          )[];
+    };
 
 export type ToolResponse = {
   id: string;

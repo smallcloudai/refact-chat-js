@@ -160,7 +160,7 @@ export const useSendChatRequest = () => {
   );
 
   const retryFromIndex = useCallback(
-    (index: number, question: string) => {
+    (index: number, question: UserMessage["content"]) => {
       const messagesToKeep = currentMessages.slice(0, index);
       const messagesToSend = messagesToKeep.concat([
         { role: "user", content: question },

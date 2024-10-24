@@ -22,7 +22,7 @@ export type UserInputProps = {
   children: UserMessage["content"];
   messageIndex: number;
   // maybe add images argument ?
-  onRetry: (index: number, question: string) => void;
+  onRetry: (index: number, question: UserMessage["content"]) => void;
   // disableRetry?: boolean;
 };
 
@@ -37,7 +37,7 @@ export const UserInput: React.FC<UserInputProps> = ({
   // const ref = React.useRef<HTMLButtonElement>(null);
 
   const handleSubmit = useCallback(
-    (value: string) => {
+    (value: UserMessage["content"]) => {
       onRetry(messageIndex, value);
       setShowTextArea(false);
     },
@@ -66,7 +66,7 @@ export const UserInput: React.FC<UserInputProps> = ({
           onSubmit={handleSubmit}
           // TODO
           // value={children}
-          value=""
+          value={children}
           onClose={() => handleShowTextArea(false)}
         />
       ) : (
@@ -191,7 +191,7 @@ function processUserInputArray(
   const nextTail = tail.slice(imagesInTail.length);
   const images = [head, ...imagesInTail];
   const elem = (
-    <Flex gap="2" wrap="wrap" my="2">
+    <Flex key={`user-image-images-${memo.length}`} gap="2" wrap="wrap" my="2">
       {images.map((image, index) => {
         if ("type" in image && image.type === "image_url") {
           const key = `user-input${memo.length}-${image.type}-${index}`;

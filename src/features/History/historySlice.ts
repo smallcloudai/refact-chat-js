@@ -41,11 +41,24 @@ function getFirstUserContentFromChat(messages: ChatThread["messages"]): string {
     return message.content.replace(/^\s+/, "");
   }
 
-  const firstUserInput = message.content.find(
-    (message) => message.type === "text",
-  );
-  if (!firstUserInput || !("text" in firstUserInput)) return "New Chat";
-  return firstUserInput.text.replace(/^\s+/, "");
+  const firstUserInput = message.content.find((message) => {
+    if ("m_type" in message && message.m_type === "text") {
+      return true;
+    }
+    if ("type" in message && message.type === "text") {
+      return true;
+    }
+    return false;
+  });
+  if (!firstUserInput) return "New Chat";
+  const text =
+    "m_content" in firstUserInput
+      ? firstUserInput.m_content
+      : "text" in firstUserInput
+        ? firstUserInput.text
+        : "New Chat";
+
+  return text.replace(/^\s+/, "");
 }
 
 export const historySlice = createSlice({
