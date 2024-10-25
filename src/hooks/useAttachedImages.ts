@@ -7,6 +7,8 @@ import {
   addImage,
   type ImageFile,
 } from "../features/AttachedImages";
+import { setError } from "../features/Errors/errorsSlice";
+import { setInformation } from "../features/Errors/informationSlice";
 
 export function useAttachedImages() {
   const images = useAppSelector(selectAllImages);
@@ -28,21 +30,26 @@ export function useAttachedImages() {
     [dispatch],
   );
 
-  // TODO: move to error and info slices
-  const setError = useCallback(
-    (fileName: string) => console.log(`file: ${fileName} reading was aborted`),
-    [],
+  const handleError = useCallback(
+    (error: string) => {
+      const action = setError(error);
+      dispatch(action);
+    },
+    [dispatch],
   );
 
-  const setWarning = useCallback(
-    (fileName: string) => console.log(`file ${fileName} reading has failed`),
-    [],
+  const handleWarning = useCallback(
+    (warning: string) => {
+      const action = setInformation(warning);
+      dispatch(action);
+    },
+    [dispatch],
   );
 
   return {
     images,
-    setError,
-    setWarning,
+    setError: handleError,
+    setWarning: handleWarning,
     insertImage,
     removeImage,
   };

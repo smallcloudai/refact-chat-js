@@ -1,7 +1,7 @@
 import React, { createContext, useCallback } from "react";
 import { Button, Slot, IconButton, Flex } from "@radix-ui/themes";
 import { Cross1Icon, ImageIcon } from "@radix-ui/react-icons";
-import { DropzoneInputProps, useDropzone } from "react-dropzone";
+import { DropzoneInputProps, FileRejection, useDropzone } from "react-dropzone";
 import { useAttachedImages } from "../../hooks/useAttachedImages";
 import { TruncateLeft } from "../Text";
 
@@ -20,7 +20,7 @@ export const DropzoneProvider: React.FC<
   const { insertImage, setError, setWarning } = useAttachedImages();
 
   const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
+    (acceptedFiles: File[], fileRejections: FileRejection[]) => {
       acceptedFiles.forEach((file) => {
         const reader = new FileReader();
         reader.onabort = () => setWarning(file.name);
@@ -35,6 +35,16 @@ export const DropzoneProvider: React.FC<
         };
         reader.readAsDataURL(file);
       });
+
+      if (fileRejections.length) {
+        const rejectedFileMessage = fileRejections.map((file) => {
+          const err = file.errors.reduce<string>((acc, cur) => {
+            return acc + `${cur.code} ${cur.message}\n`;
+          }, "");
+          return `could not atttach ${file.file.name}: ${err}`;
+        });
+        setError(rejectedFileMessage.join("\n"));
+      }
     },
     [insertImage, setError, setWarning],
   );
@@ -96,6 +106,7 @@ export const AttachFileButton = () => {
 
 export const FileList = () => {
   const { images, removeImage } = useAttachedImages();
+  if (images.length === 0) return null;
   return (
     <Flex wrap="wrap" gap="1" py="2">
       {images.map((file, index) => {
