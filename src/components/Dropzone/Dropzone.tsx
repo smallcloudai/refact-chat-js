@@ -23,8 +23,11 @@ export const DropzoneProvider: React.FC<
     (acceptedFiles: File[], fileRejections: FileRejection[]) => {
       acceptedFiles.forEach((file) => {
         const reader = new FileReader();
-        reader.onabort = () => setWarning(file.name);
-        reader.onerror = () => setError(file.name);
+        reader.onabort = () =>
+          setWarning(`file ${file.name} reading was aborted`);
+
+        reader.onerror = () => setError(`file ${file.name} reading has failed`);
+
         reader.onload = () => {
           const fileForChat = {
             name: file.name,

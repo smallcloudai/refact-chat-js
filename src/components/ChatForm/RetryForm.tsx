@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { Avatar, Button, Flex, Box } from "@radix-ui/themes";
-import { useDropzone } from "react-dropzone";
+import { FileRejection, useDropzone } from "react-dropzone";
 import { TextArea } from "../TextArea";
 import { useOnPressedEnter } from "../../hooks/useOnPressedEnter";
 import { Form } from "./Form";
@@ -13,6 +13,7 @@ import {
   UserMessage,
 } from "../../services/refact";
 import { ImageIcon, CrossCircledIcon } from "@radix-ui/react-icons";
+import { useAttachedImages } from "../../hooks/useAttachedImages";
 
 function getTextFromUserMessage(messages: UserMessage["content"]): string {
   if (typeof messages === "string") return messages;
@@ -175,16 +176,16 @@ export const RetryForm: React.FC<{
 const MyDropzone: React.FC<{
   addImage: (image: UserImage) => void;
 }> = ({ addImage }) => {
+  const { setError, setWarning } = useAttachedImages();
+
   const onDrop = useCallback(
-    (acceptedFiles: File[]) => {
+    (acceptedFiles: File[], fileRejections: FileRejection[]) => {
       acceptedFiles.forEach((file) => {
         const reader = new FileReader();
-
-        // TODO: errors
-        reader.onabort = () => console.log("file reading was aborted");
-        reader.onerror = () => console.log("file reading has failed");
+        reader.onabort = () =>
+          setWarning(`file ${file.name} reading was aborted`);
+        reader.onerror = () => setError(`file ${file.name} reading has failed`);
         reader.onload = () => {
-          // Do whatever you want with the file contents
           if (typeof reader.result === "string") {
             const image: UserImage = {
               type: "image_url",
@@ -195,8 +196,18 @@ const MyDropzone: React.FC<{
         };
         reader.readAsDataURL(file);
       });
+
+      if (fileRejections.length) {
+        const rejectedFileMessage = fileRejections.map((file) => {
+          const err = file.errors.reduce<string>((acc, cur) => {
+            return acc + `${cur.code} ${cur.message}\n`;
+          }, "");
+          return `Could not attach ${file.file.name}: ${err}`;
+        });
+        setError(rejectedFileMessage.join("\n"));
+      }
     },
-    [addImage],
+    [addImage, setError, setWarning],
   );
 
   const { getRootProps, getInputProps, open } = useDropzone({
