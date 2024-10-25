@@ -159,9 +159,7 @@ function checkForToolLoop(message: ChatMessages): boolean {
 
   if (toolCalls.length === 0) return false;
 
-  const toolResults = assistantOrToolMessages.filter((message) =>
-    isToolMessage(message),
-  );
+  const toolResults = assistantOrToolMessages.filter(isToolMessage);
 
   const hasDuplicates = scanFoDuplicatesWith(toolCalls, (a, b) => {
     const aResult: ToolMessage | undefined = toolResults.find(
@@ -197,8 +195,6 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
   const onlyDeterministicMessages = checkForToolLoop(messages);
 
   const messagesForLsp = formatMessagesForLsp(messages);
-
-  console.log({ onlyDeterministicMessages });
 
   return sendChat({
     messages: messagesForLsp,
