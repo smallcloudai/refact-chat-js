@@ -1,8 +1,9 @@
 import React, { createContext, useCallback } from "react";
-import { Button, Slot, IconButton } from "@radix-ui/themes";
-import { ImageIcon } from "@radix-ui/react-icons";
+import { Button, Slot, IconButton, Flex } from "@radix-ui/themes";
+import { Cross1Icon, ImageIcon } from "@radix-ui/react-icons";
 import { DropzoneInputProps, useDropzone } from "react-dropzone";
 import { useAttachedImages } from "../../hooks/useAttachedImages";
+import { TruncateLeft } from "../Text";
 
 export const FileUploadContext = createContext<{
   open: () => void;
@@ -96,15 +97,25 @@ export const AttachFileButton = () => {
 export const FileList = () => {
   const { images, removeImage } = useAttachedImages();
   return (
-    <div>
+    <Flex wrap="wrap" gap="1" py="2">
       {images.map((file, index) => {
         const key = `image-${file.name}-${index}`;
         return (
-          <Button key={key} size="1" onClick={() => removeImage(index)}>
-            {file.name}
+          <Button
+            // variant="surface"
+            // variant="outline"
+            variant="soft"
+            radius="full"
+            key={key}
+            size="1"
+            onClick={() => removeImage(index)}
+            style={{ maxWidth: "100%" }}
+          >
+            <TruncateLeft wrap="wrap">{file.name}</TruncateLeft>{" "}
+            <Cross1Icon width="10" style={{ flexShrink: 0 }} />
           </Button>
         );
       })}
-    </div>
+    </Flex>
   );
 };
