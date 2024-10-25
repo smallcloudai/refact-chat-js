@@ -14,7 +14,7 @@ import { statisticsApi } from "../services/refact/statistics";
 import { capsApi, isCapsErrorResponse } from "../services/refact/caps";
 import { promptsApi } from "../services/refact/prompts";
 import { toolsApi } from "../services/refact/tools";
-import { commandsApi } from "../services/refact/commands";
+import { commandsApi, isDetailMessage } from "../services/refact/commands";
 import { diffApi } from "../services/refact/diffs";
 import { pingApi } from "../services/refact/ping";
 import { clearError, setError } from "../features/Errors/errorsSlice";
@@ -62,13 +62,15 @@ startListening({
         : `fetching caps from lsp`;
       listenerApi.dispatch(setError(message));
     }
-
     if (
       promptsApi.endpoints.getPrompts.matchRejected(action) &&
       !action.meta.condition
     ) {
-      const message = `fetching system prompts.`;
-      listenerApi.dispatch(setError(action.error.message ?? message));
+      // getting first 2 lines of error message to show to user
+      const errorMessage = isDetailMessage(action.payload?.data)
+        ? action.payload.data.detail.split("\n").slice(0, 2).join("\n")
+        : `fetching system prompts.`;
+      listenerApi.dispatch(setError(errorMessage));
     }
 
     if (

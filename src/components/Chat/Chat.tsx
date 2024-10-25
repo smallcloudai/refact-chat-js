@@ -6,6 +6,7 @@ import {
   useAppSelector,
   useAppDispatch,
   useSendChatRequest,
+  useGetPromptsQuery,
 } from "../../hooks";
 import type { Config } from "../../features/Config/configSlice";
 import {
@@ -18,10 +19,13 @@ import {
   selectChatId,
   selectMessages,
   getSelectedToolUse,
+  getSelectedSystemPrompt,
+  setSystemPrompt,
 } from "../../features/Chat/Thread";
 import { ThreadHistoryButton } from "../Buttons";
 import { push } from "../../features/Pages/pagesSlice";
 import { DropzoneProvider } from "../Dropzone";
+import { SystemPrompts } from "../../services/refact";
 
 export type ChatProps = {
   host: Config["host"];
@@ -32,9 +36,6 @@ export type ChatProps = {
   // TODO: update this
   caps: ChatFormProps["caps"];
   maybeSendToSidebar: ChatFormProps["onClose"];
-  prompts: ChatFormProps["prompts"];
-  onSetSystemPrompt: ChatFormProps["onSetSystemPrompt"];
-  selectedSystemPrompt: ChatFormProps["selectedSystemPrompt"];
 };
 
 export const Chat: React.FC<ChatProps> = ({
@@ -42,9 +43,6 @@ export const Chat: React.FC<ChatProps> = ({
   unCalledTools,
   caps,
   maybeSendToSidebar,
-  prompts,
-  onSetSystemPrompt,
-  selectedSystemPrompt,
 }) => {
   const [isViewingRawJSON, setIsViewingRawJSON] = useState(false);
   const chatContentRef = useRef<HTMLDivElement>(null);
@@ -58,6 +56,10 @@ export const Chat: React.FC<ChatProps> = ({
   const dispatch = useAppDispatch();
   const messages = useAppSelector(selectMessages);
 
+  const promptsRequest = useGetPromptsQuery();
+  const selectedSystemPrompt = useAppSelector(getSelectedSystemPrompt);
+  const onSetSelectedSystemPrompt = (prompt: SystemPrompts) =>
+    dispatch(setSystemPrompt(prompt));
   const [isDebugChatHistoryVisible, setIsDebugChatHistoryVisible] =
     useState(false);
 
@@ -137,7 +139,6 @@ export const Chat: React.FC<ChatProps> = ({
             </Card>
           </Container>
         )}
-
         <ChatForm
           key={chatId} // TODO: think of how can we not trigger re-render on chatId change (checkboxes)
           chatId={chatId}
@@ -150,8 +151,8 @@ export const Chat: React.FC<ChatProps> = ({
           onStopStreaming={abort}
           onClose={maybeSendToSidebar}
           onTextAreaHeightChange={onTextAreaHeightChange}
-          prompts={prompts}
-          onSetSystemPrompt={onSetSystemPrompt}
+          prompts={promptsRequest.data ?? {}}
+          onSetSystemPrompt={onSetSelectedSystemPrompt}
           selectedSystemPrompt={selectedSystemPrompt}
         />
         <Flex justify="between" pl="1" pr="1" pt="1">
