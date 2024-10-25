@@ -23,6 +23,7 @@ export type ChatHistoryItem = ChatThread & {
   createdAt: string;
   updatedAt: string;
   title: string;
+  isTitleGenerated?: boolean;
 };
 
 export type HistoryMeta = Pick<
@@ -76,6 +77,7 @@ export const historySlice = createSlice({
           : getFirstUserContentFromChat(action.payload.messages),
         createdAt: action.payload.createdAt ?? now,
         updatedAt: now,
+        isTitleGenerated: action.payload.isTitleGenerated,
       };
 
       state[chat.id] = chat;
@@ -90,6 +92,14 @@ export const historySlice = createSlice({
           {},
         );
       }
+    },
+
+    setTitleGenerationCompletionForChat: (
+      state,
+      action: PayloadAction<string>,
+    ) => {
+      const chatId = action.payload;
+      state[chatId].isTitleGenerated = true;
     },
 
     markChatAsUnread: (state, action: PayloadAction<string>) => {
@@ -125,8 +135,13 @@ export const historySlice = createSlice({
   },
 });
 
-export const { saveChat, deleteChatById, markChatAsUnread, markChatAsRead } =
-  historySlice.actions;
+export const {
+  saveChat,
+  deleteChatById,
+  markChatAsUnread,
+  markChatAsRead,
+  setTitleGenerationCompletionForChat,
+} = historySlice.actions;
 export const { getChatById, getHistory } = historySlice.selectors;
 
 // We could use this or reduce-reducers packages
@@ -144,8 +159,9 @@ startHistoryListening({
       action.payload.id in state.chat.cache
         ? state.chat.cache[action.payload.id]
         : state.chat.thread;
-    const lastMessage = thread.messages.slice(-1)[0];
 
+    const lastMessage = thread.messages.slice(-1)[0];
+    const isTitleGenerated = thread.isTitleGenerated;
     // Checking for reliable chat pause
     if (
       thread.messages.length &&
@@ -156,7 +172,7 @@ startHistoryListening({
       const firstUserMessage = thread.messages.find(isUserMessage);
       if (firstUserMessage) {
         // Checking if chat title is already generated, if not - generating it
-        if (!thread.title) {
+        if (!isTitleGenerated) {
           listenerApi
             .dispatch(
               chatGenerateTitleThunk({
@@ -174,6 +190,9 @@ startHistoryListening({
                       title: response.title,
                     }),
                   );
+                  listenerApi.dispatch(
+                    setTitleGenerationCompletionForChat(thread.id),
+                  );
                 }
               }
             })
@@ -189,6 +208,13 @@ startHistoryListening({
             });
         }
       }
+    } else {
+      // Probably chat was paused with uncalled tools
+      listenerApi.dispatch(
+        saveChat({
+          ...thread,
+        }),
+      );
     }
     if (state.chat.thread.id === action.payload.id) {
       listenerApi.dispatch(saveChat(state.chat.thread));
