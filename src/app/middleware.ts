@@ -36,6 +36,7 @@ startListening({
   ),
   effect: (_action, listenerApi) => {
     [
+      pingApi.util.resetApiState(),
       statisticsApi.util.resetApiState(),
       capsApi.util.resetApiState(),
       promptsApi.util.resetApiState(),
