@@ -94,11 +94,18 @@ describe("takeFromEndWhile", () => {
       ["a", "a", "b", "a", "b", "b"],
       ["b", "b"],
     ],
-    [["a", "b", "b", "c"], []],
+    [["a", "b", "c", "d"], []],
+    [
+      ["a", "b", "c", "b", "b"],
+      ["b", "c", "b", "b"],
+    ],
   ];
 
   test.each(tests)("when given %s it should return %s", (input, expected) => {
-    const result = takeFromEndWhile(input, (char) => char === "b");
+    const result = takeFromEndWhile(
+      input,
+      (char) => char === "b" || char === "c",
+    );
     expect(result).toEqual(expected);
   });
 });
