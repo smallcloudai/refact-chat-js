@@ -44,7 +44,7 @@ export const DropzoneProvider: React.FC<
           const err = file.errors.reduce<string>((acc, cur) => {
             return acc + `${cur.code} ${cur.message}\n`;
           }, "");
-          return `could not atttach ${file.file.name}: ${err}`;
+          return `could not attach ${file.file.name}: ${err}`;
         });
         setError(rejectedFileMessage.join("\n"));
       }
