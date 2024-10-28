@@ -313,7 +313,7 @@ export function isChatGetTitleResponse(
   const requiredKeys = [
     "id",
     "choices",
-    "metering_balance",
+    // "metering_balance", // not in BYOK
     "model",
     "object",
     "system_fingerprint",
