@@ -1,0 +1,32 @@
+.ToolConfirmationCard {
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow:
+    hsl(206 22% 7% / 35%) 0px 10px 38px -10px,
+    hsl(206 22% 7% / 20%) 0px 10px 20px -15px;
+  background-color: white;
+  margin-top: 20px;
+}
+
+.ToolConfirmationText {
+  margin-bottom: 20px;
+  font-size: 15px;
+  color: black;
+}
+
+.ToolConfirmationActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.Button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.Button:hover {
+  background-color: #ddd;
+}
