@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect } from "react";
 
-import { Flex, Card, Text } from "@radix-ui/themes";
+import { Flex, Card, Text, IconButton } from "@radix-ui/themes";
 import styles from "./ChatForm.module.css";
 
 import { PaperPlaneButton, BackToSideBarButton } from "../Buttons/Buttons";
@@ -25,6 +25,8 @@ import {
   getInformationMessage,
 } from "../../features/Errors/informationSlice";
 import { InformationCallout } from "../Callout/Callout";
+import { ToolConfirmation } from "./ToolConfirmation";
+import { ClipboardIcon } from "@radix-ui/react-icons";
 
 export type ChatFormProps = {
   onSubmit: (str: string) => void;
@@ -63,6 +65,8 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   onSetSystemPrompt,
   selectedSystemPrompt,
 }) => {
+  const [toolNeedsConfirmation, setToolNeedsConfirmation] =
+    React.useState(false);
   const dispatch = useAppDispatch();
   const config = useConfig();
   const error = useAppSelector(getErrorMessage);
@@ -161,12 +165,27 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     [handleHelpInfo, setValue, setFileInteracted, setLineSelectionInteracted],
   );
 
+  const handleToolConfirmation = useCallback(() => {
+    setToolNeedsConfirmation(false);
+    handleSubmit();
+    console.log(`[DEBUG]: tool was confirmed`);
+  }, [handleSubmit]);
+
+  const handleToolDenial = useCallback(() => {
+    setToolNeedsConfirmation(false);
+    console.log(`[DEBUG]: tool was declined`);
+  }, []);
+
   useEffect(() => {
     if (isSendImmediately) {
       handleSubmit();
       setIsSendImmediately(false);
     }
   }, [isSendImmediately, handleSubmit, setIsSendImmediately]);
+
+  useEffect(() => {
+    console.log(`[DEBUG]: toolNeedsConfirmation: ${toolNeedsConfirmation}`);
+  }, [toolNeedsConfirmation]);
 
   if (error) {
     return (
@@ -184,6 +203,16 @@ export const ChatForm: React.FC<ChatFormProps> = ({
       <InformationCallout mt="2" onClick={onClearInformation} timeout={2000}>
         {information}
       </InformationCallout>
+    );
+  }
+
+  if (toolNeedsConfirmation) {
+    return (
+      <ToolConfirmation
+        toolName={"docker"}
+        onConfirm={handleToolConfirmation}
+        onCancel={handleToolDenial}
+      />
     );
   }
 
@@ -264,6 +293,18 @@ export const ChatForm: React.FC<ChatFormProps> = ({
               size="1"
               type="submit"
             />
+            <IconButton
+              title="debug"
+              size="1"
+              type="button"
+              variant="ghost"
+              onClick={(event) => {
+                event.preventDefault();
+                setToolNeedsConfirmation(true);
+              }}
+            >
+              <ClipboardIcon />
+            </IconButton>
           </Flex>
         </Form>
       </Flex>
