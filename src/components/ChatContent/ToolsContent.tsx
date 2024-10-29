@@ -9,36 +9,53 @@ import { Reveal } from "../Reveal";
 import { useAppSelector } from "../../hooks";
 import { selectToolResultById } from "../../features/Chat/Thread/selectors";
 
-// if content is a string
-const Result: React.FC<{ children: string }> = ({ children }) => {
+const Result: React.FC<{ children: string; hasImages: boolean }> = ({
+  children,
+  hasImages,
+}) => {
   const lines = children.split("\n");
   return (
-    <Reveal defaultOpen={lines.length < 9}>
+    <Reveal defaultOpen={!hasImages && lines.length < 9}>
       <ResultMarkdown className={styles.tool_result}>{children}</ResultMarkdown>
     </Reveal>
   );
 };
 
-function resultToString(result?: ToolResult): string {
+function resultToMarkdown(result?: ToolResult): string {
   if (!result) return "";
   if (!result.content) return "";
-  if (typeof result.content === "string") return result.content;
-  const base64url = `data:${result.content.m_type};base64,${result.content.m_content}`;
-  return `![](${base64url})`;
+
+  if (typeof result.content === "string") {
+    const escapedBackticks = result.content.replace(/`+/g, (match) => {
+      if (match === "```") return match;
+      return "\\" + "`";
+    });
+
+    return "```\n" + escapedBackticks + "\n```";
+  }
+
+  const images = result.content
+    .filter((image) => image.m_type.startsWith("image/"))
+    .map((image) => {
+      const base64url = `data:${image.m_type};base64,${image.m_content}`;
+      return `![](${base64url})`;
+    });
+  return images.join("\n");
 }
 
 const ToolMessage: React.FC<{
   toolCall: ToolCall;
 }> = ({ toolCall }) => {
-  // const results = result?.content ?? "";
   const name = toolCall.function.name ?? "";
 
-  // add a selector for tool result
   const maybeResult = useAppSelector((state) =>
     selectToolResultById(state, toolCall.id),
   );
 
-  const results = resultToString(maybeResult);
+  const results = resultToMarkdown(maybeResult);
+  const hasImages =
+    Array.isArray(maybeResult?.content) &&
+    maybeResult.content.some((image) => image.m_type.startsWith("image/"));
 
   const argsString = React.useMemo(() => {
     try {
@@ -58,16 +75,10 @@ const ToolMessage: React.FC<{
 
   const functionCalled = "```python\n" + name + "(" + argsString + ")\n```";
 
-  // could be a string or an image object
-  const escapedBackticks = results.replace(/`+/g, (match) => {
-    if (match === "```") return match;
-    return "\\" + "`";
-  });
-
   return (
     <Flex direction="column">
       <CommandMarkdown>{functionCalled}</CommandMarkdown>
-      <Result>{"```\n" + escapedBackticks + "\n```"}</Result>
+      <Result hasImages={hasImages}>{results}</Result>
     </Flex>
   );
 };

@@ -13,6 +13,7 @@ import {
   CHAT_WITH_DIFFS,
   FROG_CHAT,
   LARGE_DIFF,
+  TOOL_IMAGE_STUB,
 } from "../../__fixtures__";
 
 const MockedStore: React.FC<{
@@ -169,6 +170,22 @@ export const AssistantMarkdown: Story = {
         <MockedStore
           messages={[{ role: "assistant", content: MarkdownMessage }]}
         >
+          <Story />
+        </MockedStore>
+      );
+    },
+  ],
+};
+
+export const ToolImages: Story = {
+  args: {
+    ...meta.args,
+  },
+
+  decorators: [
+    (Story) => {
+      return (
+        <MockedStore messages={TOOL_IMAGE_STUB}>
           <Story />
         </MockedStore>
       );

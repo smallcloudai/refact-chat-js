@@ -21,6 +21,15 @@ export type MarkdownProps = {
   className?: string;
 } & Pick<CodeBlockProps, "showLineNumbers" | "startingLineNumber" | "style">;
 
+const Image: React.FC<
+  React.DetailedHTMLProps<
+    React.ImgHTMLAttributes<HTMLImageElement>,
+    HTMLImageElement
+  >
+> = ({ ...props }) => {
+  return <img {...props} className={styles.image} />;
+};
+
 export const Markdown: React.FC<MarkdownProps> = ({
   children,
   className,
@@ -28,13 +37,21 @@ export const Markdown: React.FC<MarkdownProps> = ({
 }) => {
   return (
     <ReactMarkdown
+      // TODO: make a safer url transform
+      urlTransform={(url) => {
+        return url;
+      }}
       className={classNames(styles.markdown, className)}
       components={{
         code({ color: _color, ref: _ref, node: _node, ...props }) {
           return <MarkdownCodeBlock {...props} style={style} />;
         },
         p({ color: _color, ref: _ref, node: _node, ...props }) {
-          return <MarkdownCodeBlock {...props} style={style} />;
+          return <div {...props} />;
+        },
+
+        img({ color: _color, ref: _ref, node: _node, ...props }) {
+          return <Image {...props} />;
         },
       }}
     >
