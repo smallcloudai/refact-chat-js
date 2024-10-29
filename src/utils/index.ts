@@ -3,3 +3,6 @@ export * from "./createSyntheticEvent";
 export * from "./trimIndent";
 export * from "./filename";
 export * from "./parseOrElse";
+export * from "./takeWhile";
+export * from "./takeFromEndWhile";
+export * from "./scanForDuplicates";

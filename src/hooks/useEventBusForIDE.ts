@@ -7,27 +7,66 @@ import {
   HostSettings,
   SetupHost,
 } from "../events/setup";
-import { DiffPreviewResponse } from "../events";
+import type { DiffPreviewResponse, PatchResult } from "../services/refact";
+
 export const ideDiffPasteBackAction = createAction<string>("ide/diffPasteBack");
-export const ideDiffPreviewAction =
-  createAction<DiffPreviewResponse>("ide/diffPreview");
+
+export const ideDiffPreviewAction = createAction<
+  DiffPreviewResponse & { currentPin: string; allPins: string[] }
+>("ide/diffPreview");
+
 export const ideOpenSettingsAction = createAction("ide/openSettings");
+
 export const ideNewFileAction = createAction<string>("ide/newFile");
+
 export const ideOpenHotKeys = createAction("ide/openHotKeys");
+
 export type OpenFilePayload = {
   file_name: string;
   line?: number;
 };
 export const ideOpenFile = createAction<OpenFilePayload>("ide/openFile");
+
 export const ideOpenChatInNewTab = createAction<ChatThread>(
   "ide/openChatInNewTab",
 );
+
+export const ideAnimateFileStart = createAction<string>(
+  "ide/animateFile/start",
+);
+
+export const ideAnimateFileStop = createAction<string>("ide/animateFile/stop");
+
+export const ideWriteResultsToFile = createAction<PatchResult[]>(
+  "ide/writeResultsToFile",
+);
+
+export const ideChatPageChange = createAction<string>("ide/chatPageChange");
+export const ideEscapeKeyPressed = createAction<string>("ide/escapeKeyPressed");
+
+export const ideIsChatStreaming = createAction<boolean>("ide/isChatStreaming");
 
 import { pathApi } from "../services/refact/path";
 
 export const useEventsBusForIDE = () => {
   const postMessage = usePostMessage();
   // const canPaste = useAppSelector((state) => state.active_file.can_paste);
+
+  const startFileAnimation = useCallback(
+    (fileName: string) => {
+      const action = ideAnimateFileStart(fileName);
+      postMessage(action);
+    },
+    [postMessage],
+  );
+
+  const stopFileAnimation = useCallback(
+    (fileName: string) => {
+      const action = ideAnimateFileStop(fileName);
+      postMessage(action);
+    },
+    [postMessage],
+  );
 
   const setupHost = useCallback(
     (host: HostSettings) => {
@@ -52,8 +91,8 @@ export const useEventsBusForIDE = () => {
   );
 
   const diffPreview = useCallback(
-    (preview: DiffPreviewResponse) => {
-      postMessage(ideDiffPreviewAction(preview));
+    (preview: DiffPreviewResponse, currentPin: string, allPins: string[]) => {
+      postMessage(ideDiffPreviewAction({ ...preview, currentPin, allPins }));
     },
     [postMessage],
   );
@@ -104,15 +143,64 @@ export const useEventsBusForIDE = () => {
     [postMessage],
   );
 
-  const [getCustomizationPath] = pathApi.useLazyCustomizationPathQuery();
-
-  const openCustomizationFile = useCallback(async () => {
-    const res = await getCustomizationPath(undefined).unwrap();
-    if (res) {
-      const action = ideOpenFile({ file_name: res });
+  const writeResultsToFile = useCallback(
+    (results: PatchResult[]) => {
+      const action = ideWriteResultsToFile(results);
       postMessage(action);
-    }
-  }, [getCustomizationPath, postMessage]);
+    },
+    [postMessage],
+  );
+
+  const chatPageChange = useCallback(
+    (page: string) => {
+      const action = ideChatPageChange(page);
+      postMessage(action);
+    },
+    [postMessage],
+  );
+
+  const escapeKeyPressed = useCallback(
+    (mode: string) => {
+      const action = ideEscapeKeyPressed(mode);
+      postMessage(action);
+    },
+    [postMessage],
+  );
+
+  const setIsChatStreaming = useCallback(
+    (state: boolean) => {
+      const action = ideIsChatStreaming(state);
+      postMessage(action);
+    },
+    [postMessage],
+  );
+
+  const [getCustomizationPath] = pathApi.useLazyCustomizationPathQuery();
+  const [getPrivacyPath] = pathApi.useLazyPrivacyPathQuery();
+  const [getBringYourOwnKeyPath] = pathApi.useLazyBringYourOwnKeyPathQuery();
+
+  // Creating a generic function to trigger different queries from RTK Query (to avoid duplicative code)
+  const openFileFromPathQuery = useCallback(
+    async (
+      getPathQuery: (arg: undefined) => {
+        unwrap: () => Promise<string | undefined>;
+      },
+    ) => {
+      const res = await getPathQuery(undefined).unwrap();
+
+      if (res) {
+        const action = ideOpenFile({ file_name: res });
+        postMessage(action);
+      }
+    },
+    [postMessage],
+  );
+
+  const openCustomizationFile = () =>
+    openFileFromPathQuery(getCustomizationPath);
+  const openPrivacyFile = () => openFileFromPathQuery(getPrivacyPath);
+  const openBringYourOwnKeyFile = () =>
+    openFileFromPathQuery(getBringYourOwnKeyPath);
 
   return {
     diffPasteBack,
@@ -125,6 +213,14 @@ export const useEventsBusForIDE = () => {
     diffPreview,
     queryPathThenOpenFile,
     openCustomizationFile,
+    openPrivacyFile,
+    openBringYourOwnKeyFile,
     // canPaste,
+    stopFileAnimation,
+    startFileAnimation,
+    writeResultsToFile,
+    chatPageChange,
+    escapeKeyPressed,
+    setIsChatStreaming,
   };
 };

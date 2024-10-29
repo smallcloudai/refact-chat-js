@@ -1,29 +1,83 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { DIFF_STATE_URL, DIFF_APPLY_URL, DIFF_PREVIEW_URL } from "./consts";
-import { DiffChunk } from "./types";
+import { PATCH_URL } from "./consts";
+import { ChatMessages, DiffChunk, isDiffChunk } from "./types";
 import { RootState } from "../../app/store";
+import { createAction } from "@reduxjs/toolkit";
+import { formatMessagesForLsp } from "../../features/Chat/Thread/utils";
 
-export type DiffAppliedStateArgs = {
-  chunks: DiffChunk[];
-  toolCallId?: string;
+type PatchState = {
+  chunk_id: number;
+  applied: boolean;
+  can_unapply: boolean;
+  success: boolean;
+  detail: null | string;
 };
 
-export type DiffOperationArgs = {
-  chunks: DiffChunk[];
-  toApply: boolean[];
-  toolCallId: string;
-};
-
-export type DiffPreviewArgs = {
-  chunks: DiffChunk[];
-  toApply: boolean[];
-};
-
-export interface DiffAppliedStateResponse {
-  id: number;
-  state: boolean[];
-  can_apply: boolean[];
+function isPatchState(json: unknown): json is PatchState {
+  if (!json || typeof json !== "object") return false;
+  if (!("chunk_id" in json)) return false;
+  if (typeof json.chunk_id !== "number") return false;
+  if (!("applied" in json)) return false;
+  if (typeof json.applied !== "boolean") return false;
+  if (!("can_unapply" in json)) return false;
+  if (typeof json.can_unapply !== "boolean") return false;
+  if (!("success" in json)) return false;
+  if (typeof json.success !== "boolean") return false;
+  return true;
 }
+
+export type PatchResult = {
+  file_text: string;
+  file_name_edit: string | null;
+  file_name_delete: string | null;
+  file_name_add: string | null;
+};
+
+function isPatchResult(json: unknown): json is PatchResult {
+  if (!json || typeof json !== "object") return false;
+  if (!("file_text" in json)) return false;
+  if (typeof json.file_text !== "string") return false;
+  if (!("file_name_edit" in json)) return false;
+  if (typeof json.file_name_edit !== "string" && json.file_name_edit !== null)
+    return false;
+  if (!("file_name_delete" in json)) return false;
+  if (
+    typeof json.file_name_delete !== "string" &&
+    json.file_name_delete !== null
+  )
+    return false;
+  if (!("file_name_add" in json)) return false;
+  if (typeof json.file_name_add !== "string" && json.file_name_add !== null)
+    return false;
+  return true;
+}
+
+type PatchResponse = {
+  state: PatchState[];
+  results: PatchResult[];
+  chunks: DiffChunk[];
+};
+
+function isPatchResponse(json: unknown): json is PatchResponse {
+  if (!json || typeof json !== "object") return false;
+  if (!("state" in json)) return false;
+  if (!Array.isArray(json.state)) return false;
+  if (!json.state.every(isPatchState)) return false;
+  if (!("results" in json)) return false;
+  if (!Array.isArray(json.results)) return false;
+  if (!json.results.every(isPatchResult)) return false;
+  if (!("chunks" in json)) return false;
+  if (!Array.isArray(json.chunks)) return false;
+  if (!json.chunks.every(isDiffChunk)) return false;
+  return true;
+}
+
+type PatchRequest = {
+  pin: string;
+  messages: ChatMessages;
+};
+
+export const resetDiffApi = createAction("diffs/reset");
 
 export const diffApi = createApi({
   reducerPath: "diffs",
@@ -38,91 +92,43 @@ export const diffApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["DIFF_STATE", "DIFF_PREVIEW"],
   endpoints: (builder) => ({
-    diffState: builder.query<DiffAppliedStateResponse, DiffAppliedStateArgs>({
-      queryFn: async (args, api, _extraOptions, baseQuery) => {
+    patchSingleFileFromTicket: builder.mutation<PatchResponse, PatchRequest>({
+      async queryFn(args, api, _extraOptions, baseQuery) {
         const state = api.getState() as RootState;
         const port = state.config.lspPort as unknown as number;
-        const url = `http://127.0.0.1:${port}${DIFF_STATE_URL}`;
+        const url = `http://127.0.0.1:${port}${PATCH_URL}`;
+
+        const ticket = args.pin.split(" ")[1] ?? "";
+        const messages = formatMessagesForLsp(args.messages);
+
         const result = await baseQuery({
-          url: url,
-          method: "POST",
+          url,
           credentials: "same-origin",
           redirect: "follow",
-          // referrer: "no-referrer",
-          body: { chunks: args.chunks },
+          method: "POST",
+          body: {
+            messages,
+            ticket_ids: [ticket],
+          },
         });
 
         if (result.error) return { error: result.error };
-        // TODO: type check
-        return { data: result.data as DiffAppliedStateResponse };
-      },
-      providesTags: (_result, _error, args) => {
-        if (args.toolCallId) {
-          return [{ type: "DIFF_STATE", id: args.toolCallId }];
-        }
-        return [{ type: "DIFF_STATE" }];
-      },
-    }),
-    diffApply: builder.mutation<DiffOperationResponse, DiffOperationArgs>({
-      queryFn: async (args, api, _extraOptions, baseQuery) => {
-        const state = api.getState() as RootState;
-        const port = state.config.lspPort as unknown as number;
-        const url = `http://127.0.0.1:${port}${DIFF_APPLY_URL}`;
-        const result = await baseQuery({
-          url: url,
-          method: "POST",
-          credentials: "same-origin",
-          redirect: "follow",
-          body: { chunks: args.chunks, apply: args.toApply },
-        });
 
-        if (result.error) {
-          return { error: result.error };
+        if (!isPatchResponse(result.data)) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: "Failed to parse patch response",
+              data: result.data,
+            },
+          };
         }
 
-        return { data: result.data as DiffOperationResponse };
+        return { data: result.data };
       },
-      invalidatesTags: (_result, _error, args) => {
-        return [
-          { type: "DIFF_STATE", id: args.toolCallId },
-          { type: "DIFF_PREVIEW", id: args.toolCallId },
-        ];
-      },
-    }),
-
-    diffPreview: builder.query<DiffPreviewResponse, DiffPreviewArgs>({
-      queryFn: async (args, api, _extraOptions, baseQuery) => {
-        const state = api.getState() as RootState;
-        const port = state.config.lspPort as unknown as number;
-        const url = `http://127.0.0.1:${port}${DIFF_PREVIEW_URL}`;
-        const result = await baseQuery({
-          url: url,
-          method: "POST",
-          credentials: "same-origin",
-          redirect: "follow",
-          body: { chunks: args.chunks, apply: args.toApply },
-        });
-
-        if (result.error) {
-          return { error: result.error };
-        }
-
-        return { data: result.data as DiffPreviewResponse };
-      },
-      // providesTags: (_result, _error, args) => {
-      //   return [{ type: "DIFF_PREVIEW", id: args.toolCallId }];
-      // },
-      // invalidatesTags: (res, _error) => {
-      //   if (!res) return [];
-      //   return res.state.map((chunk) => {
-      //     return { type: "DIFF_STATE", id: chunk.chunk_id };
-      //   });
-      // },
     }),
   }),
-  refetchOnMountOrArgChange: true,
 });
 
 export interface DiffOperationResponse {
@@ -142,11 +148,19 @@ export type DiffApplyResponse = {
   detail: null | string;
 }[];
 
+export type DiffApplyErrorResponse = {
+  chunk_id: number;
+  applied: false;
+  can_unapply: false;
+  success: false;
+  detail: null | string;
+};
+
 export interface DiffPreviewResponse {
   state: DiffApplyResponse;
   results: {
     file_text: string;
-    file_name_edit: string;
+    file_name_edit: string | null;
     file_name_delete: null | string;
     file_name_add: null | string;
   }[];

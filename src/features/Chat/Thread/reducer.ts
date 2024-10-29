@@ -1,5 +1,5 @@
 import { createReducer } from "@reduxjs/toolkit";
-import { Chat, ChatThread } from "./types";
+import { Chat, ChatThread, ToolUse } from "./types";
 import { v4 as uuidv4 } from "uuid";
 import { chatResponse, chatAskedQuestion } from ".";
 import {
@@ -15,29 +15,31 @@ import {
   removeChatFromCache,
   restoreChat,
   setPreventSend,
+  saveTitle,
 } from "./actions";
 import { formatChatResponse } from "./utils";
 
-const createChatThread = (): ChatThread => {
+const createChatThread = (tool_use: ToolUse): ChatThread => {
   const chat: ChatThread = {
     id: uuidv4(),
     messages: [],
     title: "",
     model: "",
+    tool_use,
   };
   return chat;
 };
 
-const createInitialState = (): Chat => {
+const createInitialState = (tool_use: ToolUse = "explore"): Chat => {
   return {
     streaming: false,
-    thread: createChatThread(),
+    thread: createChatThread(tool_use),
     error: null,
     prevent_send: false,
     waiting_for_response: false,
     cache: {},
     system_prompt: {},
-    tool_use: "explore",
+    tool_use,
     send_immediately: false,
   };
 };
@@ -46,6 +48,7 @@ const initialState = createInitialState();
 
 export const chatReducer = createReducer(initialState, (builder) => {
   builder.addCase(setToolUse, (state, action) => {
+    state.thread.tool_use = action.payload;
     state.tool_use = action.payload;
   });
 
@@ -73,13 +76,13 @@ export const chatReducer = createReducer(initialState, (builder) => {
   });
 
   builder.addCase(newChatAction, (state) => {
-    const next = createInitialState();
+    const next = createInitialState(state.tool_use);
     next.cache = { ...state.cache };
     if (state.streaming) {
       next.cache[state.thread.id] = { ...state.thread, read: false };
     }
-    next.tool_use = state.tool_use;
     next.thread.model = state.thread.model;
+    next.system_prompt = state.system_prompt;
     return next;
   });
 
@@ -124,6 +127,7 @@ export const chatReducer = createReducer(initialState, (builder) => {
     if (state.thread.id !== action.payload.id) return state;
     state.streaming = false;
     state.thread.read = true;
+    state.prevent_send = false;
   });
 
   builder.addCase(chatAskedQuestion, (state, action) => {
@@ -167,6 +171,15 @@ export const chatReducer = createReducer(initialState, (builder) => {
     } else {
       state.streaming = false;
     }
+    state.prevent_send = true;
     state.thread = mostUptoDateThread;
+    state.thread.tool_use = state.thread.tool_use ?? state.tool_use;
+  });
+
+  // New builder to save chat title within the current thread and not only inside of a history thread
+  builder.addCase(saveTitle, (state, action) => {
+    if (state.thread.id !== action.payload.id) return state;
+    state.thread.title = action.payload.title;
+    state.thread.isTitleGenerated = action.payload.isTitleGenerated;
   });
 });

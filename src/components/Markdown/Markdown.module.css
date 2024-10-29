@@ -38,3 +38,27 @@
 .list {
   padding-inline-start: var(--space-6);
 }
+
+.maybe_pin {
+}
+
+.patch_title {
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
+}
+
+.patch_title,
+.patch_title::before,
+.patch_title::after {
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-width: 0;
+}
+
+.maybe_pin:has(.patch_title) + pre {
+  margin-top: 0;
+}
+
+.maybe_pin:has(.patch_title) + pre pre {
+  margin-top: 0;
+}

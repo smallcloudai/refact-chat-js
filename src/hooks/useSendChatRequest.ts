@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useAppDispatch } from "./useAppDispatch";
 import { useAppSelector } from "./useAppSelector";
 import {
@@ -6,13 +6,12 @@ import {
   selectChatError,
   selectChatId,
   selectIsStreaming,
-  selectIsWaiting,
   selectMessages,
   selectPreventSend,
   selectSendImmediately,
   selectToolUse,
 } from "../features/Chat/Thread/selectors";
-import { useGetToolsQuery } from "./useGetToolsQuery";
+import { useGetToolsLazyQuery } from "./useGetToolsQuery";
 import {
   ChatMessage,
   ChatMessages,
@@ -22,18 +21,20 @@ import {
   backUpMessages,
   chatAskQuestionThunk,
   chatAskedQuestion,
+  setToolUse,
 } from "../features/Chat/Thread/actions";
+import { isToolUse } from "../features/Chat";
+import { useAbortControllers } from "./useAbortControllers";
 
 export const useSendChatRequest = () => {
   const dispatch = useAppDispatch();
-  const abortRef = useRef<null | ((reason?: string | undefined) => void)>(null);
   const hasError = useAppSelector(selectChatError);
+  const abortControllers = useAbortControllers();
 
-  const toolsRequest = useGetToolsQuery();
+  const [triggerGetTools] = useGetToolsLazyQuery();
 
   const chatId = useAppSelector(selectChatId);
   const streaming = useAppSelector(selectIsStreaming);
-  const isWaiting = useAppSelector(selectIsWaiting);
   const chatError = useAppSelector(selectChatError);
 
   const errored: boolean = !!hasError || !!chatError;
@@ -57,18 +58,20 @@ export const useSendChatRequest = () => {
   }, [currentMessages, systemPrompt]);
 
   const sendMessages = useCallback(
-    (messages: ChatMessages) => {
-      let tools = toolsRequest.data ?? null;
+    async (messages: ChatMessages) => {
+      let tools = await triggerGetTools(undefined).unwrap();
+      if (isToolUse(toolUse)) {
+        dispatch(setToolUse(toolUse));
+      }
       if (toolUse === "quick") {
         tools = [];
       } else if (toolUse === "explore") {
-        tools = tools?.filter((t) => !t.function.agentic) ?? [];
+        tools = tools.filter((t) => !t.function.agentic);
       }
-      tools =
-        tools?.map((t) => {
-          const { agentic: _, ...remaining } = t.function;
-          return { ...t, function: { ...remaining } };
-        }) ?? [];
+      tools = tools.map((t) => {
+        const { agentic: _, ...remaining } = t.function;
+        return { ...t, function: { ...remaining } };
+      });
       dispatch(backUpMessages({ id: chatId, messages }));
       dispatch(chatAskedQuestion({ id: chatId }));
 
@@ -79,29 +82,27 @@ export const useSendChatRequest = () => {
       });
 
       const dispatchedAction = dispatch(action);
-      abortRef.current = dispatchedAction.abort;
+      abortControllers.addAbortController(chatId, dispatchedAction.abort);
     },
-    [chatId, dispatch, toolsRequest.data, toolUse],
+    [triggerGetTools, toolUse, dispatch, chatId, abortControllers],
   );
 
   const submit = useCallback(
     (question: string) => {
-      // const tools = toolsRequest.data ?? null;
       const message: ChatMessage = { role: "user", content: question };
-      // This may cause duplicated messages
       const messages = messagesWithSystemPrompt.concat(message);
-      sendMessages(messages);
+      void sendMessages(messages);
     },
     [messagesWithSystemPrompt, sendMessages],
   );
 
   useEffect(() => {
     if (sendImmediately) {
-      sendMessages(messagesWithSystemPrompt);
+      void sendMessages(messagesWithSystemPrompt);
     }
   }, [sendImmediately, sendMessages, messagesWithSystemPrompt]);
 
-  // Automatically calls tool calls.
+  // TODO: Automatically calls tool calls. This means that this hook can only be used once :/
   useEffect(() => {
     if (!streaming && currentMessages.length > 0 && !errored && !preventSend) {
       const lastMessage = currentMessages.slice(-1)[0];
@@ -110,25 +111,38 @@ export const useSendChatRequest = () => {
         lastMessage.tool_calls &&
         lastMessage.tool_calls.length > 0
       ) {
-        sendMessages(currentMessages);
+        void sendMessages(currentMessages);
       }
     }
   }, [errored, currentMessages, preventSend, sendMessages, streaming]);
 
-  const abort = () => {
-    if (abortRef.current && (streaming || isWaiting)) {
-      abortRef.current();
-    }
-  };
+  const abort = useCallback(() => {
+    abortControllers.abort(chatId);
+  }, [abortControllers, chatId]);
 
-  const retry = (messages: ChatMessages) => {
-    abort();
-    sendMessages(messages);
-  };
+  const retry = useCallback(
+    (messages: ChatMessages) => {
+      abort();
+      void sendMessages(messages);
+    },
+    [abort, sendMessages],
+  );
+
+  const retryFromIndex = useCallback(
+    (index: number, question: string) => {
+      const messagesToKeep = currentMessages.slice(0, index);
+      const messagesToSend = messagesToKeep.concat([
+        { role: "user", content: question },
+      ]);
+      retry(messagesToSend);
+    },
+    [currentMessages, retry],
+  );
 
   return {
     submit,
     abort,
     retry,
+    retryFromIndex,
   };
 };

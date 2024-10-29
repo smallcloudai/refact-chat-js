@@ -9,7 +9,9 @@ export type ChatThread = {
   title?: string;
   createdAt?: string;
   updatedAt?: string;
+  tool_use?: ToolUse;
   read?: boolean;
+  isTitleGenerated?: boolean;
 };
 
 export type ToolUse = "quick" | "explore" | "agent";
@@ -27,6 +29,10 @@ export type Chat = {
 };
 
 export type PayloadWithId = { id: string };
+export type PayloadWithIdAndTitle = {
+  title: string;
+  isTitleGenerated: boolean;
+} & PayloadWithId;
 
 export type DetailMessage = { detail: string };
 
@@ -40,4 +46,10 @@ export function checkForDetailMessage(str: string): DetailMessage | false {
   const json = parseOrElse(str, {});
   if (isDetailMessage(json)) return json;
   return false;
+}
+
+export function isToolUse(str: string): str is ToolUse {
+  if (!str) return false;
+  if (typeof str !== "string") return false;
+  return str === "quick" || str === "explore" || str === "agent";
 }

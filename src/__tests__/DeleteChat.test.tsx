@@ -11,9 +11,11 @@ describe("Delete a Chat form history", () => {
     const history: HistoryState = {
       abc123: {
         title: "Test title",
+        isTitleGenerated: false,
         messages: [],
         id: "abc123",
         model: "foo",
+        tool_use: "quick",
         createdAt: now,
         updatedAt: now,
         read: true,

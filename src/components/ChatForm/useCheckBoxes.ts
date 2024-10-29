@@ -35,8 +35,10 @@ const useAttachActiveFile = (
     const hasLines = activeFile.line1 !== null && activeFile.line2 !== null;
 
     if (!hasLines) return activeFile.path;
-    return `${activeFile.path}:${activeFile.line1}-${activeFile.line2}`;
-  }, [activeFile.path, activeFile.line1, activeFile.line2]);
+    return `${activeFile.path}:${
+      activeFile.cursor ? activeFile.cursor + 1 : activeFile.line1
+    }`;
+  }, [activeFile.path, activeFile.cursor, activeFile.line1, activeFile.line2]);
 
   const [attachFileCheckboxData, setAttachFile] = useState<Checkbox>({
     name: "file_upload",
@@ -54,7 +56,7 @@ const useAttachActiveFile = (
   });
 
   useEffect(() => {
-    if (!attachFileCheckboxData.checked || !interacted) {
+    if (!interacted) {
       setAttachFile((prev) => {
         return {
           ...prev,
@@ -62,18 +64,12 @@ const useAttachActiveFile = (
           value: filePathWithLines,
           disabled: !activeFile.name,
           fileName: activeFile.name,
-          checked: !!activeFile.name && shouldShow && hasSnippet && !interacted,
+          // checked: interacted ? prev.checked : !!activeFile.name && shouldShow,
+          checked: !!activeFile.name && shouldShow && hasSnippet,
         };
       });
     }
-  }, [
-    activeFile.name,
-    attachFileCheckboxData.checked,
-    filePathWithLines,
-    hasSnippet,
-    interacted,
-    shouldShow,
-  ]);
+  }, [activeFile.name, filePathWithLines, hasSnippet, interacted, shouldShow]);
 
   useEffect(() => {
     if (messageLength > 0 && attachFileCheckboxData.hide === false) {
@@ -128,7 +124,7 @@ const useAttachSelectedSnippet = (
     });
 
   useEffect(() => {
-    if (!attachedSelectedSnippet.checked || !interacted) {
+    if (!interacted) {
       setAttachedSelectedSnippet((prev) => {
         return {
           ...prev,
@@ -140,14 +136,7 @@ const useAttachSelectedSnippet = (
         };
       });
     }
-  }, [
-    snippet.code,
-    host,
-    attachedSelectedSnippet.checked,
-    label,
-    markdown,
-    interacted,
-  ]);
+  }, [snippet.code, host, label, markdown, interacted]);
 
   const onToggleAttachedSelectedSnippet = useCallback(() => {
     setAttachedSelectedSnippet((prev) => {
@@ -218,14 +207,16 @@ export type Checkboxes = {
 };
 
 export const useCheckboxes = () => {
-  const [interacted, setInteracted] = useState(false);
+  // creating 2 different states instead of only one being used for both checkboxes
+  const [lineSelectionInteracted, setLineSelectionInteracted] = useState(false);
+  const [fileInteracted, setFileInteracted] = useState(false);
 
   const [attachedSelectedSnippet, onToggleAttachedSelectedSnippet] =
-    useAttachSelectedSnippet(interacted);
+    useAttachSelectedSnippet(lineSelectionInteracted);
   const [searchWorkspace, onToggleSearchWorkspace] = useSearchWorkSpace();
 
   const [attachFileCheckboxData, onToggleAttachFile] = useAttachActiveFile(
-    interacted,
+    fileInteracted,
     attachedSelectedSnippet.checked,
   );
 
@@ -246,13 +237,14 @@ export const useCheckboxes = () => {
           break;
         case "file_upload":
           onToggleAttachFile();
+          setFileInteracted(true);
           break;
         case "selected_lines":
           onToggleAttachedSelectedSnippet();
+          setFileInteracted(true);
+          setLineSelectionInteracted((prev) => !prev);
           break;
       }
-
-      setInteracted(true);
     },
     [
       onToggleAttachFile,
@@ -280,5 +272,11 @@ export const useCheckboxes = () => {
     searchWorkspace.checked,
   ]);
 
-  return { checkboxes, onToggleCheckbox, setInteracted, unCheckAll };
+  return {
+    checkboxes,
+    onToggleCheckbox,
+    setFileInteracted,
+    setLineSelectionInteracted,
+    unCheckAll,
+  };
 };

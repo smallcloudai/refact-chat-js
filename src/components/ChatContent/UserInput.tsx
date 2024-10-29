@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { Text, Container, Button } from "@radix-ui/themes";
+import React, { useCallback, useState } from "react";
+import { Text, Container, Button, Flex, IconButton } from "@radix-ui/themes";
 import { Markdown } from "../Markdown";
 import { RetryForm } from "../ChatForm";
 import styles from "./ChatContent.module.css";
+import { Pencil2Icon } from "@radix-ui/react-icons";
 
 function processLines(
   lines: string[],
@@ -42,30 +43,39 @@ function processLines(
 
 export type UserInputProps = {
   children: string;
-  onRetry: (value: string) => void;
-  disableRetry?: boolean;
+  messageIndex: number;
+  onRetry: (index: number, question: string) => void;
+  // disableRetry?: boolean;
 };
 
-export const UserInput: React.FC<UserInputProps> = (props) => {
+export const UserInput: React.FC<UserInputProps> = ({
+  messageIndex,
+  children,
+  onRetry,
+}) => {
+  // const { retryFromIndex } = useSendChatRequest();
   const [showTextArea, setShowTextArea] = useState(false);
+  const [isEditButtonVisible, setIsEditButtonVisible] = useState(false);
   const ref = React.useRef<HTMLButtonElement>(null);
-  const handleSubmit = (value: string) => {
-    props.onRetry(value);
-    setShowTextArea(false);
-  };
+  const handleSubmit = useCallback(
+    (value: string) => {
+      onRetry(messageIndex, value);
+      setShowTextArea(false);
+    },
+    [messageIndex, onRetry],
+  );
 
-  const handleShowTextArea = (value: boolean) => {
-    setShowTextArea(value);
-  };
+  const handleShowTextArea = useCallback(
+    (value: boolean) => {
+      setShowTextArea(value);
+      if (isEditButtonVisible) {
+        setIsEditButtonVisible(false);
+      }
+    },
+    [isEditButtonVisible],
+  );
 
-  const handleEditClick = () => {
-    const selection = window.getSelection();
-    if (selection?.type !== "Range") {
-      setShowTextArea(true);
-    }
-  };
-
-  const lines = props.children.split("\n");
+  const lines = children.split("\n");
   const elements = processLines(lines);
 
   return (
@@ -73,21 +83,42 @@ export const UserInput: React.FC<UserInputProps> = (props) => {
       {showTextArea ? (
         <RetryForm
           onSubmit={handleSubmit}
-          value={props.children}
+          value={children}
           onClose={() => handleShowTextArea(false)}
         />
       ) : (
-        <Button
-          ref={ref}
-          variant="soft"
-          size="4"
-          onClick={handleEditClick}
-          className={styles.userInput}
+        <Flex
+          direction="row"
+          // checking for the length of the lines to determine the position of the edit button
+          gap={lines.length <= 2 ? "2" : "1"}
+          align={lines.length <= 2 ? "center" : "end"}
           my="1"
-          asChild
+          onMouseEnter={() => setIsEditButtonVisible(true)}
+          onMouseLeave={() => setIsEditButtonVisible(false)}
         >
-          <div>{elements}</div>
-        </Button>
+          <Button
+            ref={ref}
+            variant="soft"
+            size="4"
+            className={styles.userInput}
+            asChild
+          >
+            <div>{elements}</div>
+          </Button>
+          <IconButton
+            title="Edit message"
+            variant="soft"
+            size={"2"}
+            onClick={() => handleShowTextArea(true)}
+            style={{
+              opacity: isEditButtonVisible ? 1 : 0,
+              visibility: isEditButtonVisible ? "visible" : "hidden",
+              transition: "opacity 0.15s, visibility 0.15s",
+            }}
+          >
+            <Pencil2Icon width={15} height={15} />
+          </IconButton>
+        </Flex>
       )}
     </Container>
   );

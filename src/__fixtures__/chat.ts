@@ -1,5 +1,5 @@
 import type { RootState } from "../app/store";
-import { ChatHistoryItem } from "../events";
+import { ChatHistoryItem } from "../features/History/historySlice";
 
 type ChatThread = RootState["chat"]["thread"];
 type ChatMessages = ChatThread["messages"];
@@ -64,7 +64,9 @@ export const MARS_ROVER_CHAT: ChatHistoryItem = {
     { role: "user", content: "long message\n" + "a".repeat(10000) },
   ],
   title: "mars rover kata",
+  isTitleGenerated: true,
   model: "gpt-3.5-turbo",
+  tool_use: "explore",
   createdAt: "2023-12-21T17:32:50.186Z",
   updatedAt: "2023-12-21T17:33:22.209Z",
 };
@@ -239,34 +241,8 @@ export const CHAT_FUNCTIONS_MESSAGES: ChatMessages = [
 
 export const FROG_CHAT: ChatThread = {
   id: "77b6a451-5598-44c0-bd5b-cfc19e3f4e60",
+  tool_use: "explore",
   messages: [
-    {
-      role: "context_memory",
-      content: [
-        {
-          memo_id: "note20240604_call_56uppUKhQv5bGmcEBlH7QX5w.txt",
-          memo_text: "Number of correction points 1\n",
-        },
-        {
-          memo_id: "note20240604_call_WCmczUa2WUQINsoSvqq0kUPk.txt",
-          memo_text: "Number of correction points 1\n",
-        },
-        {
-          memo_id: "note20240603_call_U54RGiVERn2zDEIpXuNIHLGy.txt",
-          memo_text: "Number of correction points 1\n",
-        },
-        {
-          memo_id: "note20240603_call_E1u9kD6fvb23q56QecnwC6QP.txt",
-          memo_text:
-            "Failed to retrieve the content of the files when attempting to explain the different properties of Frog and Toad.\n",
-        },
-        {
-          memo_id: "note20240603_call_t8R0pFerpCcvdtTkRwiw2e6S.txt",
-          memo_text:
-            "Repeated the same unsuccessful attempt to fetch the content of the files.\n",
-        },
-      ],
-    },
     {
       role: "user",
       content: "\nWhat is the difference between a frog and a toad?\n",
@@ -593,6 +569,7 @@ export const CHAT_WITH_DIFF_ACTIONS: ChatThread = {
   ],
   title: "In the project add an edible property to the frog class\n",
   model: "gpt-4o",
+  tool_use: "explore",
   createdAt: "2024-07-05T09:10:29.523Z",
   updatedAt: "2024-07-05T09:10:37.322Z",
 };
@@ -817,6 +794,7 @@ export const LARGE_DIFF: ChatThread = {
   ],
   title: "rename the frog class to bird.\n",
   model: "gpt-4o",
+  tool_use: "explore",
   createdAt: "2024-07-23T15:08:51.480Z",
   updatedAt: "2024-07-23T15:36:26.738Z",
 };
