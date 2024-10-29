@@ -1,7 +1,7 @@
 import React from "react";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { Container, Flex, Text, Box, Spinner } from "@radix-ui/themes";
-import { ToolCall, ToolUsage } from "../../services/refact";
+import { ToolCall, ToolResult, ToolUsage } from "../../services/refact";
 import styles from "./ChatContent.module.css";
 import { CommandMarkdown, ResultMarkdown } from "../Command";
 import { Chevron } from "../Collapsible";
@@ -9,6 +9,7 @@ import { Reveal } from "../Reveal";
 import { useAppSelector } from "../../hooks";
 import { selectToolResultById } from "../../features/Chat/Thread/selectors";
 
+// if content is a string
 const Result: React.FC<{ children: string }> = ({ children }) => {
   const lines = children.split("\n");
   return (
@@ -17,6 +18,14 @@ const Result: React.FC<{ children: string }> = ({ children }) => {
     </Reveal>
   );
 };
+
+function resultToString(result?: ToolResult): string {
+  if (!result) return "";
+  if (!result.content) return "";
+  if (typeof result.content === "string") return result.content;
+  const base64url = `data:${result.content.m_type};base64,${result.content.m_content}`;
+  return `![](${base64url})`;
+}
 
 const ToolMessage: React.FC<{
   toolCall: ToolCall;
@@ -29,7 +38,7 @@ const ToolMessage: React.FC<{
     selectToolResultById(state, toolCall.id),
   );
 
-  const results = maybeResult?.content ?? "";
+  const results = resultToString(maybeResult);
 
   const argsString = React.useMemo(() => {
     try {
@@ -49,6 +58,7 @@ const ToolMessage: React.FC<{
 
   const functionCalled = "```python\n" + name + "(" + argsString + ")\n```";
 
+  // could be a string or an image object
   const escapedBackticks = results.replace(/`+/g, (match) => {
     if (match === "```") return match;
     return "\\" + "`";
