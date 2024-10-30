@@ -95,8 +95,6 @@ export const commandsApi = createApi({
 
         if (response.error) return { error: response.error };
 
-        console.log("command preview response", response.data);
-
         if (
           !isCommandPreviewResponse(response.data) &&
           !isDetailMessage(response.data)
