@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Button, Text } from "@radix-ui/themes";
+import { Card, Button, Text, Flex } from "@radix-ui/themes";
 import styles from "./ToolConfirmation.module.css";
 
 type ToolConfirmationProps = {
@@ -15,17 +15,23 @@ export const ToolConfirmation: React.FC<ToolConfirmationProps> = ({
 }) => {
   return (
     <Card className={styles.ToolConfirmationCard}>
-      <Text className={styles.ToolConfirmationText}>
-        Do you really want to run {toolName} tool?
+      <Text className={styles.ToolConfirmationHeading}>
+        🔨 Tool Usage Confirmation
       </Text>
-      <div className={styles.ToolConfirmationActions}>
-        <Button className={styles.Button} onClick={onConfirm}>
-          Yes
-        </Button>
-        <Button className={styles.Button} onClick={onCancel}>
-          No
-        </Button>
-      </div>
+      <Flex align="center" justify="between" wrap="wrap" gap="2">
+        <Text className={styles.ToolConfirmationText}>
+          Do you really want to run{" "}
+          <span className={styles.ToolConfirmationTool}>{toolName}</span> tool?
+        </Text>
+        <Flex align="center" justify="center" gap="1" direction="row">
+          <Button color="grass" variant="surface" size="1" onClick={onConfirm}>
+            Yes
+          </Button>
+          <Button variant="surface" color="tomato" size="1" onClick={onCancel}>
+            No
+          </Button>
+        </Flex>
+      </Flex>
     </Card>
   );
 };
