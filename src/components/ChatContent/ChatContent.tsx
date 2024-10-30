@@ -3,6 +3,7 @@ import {
   ChatMessages,
   isChatContextFileMessage,
   isDiffMessage,
+  isToolMessage,
 } from "../../services/refact";
 import { UserInput } from "./UserInput";
 import { ScrollArea } from "../ScrollArea";
@@ -212,17 +213,9 @@ function renderMessages(
   }
 
   if (isDiffMessage(head)) {
-    // const restInTail = takeWhile(tail, (message) => {
-    //   const isEmptyAssistantMessage =
-    //     isAssistantMessage(message) && !message.content;
-    //   return (
-    //     isDiffMessage(message) ||
-    //     isToolMessage(message) ||
-    //     isEmptyAssistantMessage
-    //   );
-    // });
-
-    const restInTail = takeWhile(tail, isDiffMessage);
+    const restInTail = takeWhile(tail, (message) => {
+      return isDiffMessage(message) || isToolMessage(message);
+    });
 
     const nextTail = tail.slice(restInTail.length);
     const diffMessages = [head, ...restInTail.filter(isDiffMessage)];
