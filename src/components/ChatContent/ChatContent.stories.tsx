@@ -35,6 +35,7 @@ const MockedStore: React.FC<{
       },
     },
   });
+
   return (
     <Provider store={store}>
       <Theme>
@@ -52,17 +53,6 @@ const meta = {
   args: {
     messages: [],
   },
-  // decorators: [
-  //   (Story) => (
-  //     <Provider store={store}>
-  //       <Theme>
-  //         <AbortControllerProvider>
-  //           <Story />
-  //         </AbortControllerProvider>
-  //       </Theme>
-  //     </Provider>
-  //   ),
-  // ],
 } satisfies Meta<typeof MockedStore>;
 
 export default meta;
