@@ -111,7 +111,7 @@ export const useSendChatRequest = () => {
 
       return {
         role: "user",
-        content: [{ type: "text", text: question }, ...images],
+        content: [...images, { type: "text", text: question }],
       };
     },
     [attachedImages],
