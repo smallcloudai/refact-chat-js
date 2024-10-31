@@ -1,4 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { QUESTIONS_STUB } from "../../__fixtures__";
+import { RootState } from "../../app/store";
 
 export type User = {
   retcode: string;
@@ -62,9 +64,44 @@ export type LongThinkFunction = {
   function_selection: string;
 };
 
+export type RadioOptions = {
+  title: string;
+  value: string;
+};
+
+export interface SurveyQuestion {
+  type: string;
+  name: string;
+  question: string;
+}
+
+export interface RadioQuestion extends SurveyQuestion {
+  type: "radio";
+  options: RadioOptions[];
+}
+
+export function isRadioQuestion(
+  question: SurveyQuestion,
+): question is RadioQuestion {
+  return question.type === "radio";
+}
+
+export type SurveyQuestions = (RadioQuestion | SurveyQuestion)[];
+
 export const smallCloudApi = createApi({
   reducerPath: "smallcloud",
-  baseQuery: fetchBaseQuery({ baseUrl: "https://www.smallcloud.ai/v1" }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: "https://www.smallcloud.ai/v1",
+    prepareHeaders: (headers, api) => {
+      const getState = api.getState as () => RootState;
+      const state = getState();
+      const token = state.config.apiKey;
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+      return headers;
+    },
+  }),
   tagTypes: ["User", "Polling"],
   endpoints: (builder) => ({
     login: builder.query({
@@ -127,6 +164,25 @@ export const smallCloudApi = createApi({
         return response;
       },
       providesTags: ["User"],
+    }),
+
+    getSurvey: builder.query<SurveyQuestions, string>({
+      queryFn: (_args, _api, _extraOptions, _baseQuery) => {
+        return new Promise((resolve) => {
+          resolve({ data: QUESTIONS_STUB });
+        });
+      },
+    }),
+
+    postSurvey: builder.query<unknown, Record<string, string>>({
+      queryFn(arg, _api, extraOptions, baseQuery) {
+        return baseQuery({
+          ...extraOptions,
+          url: "survey",
+          method: "POST",
+          body: arg,
+        });
+      },
     }),
 
     removeUserFromCache: builder.mutation<null, undefined>({
