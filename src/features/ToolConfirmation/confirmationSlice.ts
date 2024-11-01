@@ -7,11 +7,11 @@ export type PauseReason = {
   tool_call_id: string;
 };
 
-interface ConfirmationState {
+export type ConfirmationState = {
   pauseReasons: PauseReason[];
   pause: boolean;
   toolsConfirmed: boolean;
-}
+};
 
 const initialState: ConfirmationState = {
   pauseReasons: [],
