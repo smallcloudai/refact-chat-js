@@ -70,7 +70,7 @@ export const useSendChatRequest = () => {
   }, [currentMessages, systemPrompt]);
 
   const sendMessages = useCallback(
-    async (messages: ChatMessages) => {
+    async (messages: ChatMessages, isRetrying = false) => {
       let tools = await triggerGetTools(undefined).unwrap();
       if (isToolUse(toolUse)) {
         dispatch(setToolUse(toolUse));
@@ -85,12 +85,17 @@ export const useSendChatRequest = () => {
         return { ...t, function: { ...remaining } };
       });
 
+      console.log(`[DEBUG]: messages: `, messages);
+
       const lastMessage = messages.slice(-1)[0];
+      console.log(`[DEBUG]: isRetrying: `, isRetrying);
       if (
+        !isRetrying &&
         !areToolsConfirmed &&
         isAssistantMessage(lastMessage) &&
         lastMessage.tool_calls
       ) {
+        console.log(`[DEBUG]: not retrying`);
         const toolCalls = lastMessage.tool_calls;
         const confirmationResponse =
           await triggetCheckForConfirmation(toolCalls).unwrap();
@@ -140,6 +145,7 @@ export const useSendChatRequest = () => {
   }, [sendImmediately, sendMessages, messagesWithSystemPrompt]);
 
   // TODO: Automatically calls tool calls. This means that this hook can only be used once :/
+  // TODO: Think how to rebuild this that in that way, that resubmitting won't call sendMessages() twice
   useEffect(() => {
     if (!streaming && currentMessages.length > 0 && !errored && !preventSend) {
       const lastMessage = currentMessages.slice(-1)[0];
@@ -148,10 +154,18 @@ export const useSendChatRequest = () => {
         lastMessage.tool_calls &&
         lastMessage.tool_calls.length > 0
       ) {
+        console.log(`[DEBUG]: sending currentMessages...`, currentMessages);
         void sendMessages(currentMessages);
       }
     }
-  }, [errored, currentMessages, preventSend, sendMessages, streaming]);
+  }, [
+    errored,
+    currentMessages,
+    preventSend,
+    sendMessages,
+    streaming,
+    areToolsConfirmed,
+  ]);
 
   useEffect(() => {
     if (confirmationInProgress && areToolsConfirmed) {
@@ -172,9 +186,10 @@ export const useSendChatRequest = () => {
   const retry = useCallback(
     (messages: ChatMessages) => {
       abort();
-      void sendMessages(messages);
+      dispatch(clearPauseReasonsAndConfirmTools(false));
+      void sendMessages(messages, true);
     },
-    [abort, sendMessages],
+    [abort, sendMessages, dispatch],
   );
 
   const confirmToolUsage = useCallback(() => {
