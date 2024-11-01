@@ -174,7 +174,7 @@ export const smallCloudApi = createApi({
       },
     }),
 
-    postSurvey: builder.query<unknown, Record<string, string>>({
+    postSurvey: builder.query<unknown, Record<string, FormDataEntryValue>>({
       queryFn(arg, _api, extraOptions, baseQuery) {
         return baseQuery({
           ...extraOptions,

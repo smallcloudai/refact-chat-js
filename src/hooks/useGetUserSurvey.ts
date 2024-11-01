@@ -10,7 +10,15 @@ export function useGetUserSurvey() {
   const apiKey = maybeApiKey ?? "";
   // console.log({ addressURL, maybeApiKey, apiKey });
   // TBD: wait until logged in
-  return smallCloudApi.useGetSurveyQuery(apiKey, {
+  const questionRequest = smallCloudApi.useGetSurveyQuery(apiKey, {
     skip: !maybeApiKey || addressURL !== "Refact",
   });
+
+  const [postSurvey, postSurveyResult] = smallCloudApi.useLazyPostSurveyQuery();
+
+  return {
+    questionRequest,
+    postSurvey,
+    postSurveyResult,
+  };
 }
