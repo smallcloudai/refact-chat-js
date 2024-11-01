@@ -44,8 +44,7 @@ export const UserSurvey = () => {
   }, []);
 
   const surveyQuestions = useGetUserSurvey();
-  // could be loading?
-  console.log({ surveyQuestions });
+
   if (!surveyQuestions.data) return null;
   return (
     <Dialog.Root defaultOpen>
@@ -53,9 +52,9 @@ export const UserSurvey = () => {
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            const formData = new FormData(event.currentTarget);
-            const entries = formData.entries();
-            console.log({ entries });
+            // const formData = new FormData(event.currentTarget);
+            // const entries = formData.entries();
+            // console.log({ entries });
             // console.log({ value, otherSource });
           }}
         >
