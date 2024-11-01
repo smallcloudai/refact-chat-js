@@ -8,7 +8,7 @@ export function useGetUserSurvey() {
   const addressURL = useAppSelector(selectAddressURL);
   const maybeApiKey = useAppSelector(selectApiKey);
   const apiKey = maybeApiKey ?? "";
-  console.log({ addressURL, maybeApiKey, apiKey });
+  // console.log({ addressURL, maybeApiKey, apiKey });
   // TBD: wait until logged in
   return smallCloudApi.useGetSurveyQuery(apiKey, {
     skip: !maybeApiKey || addressURL !== "Refact",
