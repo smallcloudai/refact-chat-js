@@ -174,14 +174,15 @@ export const smallCloudApi = createApi({
       },
     }),
 
-    postSurvey: builder.query<unknown, Record<string, FormDataEntryValue>>({
-      queryFn(arg, _api, extraOptions, baseQuery) {
-        return baseQuery({
-          ...extraOptions,
-          url: "survey",
-          method: "POST",
-          body: arg,
-        });
+    postSurvey: builder.query<undefined, Record<string, FormDataEntryValue>>({
+      queryFn(_arg, _api, _extraOptions, _baseQuery) {
+        // return baseQuery({
+        //   ...extraOptions,
+        //   url: "survey",
+        //   method: "POST",
+        //   body: arg,
+        // });
+        return new Promise((resolve) => setTimeout(resolve, 2000));
       },
     }),
 
