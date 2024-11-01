@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppDispatch } from "./useAppDispatch";
 import { useAppSelector } from "./useAppSelector";
 import {
@@ -11,7 +11,10 @@ import {
   selectSendImmediately,
   selectToolUse,
 } from "../features/Chat/Thread/selectors";
-import { useGetToolsLazyQuery } from "./useGetToolsQuery";
+import {
+  useGetToolsLazyQuery,
+  useLazyCheckForConfirmationQuery,
+} from "./useGetToolsQuery";
 import {
   ChatMessage,
   ChatMessages,
@@ -25,6 +28,11 @@ import {
 } from "../features/Chat/Thread/actions";
 import { isToolUse } from "../features/Chat";
 import { useAbortControllers } from "./useAbortControllers";
+import {
+  clearPauseReasonsAndConfirmTools,
+  getToolsConfirmationStatus,
+  setPauseReasons,
+} from "../features/ToolConfirmation/confirmationSlice";
 
 export const useSendChatRequest = () => {
   const dispatch = useAppDispatch();
@@ -32,6 +40,7 @@ export const useSendChatRequest = () => {
   const abortControllers = useAbortControllers();
 
   const [triggerGetTools] = useGetToolsLazyQuery();
+  const [triggetCheckForConfirmation] = useLazyCheckForConfirmationQuery();
 
   const chatId = useAppSelector(selectChatId);
   const streaming = useAppSelector(selectIsStreaming);
@@ -44,6 +53,9 @@ export const useSendChatRequest = () => {
   const systemPrompt = useAppSelector(getSelectedSystemPrompt);
   const sendImmediately = useAppSelector(selectSendImmediately);
   const toolUse = useAppSelector(selectToolUse);
+
+  const areToolsConfirmed = useAppSelector(getToolsConfirmationStatus);
+  const [confirmationInProgress, setConfirmationInProgress] = useState(false);
 
   const messagesWithSystemPrompt = useMemo(() => {
     const prompts = Object.entries(systemPrompt);
@@ -72,6 +84,23 @@ export const useSendChatRequest = () => {
         const { agentic: _, ...remaining } = t.function;
         return { ...t, function: { ...remaining } };
       });
+
+      const lastMessage = messages.slice(-1)[0];
+      if (
+        !areToolsConfirmed &&
+        isAssistantMessage(lastMessage) &&
+        lastMessage.tool_calls
+      ) {
+        const toolCalls = lastMessage.tool_calls;
+        const confirmationResponse =
+          await triggetCheckForConfirmation(toolCalls).unwrap();
+
+        if (confirmationResponse.pause) {
+          dispatch(setPauseReasons(confirmationResponse.pause_reasons));
+          return;
+        }
+      }
+
       dispatch(backUpMessages({ id: chatId, messages }));
       dispatch(chatAskedQuestion({ id: chatId }));
 
@@ -84,7 +113,15 @@ export const useSendChatRequest = () => {
       const dispatchedAction = dispatch(action);
       abortControllers.addAbortController(chatId, dispatchedAction.abort);
     },
-    [triggerGetTools, toolUse, dispatch, chatId, abortControllers],
+    [
+      triggerGetTools,
+      triggetCheckForConfirmation,
+      toolUse,
+      dispatch,
+      chatId,
+      abortControllers,
+      areToolsConfirmed,
+    ],
   );
 
   const submit = useCallback(
@@ -116,6 +153,18 @@ export const useSendChatRequest = () => {
     }
   }, [errored, currentMessages, preventSend, sendMessages, streaming]);
 
+  useEffect(() => {
+    if (confirmationInProgress && areToolsConfirmed) {
+      void sendMessages(currentMessages);
+      setConfirmationInProgress(false);
+    }
+  }, [
+    confirmationInProgress,
+    areToolsConfirmed,
+    sendMessages,
+    currentMessages,
+  ]);
+
   const abort = useCallback(() => {
     abortControllers.abort(chatId);
   }, [abortControllers, chatId]);
@@ -127,6 +176,12 @@ export const useSendChatRequest = () => {
     },
     [abort, sendMessages],
   );
+
+  const confirmToolUsage = useCallback(() => {
+    abort();
+    dispatch(clearPauseReasonsAndConfirmTools(true));
+    setConfirmationInProgress(true);
+  }, [abort, dispatch]);
 
   const retryFromIndex = useCallback(
     (index: number, question: string) => {
@@ -144,5 +199,6 @@ export const useSendChatRequest = () => {
     abort,
     retry,
     retryFromIndex,
+    confirmToolUsage,
   };
 };

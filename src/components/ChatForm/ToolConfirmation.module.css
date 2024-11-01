@@ -16,11 +16,16 @@
 
 .ToolConfirmationText {
   display: inline-block;
-  max-width: 80%;
+  max-width: 100%;
   font-size: 15px;
   color: white;
 }
 
 .ToolConfirmationTool {
+  font-weight: 700;
+}
+
+.ToolConfirmationRule {
+  display: block;
   font-weight: 700;
 }

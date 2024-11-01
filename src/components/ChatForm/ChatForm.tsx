@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect } from "react";
 
-import { Flex, Card, Text, IconButton } from "@radix-ui/themes";
+import { Flex, Card, Text } from "@radix-ui/themes";
 import styles from "./ChatForm.module.css";
 
 import { PaperPlaneButton, BackToSideBarButton } from "../Buttons/Buttons";
@@ -26,7 +26,7 @@ import {
 } from "../../features/Errors/informationSlice";
 import { InformationCallout } from "../Callout/Callout";
 import { ToolConfirmation } from "./ToolConfirmation";
-import { ClipboardIcon } from "@radix-ui/react-icons";
+import { getPauseReasonsWithPauseStatus } from "../../features/ToolConfirmation/confirmationSlice";
 
 export type ChatFormProps = {
   onSubmit: (str: string) => void;
@@ -48,6 +48,7 @@ export type ChatFormProps = {
   onSetSystemPrompt: (prompt: SystemPrompts) => void;
   selectedSystemPrompt: SystemPrompts;
   chatId: string;
+  onToolConfirm: () => void;
 };
 
 export const ChatForm: React.FC<ChatFormProps> = ({
@@ -64,13 +65,13 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   prompts,
   onSetSystemPrompt,
   selectedSystemPrompt,
+  onToolConfirm,
 }) => {
-  const [toolNeedsConfirmation, setToolNeedsConfirmation] =
-    React.useState(false);
   const dispatch = useAppDispatch();
   const config = useConfig();
   const error = useAppSelector(getErrorMessage);
   const information = useAppSelector(getInformationMessage);
+  const pauseReasonsWithPause = useAppSelector(getPauseReasonsWithPauseStatus);
   const [helpInfo, setHelpInfo] = React.useState<React.ReactNode | null>(null);
   const onClearError = useCallback(() => dispatch(clearError()), [dispatch]);
   const {
@@ -166,15 +167,8 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   );
 
   const handleToolConfirmation = useCallback(() => {
-    setToolNeedsConfirmation(false);
-    handleSubmit();
-    console.log(`[DEBUG]: tool was confirmed`);
-  }, [handleSubmit]);
-
-  const handleToolDenial = useCallback(() => {
-    setToolNeedsConfirmation(false);
-    console.log(`[DEBUG]: tool was declined`);
-  }, []);
+    onToolConfirm();
+  }, [onToolConfirm]);
 
   useEffect(() => {
     if (isSendImmediately) {
@@ -182,10 +176,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
       setIsSendImmediately(false);
     }
   }, [isSendImmediately, handleSubmit, setIsSendImmediately]);
-
-  useEffect(() => {
-    console.log(`[DEBUG]: toolNeedsConfirmation: ${toolNeedsConfirmation}`);
-  }, [toolNeedsConfirmation]);
 
   if (error) {
     return (
@@ -206,12 +196,11 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     );
   }
 
-  if (toolNeedsConfirmation) {
+  if (pauseReasonsWithPause.pause) {
     return (
       <ToolConfirmation
-        toolName={"docker"}
+        pauseReasons={pauseReasonsWithPause.pauseReasons}
         onConfirm={handleToolConfirmation}
-        onCancel={handleToolDenial}
       />
     );
   }
@@ -293,18 +282,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
               size="1"
               type="submit"
             />
-            <IconButton
-              title="debug"
-              size="1"
-              type="button"
-              variant="ghost"
-              onClick={(event) => {
-                event.preventDefault();
-                setToolNeedsConfirmation(true);
-              }}
-            >
-              <ClipboardIcon />
-            </IconButton>
           </Flex>
         </Form>
       </Flex>
