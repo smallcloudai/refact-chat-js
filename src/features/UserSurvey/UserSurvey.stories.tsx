@@ -33,6 +33,15 @@ const meta = {
         http.get("http://127.0.0.1:8001/v1/ping", () => {
           return HttpResponse.text("pong");
         }),
+        http.get("https://www.smallcloud.ai/v1/login", () => {
+          return HttpResponse.json({
+            retcode: "OK",
+            account: "party@refact.ai",
+            inference_url: "https://www.smallcloud.ai/v1",
+            inference: "PRO",
+            metering_balance: -100000,
+          });
+        }),
       ],
     },
   },
