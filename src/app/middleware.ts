@@ -64,7 +64,6 @@ startListening({
       toolsApi.endpoints.getTools.matchRejected(action) &&
       !action.meta.condition
     ) {
-      // getting error message from LSP
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : "fetching tools from lsp.";
@@ -74,7 +73,6 @@ startListening({
       promptsApi.endpoints.getPrompts.matchRejected(action) &&
       !action.meta.condition
     ) {
-      // getting first 2 lines of error message to show to user
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail.split("\n").slice(0, 2).join("\n")
         : `fetching system prompts.`;
@@ -86,7 +84,8 @@ startListening({
       !action.meta.aborted &&
       typeof action.payload === "string"
     ) {
-      listenerApi.dispatch(setError(action.payload));
+      const errorMessage = "Unknown error occured on submitting request";
+      listenerApi.dispatch(setError(errorMessage));
     }
   },
 });
