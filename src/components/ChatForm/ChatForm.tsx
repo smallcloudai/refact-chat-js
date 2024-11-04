@@ -196,7 +196,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     );
   }
 
-  if (pauseReasonsWithPause.pause) {
+  if (!isStreaming && pauseReasonsWithPause.pause) {
     return (
       <ToolConfirmation
         pauseReasons={pauseReasonsWithPause.pauseReasons}

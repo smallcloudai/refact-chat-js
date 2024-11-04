@@ -44,7 +44,10 @@ export const toolsApi = createApi({
         return { data: tools };
       },
     }),
-    checkForConfirmation: builder.query<ToolConfirmationResponse, ToolCall[]>({
+    checkForConfirmation: builder.mutation<
+      ToolConfirmationResponse,
+      ToolCall[]
+    >({
       queryFn: async (tool_calls, api, _extraOptions, baseQuery) => {
         const getState = api.getState as () => RootState;
         const state = getState();

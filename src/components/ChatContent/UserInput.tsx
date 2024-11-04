@@ -53,7 +53,6 @@ export const UserInput: React.FC<UserInputProps> = ({
   children,
   onRetry,
 }) => {
-  // const { retryFromIndex } = useSendChatRequest();
   const [showTextArea, setShowTextArea] = useState(false);
   const [isEditButtonVisible, setIsEditButtonVisible] = useState(false);
   const ref = React.useRef<HTMLButtonElement>(null);

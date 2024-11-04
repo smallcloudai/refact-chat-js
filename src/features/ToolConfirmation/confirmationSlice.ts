@@ -36,10 +36,14 @@ export const confirmationSlice = createSlice({
   selectors: {
     getPauseReasonsWithPauseStatus: (state) => state,
     getToolsConfirmationStatus: (state) => state.toolsConfirmed,
+    getConfirmationPauseStatus: (state) => state.pause,
   },
 });
 
 export const { setPauseReasons, clearPauseReasonsAndConfirmTools } =
   confirmationSlice.actions;
-export const { getPauseReasonsWithPauseStatus, getToolsConfirmationStatus } =
-  confirmationSlice.selectors;
+export const {
+  getPauseReasonsWithPauseStatus,
+  getToolsConfirmationStatus,
+  getConfirmationPauseStatus,
+} = confirmationSlice.selectors;

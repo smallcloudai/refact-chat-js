@@ -16,6 +16,7 @@ export const ToolConfirmation: React.FC<ToolConfirmationProps> = ({
   const rules = pauseReasons.map((reason) => reason.rule);
   const types = pauseReasons.map((reason) => reason.type);
   const toolCallIds = pauseReasons.map((reason) => reason.tool_call_id);
+
   return (
     <Card className={styles.ToolConfirmationCard}>
       <Flex align="end" justify="between" wrap="wrap" gap="4">

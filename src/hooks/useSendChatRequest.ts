@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useAppDispatch } from "./useAppDispatch";
 import { useAppSelector } from "./useAppSelector";
 import {
@@ -6,14 +6,15 @@ import {
   selectChatError,
   selectChatId,
   selectIsStreaming,
+  selectIsWaiting,
   selectMessages,
   selectPreventSend,
   selectSendImmediately,
   selectToolUse,
 } from "../features/Chat/Thread/selectors";
 import {
+  useCheckForConfirmationMutation,
   useGetToolsLazyQuery,
-  useLazyCheckForConfirmationQuery,
 } from "./useGetToolsQuery";
 import {
   ChatMessage,
@@ -30,6 +31,7 @@ import { isToolUse } from "../features/Chat";
 import { useAbortControllers } from "./useAbortControllers";
 import {
   clearPauseReasonsAndConfirmTools,
+  // getConfirmationPauseStatus,
   getToolsConfirmationStatus,
   setPauseReasons,
 } from "../features/ToolConfirmation/confirmationSlice";
@@ -40,7 +42,7 @@ export const useSendChatRequest = () => {
   const abortControllers = useAbortControllers();
 
   const [triggerGetTools] = useGetToolsLazyQuery();
-  const [triggetCheckForConfirmation] = useLazyCheckForConfirmationQuery();
+  const [triggerCheckForConfirmation] = useCheckForConfirmationMutation();
 
   const chatId = useAppSelector(selectChatId);
   const streaming = useAppSelector(selectIsStreaming);
@@ -48,6 +50,7 @@ export const useSendChatRequest = () => {
 
   const errored: boolean = !!hasError || !!chatError;
   const preventSend = useAppSelector(selectPreventSend);
+  const isWaiting = useAppSelector(selectIsWaiting);
 
   const currentMessages = useAppSelector(selectMessages);
   const systemPrompt = useAppSelector(getSelectedSystemPrompt);
@@ -55,7 +58,13 @@ export const useSendChatRequest = () => {
   const toolUse = useAppSelector(selectToolUse);
 
   const areToolsConfirmed = useAppSelector(getToolsConfirmationStatus);
-  const [confirmationInProgress, setConfirmationInProgress] = useState(false);
+  // const confirmationPauseStatus = useAppSelector(getConfirmationPauseStatus);
+  // const [confirmationInProgress, setConfirmationInProgress] = useState(false);
+
+  // const confirmationInProgressConfirmed = useMemo(
+  //   () => confirmationInProgress && areToolsConfirmed,
+  //   [confirmationInProgress, areToolsConfirmed],
+  // );
 
   const messagesWithSystemPrompt = useMemo(() => {
     const prompts = Object.entries(systemPrompt);
@@ -70,7 +79,8 @@ export const useSendChatRequest = () => {
   }, [currentMessages, systemPrompt]);
 
   const sendMessages = useCallback(
-    async (messages: ChatMessages, isRetrying = false) => {
+    async (messages: ChatMessages) => {
+      console.log(`[DEBUG]: sendMsssages()`);
       let tools = await triggerGetTools(undefined).unwrap();
       if (isToolUse(toolUse)) {
         dispatch(setToolUse(toolUse));
@@ -88,18 +98,17 @@ export const useSendChatRequest = () => {
       console.log(`[DEBUG]: messages: `, messages);
 
       const lastMessage = messages.slice(-1)[0];
-      console.log(`[DEBUG]: isRetrying: `, isRetrying);
+      console.log(`[DEBUG]: lastMessage: `, lastMessage);
       if (
-        !isRetrying &&
+        !isWaiting &&
         !areToolsConfirmed &&
         isAssistantMessage(lastMessage) &&
         lastMessage.tool_calls
       ) {
-        console.log(`[DEBUG]: not retrying`);
         const toolCalls = lastMessage.tool_calls;
         const confirmationResponse =
-          await triggetCheckForConfirmation(toolCalls).unwrap();
-
+          await triggerCheckForConfirmation(toolCalls).unwrap();
+        console.log(`[DEBUG]: confirmationResponse: `, confirmationResponse);
         if (confirmationResponse.pause) {
           dispatch(setPauseReasons(confirmationResponse.pause_reasons));
           return;
@@ -120,12 +129,13 @@ export const useSendChatRequest = () => {
     },
     [
       triggerGetTools,
-      triggetCheckForConfirmation,
+      triggerCheckForConfirmation,
       toolUse,
       dispatch,
       chatId,
       abortControllers,
       areToolsConfirmed,
+      isWaiting,
     ],
   );
 
@@ -147,6 +157,13 @@ export const useSendChatRequest = () => {
   // TODO: Automatically calls tool calls. This means that this hook can only be used once :/
   // TODO: Think how to rebuild this that in that way, that resubmitting won't call sendMessages() twice
   useEffect(() => {
+    console.log(`[DEBUG]: currentMessages.length: ${currentMessages.length}`);
+    console.log(
+      `[DEBUG]: useEffect cond result: ${
+        !streaming && currentMessages.length > 0 && !errored && !preventSend
+      }`,
+    );
+
     if (!streaming && currentMessages.length > 0 && !errored && !preventSend) {
       const lastMessage = currentMessages.slice(-1)[0];
       if (
@@ -164,19 +181,7 @@ export const useSendChatRequest = () => {
     preventSend,
     sendMessages,
     streaming,
-    areToolsConfirmed,
-  ]);
-
-  useEffect(() => {
-    if (confirmationInProgress && areToolsConfirmed) {
-      void sendMessages(currentMessages);
-      setConfirmationInProgress(false);
-    }
-  }, [
-    confirmationInProgress,
-    areToolsConfirmed,
-    sendMessages,
-    currentMessages,
+    // confirmationInProgressConfirmed,
   ]);
 
   const abort = useCallback(() => {
@@ -186,8 +191,9 @@ export const useSendChatRequest = () => {
   const retry = useCallback(
     (messages: ChatMessages) => {
       abort();
+      console.log(`[DEBUG]: clearPauseReasonsAndConfirmTools()`);
       dispatch(clearPauseReasonsAndConfirmTools(false));
-      void sendMessages(messages, true);
+      void sendMessages(messages);
     },
     [abort, sendMessages, dispatch],
   );
@@ -195,15 +201,17 @@ export const useSendChatRequest = () => {
   const confirmToolUsage = useCallback(() => {
     abort();
     dispatch(clearPauseReasonsAndConfirmTools(true));
-    setConfirmationInProgress(true);
+    // setConfirmationInProgress(true);
   }, [abort, dispatch]);
 
   const retryFromIndex = useCallback(
     (index: number, question: string) => {
+      console.log(`[DEBUG]: retryFronIndex()`);
       const messagesToKeep = currentMessages.slice(0, index);
       const messagesToSend = messagesToKeep.concat([
         { role: "user", content: question },
       ]);
+      console.log(`[DEBUG]: messagesToSend: `, messagesToSend);
       retry(messagesToSend);
     },
     [currentMessages, retry],

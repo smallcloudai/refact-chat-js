@@ -10,6 +10,6 @@ export const useGetToolsLazyQuery = () => {
   return toolsApi.useLazyGetToolsQuery();
 };
 
-export const useLazyCheckForConfirmationQuery = () => {
-  return toolsApi.useLazyCheckForConfirmationQuery();
+export const useCheckForConfirmationMutation = () => {
+  return toolsApi.useCheckForConfirmationMutation();
 };
