@@ -6,6 +6,7 @@ import { useAppSelector, useAppDispatch } from "../../hooks";
 import { deleteChatById } from "../../features/History/historySlice";
 import { push } from "../../features/Pages/pagesSlice";
 import { restoreChat, type ChatThread } from "../../features/Chat/Thread";
+import { chatDb } from "../../services/refact/chat-db";
 
 export type SidebarProps = {
   takingNotes: boolean;
@@ -23,6 +24,8 @@ export type SidebarProps = {
 export const Sidebar: React.FC<SidebarProps> = ({ takingNotes, style }) => {
   // TODO: these can be lowered.
   const dispatch = useAppDispatch();
+  const db = chatDb.useGetThreadsQuery({});
+  console.log({ db });
   const history = useAppSelector((app) => app.history, {
     // TODO: selector issue here
     devModeChecks: { stabilityCheck: "never" },
