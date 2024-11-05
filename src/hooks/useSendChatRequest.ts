@@ -31,10 +31,11 @@ import { isToolUse } from "../features/Chat";
 import { useAbortControllers } from "./useAbortControllers";
 import {
   clearPauseReasonsAndConfirmTools,
-  // getConfirmationPauseStatus,
   getToolsConfirmationStatus,
   setPauseReasons,
 } from "../features/ToolConfirmation/confirmationSlice";
+
+let recallCounter = 0;
 
 export const useSendChatRequest = () => {
   const dispatch = useAppDispatch();
@@ -58,13 +59,6 @@ export const useSendChatRequest = () => {
   const toolUse = useAppSelector(selectToolUse);
 
   const areToolsConfirmed = useAppSelector(getToolsConfirmationStatus);
-  // const confirmationPauseStatus = useAppSelector(getConfirmationPauseStatus);
-  // const [confirmationInProgress, setConfirmationInProgress] = useState(false);
-
-  // const confirmationInProgressConfirmed = useMemo(
-  //   () => confirmationInProgress && areToolsConfirmed,
-  //   [confirmationInProgress, areToolsConfirmed],
-  // );
 
   const messagesWithSystemPrompt = useMemo(() => {
     const prompts = Object.entries(systemPrompt);
@@ -148,6 +142,14 @@ export const useSendChatRequest = () => {
     [messagesWithSystemPrompt, sendMessages],
   );
 
+  const abort = useCallback(() => {
+    abortControllers.abort(chatId);
+  }, [abortControllers, chatId]);
+
+  useEffect(() => {
+    console.log(`[DEBUG]: currentMessages updated: `, currentMessages);
+  }, [currentMessages]);
+
   useEffect(() => {
     if (sendImmediately) {
       void sendMessages(messagesWithSystemPrompt);
@@ -157,13 +159,6 @@ export const useSendChatRequest = () => {
   // TODO: Automatically calls tool calls. This means that this hook can only be used once :/
   // TODO: Think how to rebuild this that in that way, that resubmitting won't call sendMessages() twice
   useEffect(() => {
-    console.log(`[DEBUG]: currentMessages.length: ${currentMessages.length}`);
-    console.log(
-      `[DEBUG]: useEffect cond result: ${
-        !streaming && currentMessages.length > 0 && !errored && !preventSend
-      }`,
-    );
-
     if (!streaming && currentMessages.length > 0 && !errored && !preventSend) {
       const lastMessage = currentMessages.slice(-1)[0];
       if (
@@ -171,8 +166,25 @@ export const useSendChatRequest = () => {
         lastMessage.tool_calls &&
         lastMessage.tool_calls.length > 0
       ) {
-        console.log(`[DEBUG]: sending currentMessages...`, currentMessages);
+        console.log(
+          `[DEBUG]: useEffect(): sending currentMessages...`,
+          currentMessages,
+        );
+        if (!areToolsConfirmed) {
+          console.log(
+            `[DEBUG]: tools are not confirmed, aborting! counter: ${recallCounter}`,
+          );
+          abort();
+          if (recallCounter < 1) {
+            console.log(
+              `[DEBUG]: counter is less than 1, return. counter: ${recallCounter}`,
+            );
+            recallCounter++;
+            return;
+          }
+        }
         void sendMessages(currentMessages);
+        recallCounter = 0;
       }
     }
   }, [
@@ -180,18 +192,14 @@ export const useSendChatRequest = () => {
     currentMessages,
     preventSend,
     sendMessages,
+    abort,
     streaming,
-    // confirmationInProgressConfirmed,
+    areToolsConfirmed,
   ]);
-
-  const abort = useCallback(() => {
-    abortControllers.abort(chatId);
-  }, [abortControllers, chatId]);
 
   const retry = useCallback(
     (messages: ChatMessages) => {
       abort();
-      console.log(`[DEBUG]: clearPauseReasonsAndConfirmTools()`);
       dispatch(clearPauseReasonsAndConfirmTools(false));
       void sendMessages(messages);
     },
@@ -201,12 +209,10 @@ export const useSendChatRequest = () => {
   const confirmToolUsage = useCallback(() => {
     abort();
     dispatch(clearPauseReasonsAndConfirmTools(true));
-    // setConfirmationInProgress(true);
   }, [abort, dispatch]);
 
   const retryFromIndex = useCallback(
     (index: number, question: string) => {
-      console.log(`[DEBUG]: retryFronIndex()`);
       const messagesToKeep = currentMessages.slice(0, index);
       const messagesToSend = messagesToKeep.concat([
         { role: "user", content: question },
