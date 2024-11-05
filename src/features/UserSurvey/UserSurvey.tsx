@@ -49,10 +49,8 @@ const RadioInput: React.FC<RadioInputProps> = ({
 };
 
 export const UserSurvey = () => {
-  const { questionRequest, postSurvey, postSurveyResult } = useGetUserSurvey();
-
-  // TODO: conditions for showing the survey. has user, has data, user has not responded
-  const [isOpen, setOpen] = React.useState(false);
+  const { questionRequest, postSurvey, postSurveyResult, open, setOpen } =
+    useGetUserSurvey();
 
   const handleSubmit = React.useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
@@ -60,24 +58,27 @@ export const UserSurvey = () => {
       const formData = new FormData(event.currentTarget);
       const entries = formData.entries();
       const json = Object.fromEntries(entries);
-      void postSurvey(json);
+      if ("other" in json) {
+        void postSurvey({ other: json.other });
+      } else {
+        void postSurvey(json);
+      }
     },
     [postSurvey],
   );
 
-  const close = React.useCallback(() => setOpen(false), []);
+  const close = React.useCallback(() => setOpen(false), [setOpen]);
 
   if (!questionRequest.data) return null; // Loading
-  // handle error when fetching
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={setOpen}>
+    <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Content>
         {postSurveyResult.isUninitialized ? (
           <SurveyForm
             onSubmit={handleSubmit}
             questions={questionRequest.data}
-            isFetching={postSurveyResult.isFetching}
+            isFetching={postSurveyResult.isLoading}
           />
         ) : (
           <DoneMessage timeout={1000} closeFn={close} />
@@ -128,7 +129,7 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
           <TextField.Root
             required
             disabled={isFetching}
-            name="other_source"
+            name="other"
             placeholder="Other..."
           />
         )}
@@ -139,11 +140,9 @@ const SurveyForm: React.FC<SurveyFormProps> = ({
               Close
             </Button>
           </Dialog.Close>
-          {/* <Dialog.Close> */}
           <Button type="submit" disabled={isFetching} loading={isFetching}>
             Submit
           </Button>
-          {/* </Dialog.Close> */}
         </Flex>
       </Flex>
     </form>

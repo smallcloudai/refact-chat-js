@@ -1,19 +1,33 @@
+import { useState, useEffect, useMemo } from "react";
 import { smallCloudApi } from "../services/smallcloud";
 import { useGetUser } from "./useGetUser";
 
 export function useGetUserSurvey() {
   const userData = useGetUser();
 
+  const [open, setOpen] = useState(false);
+
+  const shouldSkip = useMemo(() => {
+    return (
+      userData.data?.retcode !== "OK" && userData.data?.questionnaire !== false
+    );
+  }, [userData.data?.questionnaire, userData.data?.retcode]);
+
   const questionRequest = smallCloudApi.useGetSurveyQuery(undefined, {
-    skip: userData.data?.retcode !== "OK",
+    skip: shouldSkip,
   });
 
-  const shouldOpen = true;
+  const [postSurvey, postSurveyResult] = smallCloudApi.usePostSurveyMutation();
 
-  const [postSurvey, postSurveyResult] = smallCloudApi.useLazyPostSurveyQuery();
+  useEffect(() => {
+    if (questionRequest.data && postSurveyResult.isUninitialized) {
+      setOpen(true);
+    }
+  }, [postSurveyResult.isUninitialized, questionRequest.data]);
 
   return {
-    shouldOpen,
+    open,
+    setOpen,
     questionRequest,
     postSurvey,
     postSurveyResult,

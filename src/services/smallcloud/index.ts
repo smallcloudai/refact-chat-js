@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { QUESTIONS_STUB } from "../../__fixtures__";
+// import { QUESTIONS_STUB } from "../../__fixtures__";
 import { RootState } from "../../app/store";
 
 export type User = {
@@ -8,6 +8,7 @@ export type User = {
   inference_url: string;
   inference: string;
   metering_balance: number;
+  questionnaire: false | Record<string, string>;
 };
 
 function isUser(json: unknown): json is User {
@@ -75,6 +76,19 @@ export interface SurveyQuestion {
   question: string;
 }
 
+function isSurveyQuestion(json: unknown): json is SurveyQuestion {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  return (
+    "type" in json &&
+    typeof json.type === "string" &&
+    "name" in json &&
+    typeof json.name === "string" &&
+    "question" in json &&
+    typeof json.question === "string"
+  );
+}
+
 export interface RadioQuestion extends SurveyQuestion {
   type: "radio";
   options: RadioOptions[];
@@ -87,6 +101,11 @@ export function isRadioQuestion(
 }
 
 export type SurveyQuestions = (RadioQuestion | SurveyQuestion)[];
+
+function isSurveyQuestions(json: unknown): json is SurveyQuestions {
+  if (!Array.isArray(json)) return false;
+  return json.every(isSurveyQuestion);
+}
 
 export const smallCloudApi = createApi({
   reducerPath: "smallcloud",
@@ -167,25 +186,29 @@ export const smallCloudApi = createApi({
     }),
 
     getSurvey: builder.query<SurveyQuestions, undefined>({
-      queryFn: (_args, _api, _extraOptions, _baseQuery) => {
-        return new Promise((resolve) => {
-          resolve({ data: QUESTIONS_STUB });
-        });
+      query: () => "/questionnaire",
+      transformResponse(baseQueryReturnValue, _meta, _arg) {
+        if (!isSurveyQuestions(baseQueryReturnValue)) {
+          // eslint-disable-next-line no-console
+          console.error(baseQueryReturnValue);
+          throw new Error("Invalid response from server");
+        }
+        return baseQueryReturnValue;
       },
     }),
 
-    postSurvey: builder.query<null, Record<string, FormDataEntryValue>>({
-      queryFn(_arg, _api, _extraOptions, _baseQuery) {
-        // return baseQuery({
-        //   ...extraOptions,
-        //   url: "survey",
-        //   method: "POST",
-        //   body: arg,
-        // });
-        return new Promise((resolve) =>
-          setTimeout(() => resolve({ data: null }), 2000),
-        );
+    postSurvey: builder.mutation<null, Record<string, FormDataEntryValue>>({
+      query: (arg) => {
+        return {
+          url: "/save-questionnaire",
+          method: "POST",
+          body: { questionnaire: arg },
+          headers: {
+            "Content-Type": "application/json",
+          },
+        };
       },
+      invalidatesTags: ["User"],
     }),
 
     removeUserFromCache: builder.mutation<null, undefined>({
