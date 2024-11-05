@@ -1,5 +1,4 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-// import { QUESTIONS_STUB } from "../../__fixtures__";
 import { RootState } from "../../app/store";
 
 export type User = {
