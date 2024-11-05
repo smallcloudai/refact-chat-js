@@ -9,9 +9,11 @@ export function useGetUserSurvey() {
 
   const shouldSkip = useMemo(() => {
     return (
-      userData.data?.retcode !== "OK" && userData.data?.questionnaire !== false
+      userData.data !== undefined &&
+      userData.data.retcode !== "OK" &&
+      userData.data.questionnaire !== false
     );
-  }, [userData.data?.questionnaire, userData.data?.retcode]);
+  }, [userData.data]);
 
   const questionRequest = smallCloudApi.useGetSurveyQuery(undefined, {
     skip: shouldSkip,
