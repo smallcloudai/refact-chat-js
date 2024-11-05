@@ -3,7 +3,7 @@ import { UserSurvey } from "./UserSurvey";
 import { Provider } from "react-redux";
 import { setUpStore } from "../../app/store";
 import { Theme } from "../../components/Theme";
-import { http, HttpResponse } from "msw";
+import { http, HttpResponse, type HttpHandler } from "msw";
 
 const Component = () => {
   const store = setUpStore({
@@ -45,7 +45,9 @@ const meta = {
       ],
     },
   },
-} satisfies Meta<typeof UserSurvey>;
+} satisfies Meta<
+  typeof Component & { parameters: { msw: { handlers: HttpHandler[] } } }
+>;
 
 export default meta;
 
