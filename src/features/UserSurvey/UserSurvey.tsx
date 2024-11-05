@@ -58,11 +58,7 @@ export const UserSurvey = () => {
       const formData = new FormData(event.currentTarget);
       const entries = formData.entries();
       const json = Object.fromEntries(entries);
-      if ("other" in json) {
-        void postSurvey({ other: json.other });
-      } else {
-        void postSurvey(json);
-      }
+      void postSurvey(json);
     },
     [postSurvey],
   );
