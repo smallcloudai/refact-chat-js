@@ -9,8 +9,8 @@ export function useGetUserSurvey() {
 
   const shouldSkip = useMemo(() => {
     return (
-      userData.data !== undefined &&
-      userData.data.retcode !== "OK" &&
+      userData.data === undefined ||
+      userData.data.retcode !== "OK" ||
       userData.data.questionnaire !== false
     );
   }, [userData.data]);
