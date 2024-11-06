@@ -74,6 +74,8 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
       dispatch(restart());
       dispatch(popBackTo("initial setup"));
       dispatch(push({ name: "welcome" }));
+    } else if (to === "integrations") {
+      dispatch(push({ name: "integrations page" }));
     } else if (to === "chat") {
       dispatch(popBackTo("history"));
       dispatch(push({ name: "chat" }));

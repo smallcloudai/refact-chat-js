@@ -33,6 +33,7 @@ import { Toolbar } from "../components/Toolbar";
 import { Tab } from "../components/Toolbar/Toolbar";
 import { PageWrapper } from "../components/PageWrapper";
 import { ThreadHistory } from "./ThreadHistory";
+import { Integrations } from "./Integrations";
 
 export interface AppProps {
   style?: React.CSSProperties;
@@ -199,6 +200,14 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
             tabbed={config.tabbed}
             host={config.host}
             onCloseStatistic={goBack}
+          />
+        )}
+        {page.name === "integrations page" && (
+          <Integrations
+            backFromIntegrations={goBack}
+            tabbed={config.tabbed}
+            host={config.host}
+            onCloseIntegrations={goBack}
           />
         )}
         {page.name === "thread history page" && (

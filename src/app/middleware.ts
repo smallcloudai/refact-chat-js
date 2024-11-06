@@ -11,6 +11,7 @@ import {
   restoreChat,
 } from "../features/Chat/Thread";
 import { statisticsApi } from "../services/refact/statistics";
+import { integrationsApi } from "../services/refact/integrations";
 import { capsApi, isCapsErrorResponse } from "../services/refact/caps";
 import { promptsApi } from "../services/refact/prompts";
 import { toolsApi } from "../services/refact/tools";
@@ -81,6 +82,18 @@ startListening({
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail.split("\n").slice(0, 2).join("\n")
         : `fetching system prompts.`;
+      listenerApi.dispatch(setError(errorMessage));
+    }
+
+    if (
+      integrationsApi.endpoints.getAllIntegrations.matchRejected(action) &&
+      !action.meta.condition
+    ) {
+      // getting first 2 lines of error message to show to user
+      console.log(`[DEBUG]: maybeData: `, action.payload?.data);
+      const errorMessage = isDetailMessage(action.payload?.data)
+        ? action.payload.data.detail
+        : `fetching integrations.`;
       listenerApi.dispatch(setError(errorMessage));
     }
 

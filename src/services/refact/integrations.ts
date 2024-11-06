@@ -33,6 +33,7 @@ export const integrationsApi = createApi({
         });
 
         if (response.error) {
+          console.log(`[DEBUG]: error: `, response.error);
           return { error: response.error };
         }
 

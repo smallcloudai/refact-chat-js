@@ -1,0 +1,10 @@
+.icon {
+  max-width: 75px;
+  object-fit: cover;
+}
+
+.integrationCard {
+  padding: 1rem;
+  height: 175px;
+  min-width: calc(50% - 0.5rem);
+}

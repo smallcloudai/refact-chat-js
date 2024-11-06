@@ -53,6 +53,10 @@ export interface ChatThreadHistoryPage {
   chatId: string;
 }
 
+export interface IntegrationsSetupPage {
+  name: "integrations page";
+}
+
 export type Page =
   | InitialSetupPage
   | CloudLogin
@@ -66,7 +70,8 @@ export type Page =
   | FIMDebugPage
   | StatisticsPage
   | DocumentationSettingsPage
-  | ChatThreadHistoryPage;
+  | ChatThreadHistoryPage
+  | IntegrationsSetupPage;
 
 export type PageSliceState = Page[];
 
