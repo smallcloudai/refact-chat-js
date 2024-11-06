@@ -8,15 +8,28 @@ import { Chevron } from "../Collapsible";
 import { Reveal } from "../Reveal";
 import { useAppSelector } from "../../hooks";
 import { selectToolResultById } from "../../features/Chat/Thread/selectors";
+import { ScrollArea } from "../ScrollArea";
 
-const Result: React.FC<{ children: string; hasImages: boolean }> = ({
+type ResultProps = {
+  children: string;
+  isInsideScrollArea?: boolean;
+  hasImages: boolean;
+};
+
+const Result: React.FC<ResultProps> = ({
   children,
+  isInsideScrollArea = false,
   hasImages,
 }) => {
   const lines = children.split("\n");
   return (
     <Reveal defaultOpen={!hasImages && lines.length < 9}>
-      <ResultMarkdown className={styles.tool_result}>{children}</ResultMarkdown>
+      <ResultMarkdown
+        className={styles.tool_result}
+        isInsideScrollArea={isInsideScrollArea}
+      >
+        {children}
+      </ResultMarkdown>
     </Reveal>
   );
 };
@@ -77,8 +90,16 @@ const ToolMessage: React.FC<{
 
   return (
     <Flex direction="column">
-      <CommandMarkdown>{functionCalled}</CommandMarkdown>
-      <Result hasImages={hasImages}>{results}</Result>
+      <ScrollArea scrollbars="horizontal" style={{ width: "100%" }}>
+        <Box>
+          <CommandMarkdown isInsideScrollArea>{functionCalled}</CommandMarkdown>
+        </Box>
+      </ScrollArea>
+      <ScrollArea scrollbars="horizontal" style={{ width: "100%" }} asChild>
+        <Box>
+          <Result hasImages={hasImages} isInsideScrollArea>{results}</Result>
+        </Box>
+      </ScrollArea>
     </Flex>
   );
 };

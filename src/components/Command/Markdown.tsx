@@ -32,6 +32,7 @@ type CodeBlockProps = React.JSX.IntrinsicElements["code"] & {
 export type MarkdownProps = {
   children: string;
   className?: string;
+  isInsideScrollArea?: boolean;
 } & Pick<CodeBlockProps, "showLineNumbers" | "startingLineNumber" | "style">;
 
 const Image: React.FC<
@@ -46,12 +47,15 @@ const Image: React.FC<
 export const Markdown: React.FC<MarkdownProps> = ({
   children,
   className,
+  isInsideScrollArea,
   style = hljsStyle,
 }) => {
   return (
     <ReactMarkdown
       urlTransform={urlTransform}
-      className={classNames(styles.markdown, className)}
+      className={classNames(styles.markdown, className, {
+        [styles.isInsideScrollArea]: isInsideScrollArea,
+      })}
       components={{
         code({ color: _color, ref: _ref, node: _node, ...props }) {
           return <MarkdownCodeBlock {...props} style={style} />;
