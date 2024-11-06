@@ -39,6 +39,7 @@ import mergeInitialState from "redux-persist/lib/stateReconciler/autoMergeLevel2
 import { listenerMiddleware } from "./middleware";
 import { informationSlice } from "../features/Errors/informationSlice";
 import { confirmationSlice } from "../features/ToolConfirmation/confirmationSlice";
+import { attachedImagesSlice } from "../features/AttachedImages";
 
 const tipOfTheDayPersistConfig = {
   key: "totd",
@@ -77,6 +78,7 @@ const rootReducer = combineSlices(
   informationSlice,
   pagesSlice,
   confirmationSlice,
+  attachedImagesSlice,
 );
 
 const rootPersistConfig = {

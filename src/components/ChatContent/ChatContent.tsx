@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect } from "react";
 import {
   ChatMessages,
-  isAssistantMessage,
   isChatContextFileMessage,
   isDiffMessage,
   isToolMessage,
+  UserMessage,
 } from "../../services/refact";
 import { UserInput } from "./UserInput";
 import { ScrollArea } from "../ScrollArea";
@@ -111,7 +111,7 @@ const PlaceHolderText: React.FC = () => {
 };
 
 export type ChatContentProps = {
-  onRetry: (index: number, question: string) => void;
+  onRetry: (index: number, question: UserMessage["content"]) => void;
 };
 
 export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
@@ -132,7 +132,10 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
       isStreaming,
     });
 
-    const onRetryWrapper = (index: number, question: string) => {
+    const onRetryWrapper = (
+      index: number,
+      question: UserMessage["content"],
+    ) => {
       props.onRetry(index, question);
       handleScrollButtonClick();
     };
@@ -166,7 +169,7 @@ ChatContent.displayName = "ChatContent";
 
 function renderMessages(
   messages: ChatMessages,
-  onRetry: (index: number, question: string) => void,
+  onRetry: (index: number, question: UserMessage["content"]) => void,
   memo: React.ReactNode[] = [],
   index = 0,
 ) {
@@ -198,6 +201,7 @@ function renderMessages(
 
   if (head.role === "user") {
     const key = "user-input-" + index;
+
     const nextMemo = [
       ...memo,
       <UserInput onRetry={onRetry} key={key} messageIndex={index}>
@@ -215,13 +219,7 @@ function renderMessages(
 
   if (isDiffMessage(head)) {
     const restInTail = takeWhile(tail, (message) => {
-      const isEmptyAssistantMessage =
-        isAssistantMessage(message) && !message.content;
-      return (
-        isDiffMessage(message) ||
-        isToolMessage(message) ||
-        isEmptyAssistantMessage
-      );
+      return isDiffMessage(message) || isToolMessage(message);
     });
 
     const nextTail = tail.slice(restInTail.length);

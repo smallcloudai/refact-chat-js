@@ -27,6 +27,7 @@ import {
 import { InformationCallout } from "../Callout/Callout";
 import { ToolConfirmation } from "./ToolConfirmation";
 import { getPauseReasonsWithPauseStatus } from "../../features/ToolConfirmation/confirmationSlice";
+import { AttachFileButton, FileList } from "../Dropzone";
 
 export type ChatFormProps = {
   onSubmit: (str: string) => void;
@@ -105,6 +106,8 @@ export const ChatForm: React.FC<ChatFormProps> = ({
         checkboxes,
         config.features?.vecdb ?? false,
       );
+      setFileInteracted(false);
+      setLineSelectionInteracted(false);
       onSubmit(valueIncludingChecks);
       setValue(() => "");
       unCheckAll();
@@ -118,6 +121,8 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     onSubmit,
     setValue,
     unCheckAll,
+    setFileInteracted,
+    setLineSelectionInteracted,
   ]);
 
   const handleEnter = useOnPressedEnter(handleSubmit);
@@ -275,6 +280,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
                 onClick={onClose}
               />
             )}
+            <AttachFileButton />
             {/* TODO: Reserved space for microphone button coming later on */}
             <PaperPlaneButton
               disabled={isStreaming || !isOnline}
@@ -285,7 +291,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
           </Flex>
         </Form>
       </Flex>
-
+      <FileList />
       <ChatControls
         host={config.host}
         checkboxes={checkboxes}
