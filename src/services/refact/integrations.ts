@@ -117,6 +117,7 @@ export function isIntegrationIcon(json: unknown): json is IntegrationIcon {
 
 export type Integration = {
   name: string;
+  enabled: boolean;
   schema: null | Record<string, unknown>; // TODO: JSON schema
   value: {
     // Value = any json value :/
@@ -134,6 +135,7 @@ export function isIntegration(json: unknown): json is Integration {
   if (typeof json !== "object") return false;
   if (!("name" in json)) return false;
   if (typeof json.name !== "string") return false;
+  if (!("enabled" in json)) return false;
   if (!("schema" in json)) return false;
   if (!("value" in json)) return false;
   return true;
