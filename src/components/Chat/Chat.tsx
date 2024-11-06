@@ -113,6 +113,11 @@ export const Chat: React.FC<ChatProps> = ({
       focusTextarea();
     }
   }, [isWaiting, isStreaming, focusTextarea]);
+  console.log({ chatId });
+
+  useEffect(() => {
+    console.log("retry changed");
+  }, [retryFromIndex]);
 
   return (
     <DropzoneProvider asChild>
@@ -128,7 +133,7 @@ export const Chat: React.FC<ChatProps> = ({
         <ChatContent
           key={`chat-content-${chatId}`}
           ref={chatContentRef}
-          onRetry={retryFromIndex}
+          // onRetry={retryFromIndex}
         />
         {!isStreaming && preventSend && unCalledTools && (
           <Container py="4" bottom="0" style={{ justifyContent: "flex-end" }}>

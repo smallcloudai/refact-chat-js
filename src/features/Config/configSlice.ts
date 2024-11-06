@@ -86,3 +86,6 @@ export const selectAddressURL = (state: RootState) => state.config.addressURL;
 export const selectHost = (state: RootState) => state.config.host;
 export const selectSubmitOption = (state: RootState) =>
   state.config.shiftEnterToSubmit ?? false;
+
+export const selectCompleteManual = (state: RootState) =>
+  state.config.keyBindings?.completeManual;

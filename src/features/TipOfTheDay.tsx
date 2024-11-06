@@ -1,4 +1,4 @@
-import { createAction, createReducer } from "@reduxjs/toolkit";
+import { createAction, createReducer, createSlice } from "@reduxjs/toolkit";
 import type { Config } from "../features/Config/configSlice";
 
 type TipHost = "all" | "vscode";
@@ -54,31 +54,35 @@ const initialState: TipOfTheDayState = {
   tip: "",
 };
 
-export const next = createAction<Config>("tipOfTheDay/next");
+export const next = createAction<{
+  host: Config["host"];
+  completeManual?: string;
+}>("tipOfTheDay/next");
 
 export const tipOfTheDayReducer = createReducer<TipOfTheDayState>(
   initialState,
   (builder) => {
     builder.addCase(next, (state, action) => {
-      const keyBindings = action.payload.keyBindings;
-      const host = action.payload.host;
+      // meeds data from other slices
+      const { host, completeManual } = action.payload;
+      console.log("Next Tip called");
+      console.log({ host, completeManual });
+      // const keyBindings = action.payload.keyBindings;
+      // const host = action.payload.host;
 
       let tip: string | undefined = undefined;
-      let next = state.next;
+      let nextNumber = state.next;
 
       while (tip === undefined) {
-        const [tipHost, curTip] = tips[next];
-        next = (next + 1) % tips.length;
+        const [tipHost, curTip] = tips[nextNumber];
+        nextNumber = (nextNumber + 1) % tips.length;
 
         if (!matchesHost(tipHost, host)) {
           continue;
         }
 
-        if (keyBindings?.completeManual !== undefined) {
-          tip = curTip.replace(
-            "[MANUAL_COMPLETION]",
-            keyBindings.completeManual,
-          );
+        if (completeManual !== undefined) {
+          tip = curTip.replace("[MANUAL_COMPLETION]", completeManual);
         } else {
           tip = curTip.replace(
             "[MANUAL_COMPLETION]",
@@ -86,9 +90,9 @@ export const tipOfTheDayReducer = createReducer<TipOfTheDayState>(
           );
         }
       }
-
+      console.log({ nextNumber, tip });
       return {
-        next,
+        next: nextNumber,
         tip,
       };
     });

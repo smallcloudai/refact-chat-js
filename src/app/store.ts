@@ -104,9 +104,9 @@ export function setUpStore(preloadedState?: Partial<RootState>) {
   const store = configureStore({
     reducer: persistedReducer,
     preloadedState: initialState,
-    devTools: {
-      maxAge: 50,
-    },
+    // devTools: {
+    //   maxAge: 50,
+    // },
     middleware: (getDefaultMiddleware) => {
       const production = import.meta.env.MODE === "production";
       const middleware = production

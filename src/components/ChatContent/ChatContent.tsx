@@ -27,16 +27,27 @@ import {
 import { takeWhile } from "../../utils";
 import { GroupedDiffs } from "./DiffContent";
 import { ScrollToBottomButton } from "./ScrollToBottomButton";
+import {
+  selectCompleteManual,
+  selectHost,
+} from "../../features/Config/configSlice";
 
-export const TipOfTheDay: React.FC = () => {
+const TipOfTheDay: React.FC = () => {
   const dispatch = useAppDispatch();
-  const config = useConfig();
   const state = useAppSelector((state: RootState) => state.tipOfTheDay);
+  const host = useAppSelector(selectHost);
+  const completeManual = useAppSelector(selectCompleteManual);
+
+  useEffect(() => {
+    console.log("Tip Mounted");
+    return () => console.log("Tip unmounted");
+  }, []);
 
   // TODO: find out what this is about.
   useEffect(() => {
-    dispatch(next(config));
-  }, [dispatch, config]);
+    console.log({ host, completeManual });
+    dispatch(next({ host, completeManual }));
+  }, [completeManual, dispatch, host]);
 
   return (
     <Text>
@@ -111,14 +122,19 @@ const PlaceHolderText: React.FC = () => {
 };
 
 export type ChatContentProps = {
-  onRetry: (index: number, question: UserMessage["content"]) => void;
+  // onRetry: (index: number, question: UserMessage["content"]) => void;
 };
 
 export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
-  (props, ref) => {
+  (_props, ref) => {
     const messages = useAppSelector(selectMessages);
     const isStreaming = useAppSelector(selectIsStreaming);
     const isWaiting = useAppSelector(selectIsWaiting);
+
+    useEffect(() => {
+      console.log("Chat Content Mounted");
+      return () => console.log("Chat Content unmounted");
+    }, []);
 
     const {
       innerRef,
@@ -136,7 +152,7 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
       index: number,
       question: UserMessage["content"],
     ) => {
-      props.onRetry(index, question);
+      // props.onRetry(index, question);
       handleScrollButtonClick();
     };
 
