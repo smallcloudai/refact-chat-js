@@ -63,8 +63,14 @@ export const ToolConfirmation: React.FC<ToolConfirmationProps> = ({
 
   return (
     <Card className={styles.ToolConfirmationCard}>
-      <Flex align="end" justify="between" wrap="wrap" gap="4">
-        <Flex align="start" direction="column" gap="3">
+      <Flex
+        align="start"
+        justify="between"
+        direction="column"
+        wrap="wrap"
+        gap="4"
+      >
+        <Flex align="start" direction="column" gap="3" maxWidth="100%">
           <Text className={styles.ToolConfirmationHeading}>
             🔨 Model {allConfirmational ? "wants" : "tried"} to run:
           </Text>
