@@ -3,6 +3,7 @@ import type { Integration } from "../services/refact";
 export const INTEGRATIONS_RESPONSE: Integration[] = [
   {
     name: "github",
+    enabled: true,
     schema: {
       $schema: "http://json-schema.org/draft-07/schema#",
       title: "IntegrationGitHub",
@@ -26,6 +27,7 @@ export const INTEGRATIONS_RESPONSE: Integration[] = [
   },
   {
     name: "gitlab",
+    enabled: false,
     schema: {
       $schema: "http://json-schema.org/draft-07/schema#",
       title: "IntegrationGitLab",
@@ -49,6 +51,7 @@ export const INTEGRATIONS_RESPONSE: Integration[] = [
   },
   {
     name: "pdb",
+    enabled: true,
     schema: {
       $schema: "http://json-schema.org/draft-07/schema#",
       title: "IntegrationPdb",
@@ -66,6 +69,7 @@ export const INTEGRATIONS_RESPONSE: Integration[] = [
   },
   {
     name: "postgres",
+    enabled: false,
     schema: {
       $schema: "http://json-schema.org/draft-07/schema#",
       title: "IntegrationPostgres",
@@ -89,6 +93,7 @@ export const INTEGRATIONS_RESPONSE: Integration[] = [
   },
   {
     name: "chrome",
+    enabled: true,
     schema: {
       $schema: "http://json-schema.org/draft-07/schema#",
       title: "IntegrationChrome",
