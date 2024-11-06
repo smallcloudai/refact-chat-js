@@ -7,6 +7,7 @@ import {
   useAppDispatch,
   useSendChatRequest,
   useGetPromptsQuery,
+  useGetCapsQuery,
 } from "../../hooks";
 import type { Config } from "../../features/Config/configSlice";
 import {
@@ -34,16 +35,31 @@ export type ChatProps = {
   style?: React.CSSProperties;
   unCalledTools: boolean;
   // TODO: update this
-  caps: ChatFormProps["caps"];
+  // caps: ChatFormProps["caps"];
   maybeSendToSidebar: ChatFormProps["onClose"];
 };
 
 export const Chat: React.FC<ChatProps> = ({
   style,
   unCalledTools,
-  caps,
+  // caps, // changes when clicking new chat :/
   maybeSendToSidebar,
 }) => {
+  useEffect(() => {
+    console.log("style changed");
+  }, [style]);
+  useEffect(() => {
+    console.log("uncalled tools change");
+  }, [unCalledTools]);
+
+  // useEffect(() => {
+  //   console.log("caps changed");
+  // }, [caps]);
+
+  useEffect(() => {
+    console.log("side fn changed");
+  }, [maybeSendToSidebar]);
+
   const [isViewingRawJSON, setIsViewingRawJSON] = useState(false);
   const chatContentRef = useRef<HTMLDivElement>(null);
   const isStreaming = useAppSelector(selectIsStreaming);
@@ -64,12 +80,15 @@ export const Chat: React.FC<ChatProps> = ({
   const [isDebugChatHistoryVisible, setIsDebugChatHistoryVisible] =
     useState(false);
 
+  // TODO: can push this down,
+  const capsRequest = useGetCapsQuery();
   const onSetChatModel = useCallback(
     (value: string) => {
-      const model = caps.default_cap === value ? "" : value;
+      const defaultModel = capsRequest.data?.code_chat_default_model ?? "";
+      const model = defaultModel === value ? "" : value;
       dispatch(setChatModel(model));
     },
-    [caps.default_cap, dispatch],
+    [capsRequest.data?.code_chat_default_model, dispatch],
   );
   const preventSend = useAppSelector(selectPreventSend);
   const onEnableSend = () => dispatch(enableSend({ id: chatId }));
@@ -115,9 +134,14 @@ export const Chat: React.FC<ChatProps> = ({
   }, [isWaiting, isStreaming, focusTextarea]);
   console.log({ chatId });
 
+  // useEffect(() => {
+  //   console.log("retry changed");
+  // }, [retryFromIndex]);
+
   useEffect(() => {
-    console.log("retry changed");
-  }, [retryFromIndex]);
+    console.log("chat mounted");
+    return () => console.log("chat unmount");
+  }, []);
 
   return (
     <DropzoneProvider asChild>
@@ -153,7 +177,13 @@ export const Chat: React.FC<ChatProps> = ({
           onSubmit={handleSummit}
           model={chatModel}
           onSetChatModel={onSetChatModel}
-          caps={caps}
+          // caps={caps}
+          caps={{
+            error: capsRequest.error ? "error fetching caps" : null,
+            fetching: capsRequest.isFetching,
+            default_cap: capsRequest.data?.code_chat_default_model ?? "",
+            available_caps: capsRequest.data?.code_chat_models ?? {},
+          }}
           onStopStreaming={abort}
           onClose={maybeSendToSidebar}
           onTextAreaHeightChange={onTextAreaHeightChange}
@@ -167,7 +197,11 @@ export const Chat: React.FC<ChatProps> = ({
           {messages.length > 0 && (
             <Flex align="center" justify="between" width="100%">
               <Flex align="center" gap="1">
-                <Text size="1">model: {chatModel || caps.default_cap} </Text> •{" "}
+                <Text size="1">
+                  model:{" "}
+                  {chatModel || capsRequest.data?.code_chat_default_model}{" "}
+                </Text>{" "}
+                •{" "}
                 <Text
                   size="1"
                   onClick={() => setIsDebugChatHistoryVisible((prev) => !prev)}

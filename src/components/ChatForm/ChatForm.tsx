@@ -297,6 +297,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
         checkboxes={checkboxes}
         showControls={showControls}
         onCheckedChange={onToggleCheckbox}
+        // can be moved down ?
         selectProps={{
           value: model || caps.default_cap,
           onChange: onSetChatModel,

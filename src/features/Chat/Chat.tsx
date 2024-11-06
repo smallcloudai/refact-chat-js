@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
 import type { Config } from "../Config/configSlice";
 import { Chat as ChatComponent } from "../../components/Chat";
-import { useAppSelector } from "../../hooks";
+import { useAppSelector, useAutoSubmit } from "../../hooks";
 import { useGetCapsQuery } from "../../hooks/useGetCapsQuery";
 import { selectMessages } from "./Thread";
 
@@ -18,9 +18,15 @@ export const Chat: React.FC<ChatProps> = ({
   host,
   tabbed,
 }) => {
-  const capsRequest = useGetCapsQuery();
+  // const capsRequest = useGetCapsQuery();
+
+  useEffect(() => {
+    console.log("Chat Feature unmounted");
+    return () => console.log("Chat Feature unmounted");
+  }, []);
 
   const messages = useAppSelector(selectMessages);
+  useAutoSubmit();
 
   const sendToSideBar = () => {
     // TODO:
@@ -29,7 +35,7 @@ export const Chat: React.FC<ChatProps> = ({
   const maybeSendToSideBar =
     host === "vscode" && tabbed ? sendToSideBar : undefined;
 
-  // can be a selector
+  // TODO: can be a selector
   const unCalledTools = React.useMemo(() => {
     if (messages.length === 0) return false;
     const last = messages[messages.length - 1];
@@ -47,12 +53,13 @@ export const Chat: React.FC<ChatProps> = ({
       backFromChat={backFromChat}
       unCalledTools={unCalledTools}
       // TODO: This could be moved lower in the component tree
-      caps={{
-        error: capsRequest.error ? "error fetching caps" : null,
-        fetching: capsRequest.isFetching,
-        default_cap: capsRequest.data?.code_chat_default_model ?? "",
-        available_caps: capsRequest.data?.code_chat_models ?? {},
-      }}
+      // caps={{
+      //   error: capsRequest.error ? "error fetching caps" : null,
+      //   fetching: capsRequest.isFetching,
+      //   default_cap: capsRequest.data?.code_chat_default_model ?? "",
+      //   available_caps: capsRequest.data?.code_chat_models ?? {},
+      // }}
+      // TODO: this can be removed
       maybeSendToSidebar={maybeSendToSideBar}
       // TODO: This can be removed
       // requestPreviewFiles={() => ({})}

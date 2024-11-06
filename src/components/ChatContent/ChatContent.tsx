@@ -15,7 +15,7 @@ import { ContextFiles } from "./ContextFiles";
 import { AssistantInput } from "./AssistantInput";
 import { useAutoScroll } from "./useAutoScroll";
 import { PlainText } from "./PlainText";
-import { useConfig, useEventsBusForIDE } from "../../hooks";
+import { useConfig, useEventsBusForIDE, useSendChatRequest } from "../../hooks";
 import { useAppSelector, useAppDispatch } from "../../hooks";
 import { RootState } from "../../app/store";
 import { next } from "../../features/TipOfTheDay";
@@ -45,7 +45,6 @@ const TipOfTheDay: React.FC = () => {
 
   // TODO: find out what this is about.
   useEffect(() => {
-    console.log({ host, completeManual });
     dispatch(next({ host, completeManual }));
   }, [completeManual, dispatch, host]);
 
@@ -121,65 +120,71 @@ const PlaceHolderText: React.FC = () => {
   );
 };
 
-export type ChatContentProps = {
-  // onRetry: (index: number, question: UserMessage["content"]) => void;
-};
+export const ChatContent = React.forwardRef<HTMLDivElement>((_props, ref) => {
+  const messages = useAppSelector(selectMessages);
+  const isStreaming = useAppSelector(selectIsStreaming);
+  const isWaiting = useAppSelector(selectIsWaiting);
+  const { retryFromIndex } = useSendChatRequest();
 
-export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
-  (_props, ref) => {
-    const messages = useAppSelector(selectMessages);
-    const isStreaming = useAppSelector(selectIsStreaming);
-    const isWaiting = useAppSelector(selectIsWaiting);
+  // useEffect(() => {
+  //   console.log("Chat content props change");
+  //   console.log(_props);
+  // }, [_props]);
 
-    useEffect(() => {
-      console.log("Chat Content Mounted");
-      return () => console.log("Chat Content unmounted");
-    }, []);
+  // useEffect(() => {
+  //   console.log("Chat Content, ref changed");
+  //   console.log(ref);
+  // }, [ref]);
 
-    const {
-      innerRef,
-      handleScroll,
-      handleWheel,
-      handleScrollButtonClick,
-      isScrolledTillBottom,
-    } = useAutoScroll({
-      ref,
-      messages,
-      isStreaming,
-    });
+  useEffect(() => {
+    console.log("Chat Content Mounted");
+    return () => console.log("Chat Content unmounted");
+  }, []);
 
-    const onRetryWrapper = (
-      index: number,
-      question: UserMessage["content"],
-    ) => {
+  const {
+    innerRef,
+    handleScroll,
+    handleWheel,
+    handleScrollButtonClick,
+    isScrolledTillBottom,
+  } = useAutoScroll({
+    ref,
+    messages,
+    isStreaming,
+  });
+
+  const onRetryWrapper = useCallback(
+    (index: number, question: UserMessage["content"]) => {
       // props.onRetry(index, question);
+      retryFromIndex(index, question);
       handleScrollButtonClick();
-    };
+    },
+    [handleScrollButtonClick, retryFromIndex],
+  );
 
-    return (
-      <ScrollArea
-        style={{ flexGrow: 1, height: "auto", position: "relative" }}
-        scrollbars="vertical"
-        onScroll={handleScroll}
-        onWheel={handleWheel}
-      >
-        <Flex direction="column" className={styles.content} p="2" gap="1">
-          {messages.length === 0 && <PlaceHolderText />}
-          {renderMessages(messages, onRetryWrapper)}
-          {isWaiting && (
-            <Container py="4">
-              <Spinner />
-            </Container>
-          )}
-          <div ref={innerRef} />
-        </Flex>
-        {!isScrolledTillBottom && (
-          <ScrollToBottomButton onClick={handleScrollButtonClick} />
+  return (
+    <ScrollArea
+      style={{ flexGrow: 1, height: "auto", position: "relative" }}
+      scrollbars="vertical"
+      onScroll={handleScroll}
+      onWheel={handleWheel}
+    >
+      <Flex direction="column" className={styles.content} p="2" gap="1">
+        {messages.length === 0 && <PlaceHolderText />}
+        {renderMessages(messages, onRetryWrapper)}
+        {isWaiting && (
+          <Container py="4">
+            <Spinner />
+          </Container>
         )}
-      </ScrollArea>
-    );
-  },
-);
+        <div ref={innerRef} />
+      </Flex>
+      {!isScrolledTillBottom && (
+        <ScrollToBottomButton onClick={handleScrollButtonClick} />
+      )}
+    </ScrollArea>
+  );
+});
 
 ChatContent.displayName = "ChatContent";
 
