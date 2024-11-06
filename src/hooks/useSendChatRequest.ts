@@ -74,7 +74,6 @@ export const useSendChatRequest = () => {
 
   const sendMessages = useCallback(
     async (messages: ChatMessages) => {
-      console.log(`[DEBUG]: sendMsssages()`);
       let tools = await triggerGetTools(undefined).unwrap();
       if (isToolUse(toolUse)) {
         dispatch(setToolUse(toolUse));
@@ -89,10 +88,7 @@ export const useSendChatRequest = () => {
         return { ...t, function: { ...remaining } };
       });
 
-      console.log(`[DEBUG]: messages: `, messages);
-
       const lastMessage = messages.slice(-1)[0];
-      console.log(`[DEBUG]: lastMessage: `, lastMessage);
       if (
         !isWaiting &&
         !areToolsConfirmed &&
@@ -102,7 +98,6 @@ export const useSendChatRequest = () => {
         const toolCalls = lastMessage.tool_calls;
         const confirmationResponse =
           await triggerCheckForConfirmation(toolCalls).unwrap();
-        console.log(`[DEBUG]: confirmationResponse: `, confirmationResponse);
         if (confirmationResponse.pause) {
           dispatch(setPauseReasons(confirmationResponse.pause_reasons));
           return;
@@ -147,17 +142,13 @@ export const useSendChatRequest = () => {
   }, [abortControllers, chatId]);
 
   useEffect(() => {
-    console.log(`[DEBUG]: currentMessages updated: `, currentMessages);
-  }, [currentMessages]);
-
-  useEffect(() => {
     if (sendImmediately) {
       void sendMessages(messagesWithSystemPrompt);
     }
   }, [sendImmediately, sendMessages, messagesWithSystemPrompt]);
 
   // TODO: Automatically calls tool calls. This means that this hook can only be used once :/
-  // TODO: Think how to rebuild this that in that way, that resubmitting won't call sendMessages() twice
+  // TODO: Think of better way to manage useEffect calls, not with outer counter
   useEffect(() => {
     if (!streaming && currentMessages.length > 0 && !errored && !preventSend) {
       const lastMessage = currentMessages.slice(-1)[0];
@@ -166,19 +157,9 @@ export const useSendChatRequest = () => {
         lastMessage.tool_calls &&
         lastMessage.tool_calls.length > 0
       ) {
-        console.log(
-          `[DEBUG]: useEffect(): sending currentMessages...`,
-          currentMessages,
-        );
         if (!areToolsConfirmed) {
-          console.log(
-            `[DEBUG]: tools are not confirmed, aborting! counter: ${recallCounter}`,
-          );
           abort();
           if (recallCounter < 1) {
-            console.log(
-              `[DEBUG]: counter is less than 1, return. counter: ${recallCounter}`,
-            );
             recallCounter++;
             return;
           }
@@ -217,7 +198,6 @@ export const useSendChatRequest = () => {
       const messagesToSend = messagesToKeep.concat([
         { role: "user", content: question },
       ]);
-      console.log(`[DEBUG]: messagesToSend: `, messagesToSend);
       retry(messagesToSend);
     },
     [currentMessages, retry],
