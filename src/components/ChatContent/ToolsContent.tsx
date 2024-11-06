@@ -97,7 +97,9 @@ const ToolMessage: React.FC<{
       </ScrollArea>
       <ScrollArea scrollbars="horizontal" style={{ width: "100%" }} asChild>
         <Box>
-          <Result hasImages={hasImages} isInsideScrollArea>{results}</Result>
+          <Result hasImages={hasImages} isInsideScrollArea>
+            {results}
+          </Result>
         </Box>
       </ScrollArea>
     </Flex>
