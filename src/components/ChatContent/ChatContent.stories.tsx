@@ -13,13 +13,11 @@ import {
   CHAT_WITH_DIFFS,
   FROG_CHAT,
   LARGE_DIFF,
-  TOOL_IMAGE_STUB,
 } from "../../__fixtures__";
 
 const MockedStore: React.FC<{
-  children: React.ReactNode;
-  messages?: ChatMessages;
-}> = ({ children, messages = [] }) => {
+  messages: ChatMessages;
+}> = ({ messages }) => {
   const store = setUpStore({
     chat: {
       streaming: false,
@@ -37,10 +35,13 @@ const MockedStore: React.FC<{
       },
     },
   });
+
   return (
     <Provider store={store}>
       <Theme>
-        <AbortControllerProvider>{children}</AbortControllerProvider>
+        <AbortControllerProvider>
+          <ChatContent onRetry={() => ({})} />
+        </AbortControllerProvider>
       </Theme>
     </Provider>
   );
@@ -48,147 +49,66 @@ const MockedStore: React.FC<{
 
 const meta = {
   title: "Chat Content",
-  component: ChatContent,
-  args: {},
-  // decorators: [
-  //   (Story) => (
-  //     <Provider store={store}>
-  //       <Theme>
-  //         <AbortControllerProvider>
-  //           <Story />
-  //         </AbortControllerProvider>
-  //       </Theme>
-  //     </Provider>
-  //   ),
-  // ],
-} satisfies Meta<typeof ChatContent>;
+  component: MockedStore,
+  args: {
+    messages: [],
+  },
+} satisfies Meta<typeof MockedStore>;
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const Primary: Story = {
-  decorators: [
-    (Story) => (
-      <MockedStore>
-        <Story />
-      </MockedStore>
-    ),
-  ],
-};
+export const Primary: Story = {};
 
 export const WithFunctions: Story = {
   args: {
     ...meta.args,
-    // messages: CHAT_FUNCTIONS_MESSAGES,
+    messages: CHAT_FUNCTIONS_MESSAGES,
   },
-  decorators: [
-    (Story) => (
-      <MockedStore messages={CHAT_FUNCTIONS_MESSAGES}>
-        <Story />
-      </MockedStore>
-    ),
-  ],
 };
 
 export const Notes: Story = {
   args: {
-    // messages: FROG_CHAT.messages,
+    messages: FROG_CHAT.messages,
   },
-  decorators: [
-    (Story) => (
-      <MockedStore messages={FROG_CHAT.messages}>
-        <Story />
-      </MockedStore>
-    ),
-  ],
 };
 
 export const WithDiffs: Story = {
   args: {
-    // messages: CHAT_WITH_DIFFS,
+    messages: CHAT_WITH_DIFFS,
   },
-  decorators: [
-    (Story) => (
-      <MockedStore messages={CHAT_WITH_DIFFS}>
-        <Story />
-      </MockedStore>
-    ),
-  ],
 };
 
 export const WithDiffActions: Story = {
   args: {
-    // messages: CHAT_WITH_DIFF_ACTIONS.messages,
+    messages: CHAT_WITH_DIFF_ACTIONS.messages,
     // getDiffByIndex: (key: string) => CHAT_WITH_DIFF_ACTIONS.applied_diffs[key],
   },
-  decorators: [
-    (Story) => (
-      <MockedStore messages={CHAT_WITH_DIFF_ACTIONS.messages}>
-        <Story />
-      </MockedStore>
-    ),
-  ],
 };
 
 export const LargeDiff: Story = {
   args: {
-    // messages: LARGE_DIFF.messages,
+    messages: LARGE_DIFF.messages,
     // getDiffByIndex: (key: string) => LARGE_DIFF.applied_diffs[key],
   },
-  decorators: [
-    (Story) => (
-      <MockedStore messages={LARGE_DIFF.messages}>
-        <Story />
-      </MockedStore>
-    ),
-  ],
 };
 
 export const Empty: Story = {
   args: {
     ...meta.args,
   },
-  decorators: [
-    // TODO: use redux store
-    (Story) => (
-      <MockedStore messages={[]}>
-        <Story />
-      </MockedStore>
-    ),
-  ],
 };
 
 export const AssistantMarkdown: Story = {
   args: {
     ...meta.args,
-    // messages: [["assistant", MarkdownTest]],
+    messages: [{ role: "assistant", content: MarkdownMessage }],
   },
-  decorators: [
-    (Story) => {
-      return (
-        <MockedStore
-          messages={[{ role: "assistant", content: MarkdownMessage }]}
-        >
-          <Story />
-        </MockedStore>
-      );
-    },
-  ],
 };
 
 export const ToolImages: Story = {
   args: {
     ...meta.args,
   },
-
-  decorators: [
-    (Story) => {
-      return (
-        <MockedStore messages={TOOL_IMAGE_STUB}>
-          <Story />
-        </MockedStore>
-      );
-    },
-  ],
 };

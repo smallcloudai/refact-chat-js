@@ -101,6 +101,8 @@ export const ChatForm: React.FC<ChatFormProps> = ({
         checkboxes,
         config.features?.vecdb ?? false,
       );
+      setFileInteracted(false);
+      setLineSelectionInteracted(false);
       onSubmit(valueIncludingChecks);
       setValue(() => "");
       unCheckAll();
@@ -114,6 +116,8 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     onSubmit,
     setValue,
     unCheckAll,
+    setFileInteracted,
+    setLineSelectionInteracted,
   ]);
 
   const handleEnter = useOnPressedEnter(handleSubmit);
