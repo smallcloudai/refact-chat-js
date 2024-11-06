@@ -19,6 +19,7 @@ import {
   diffApi,
   pathApi,
   pingApi,
+  integrationsApi,
 } from "../services/refact";
 import { smallCloudApi } from "../services/smallcloud";
 import { reducer as fimReducer } from "../features/FIM/reducer";
@@ -75,6 +76,7 @@ const rootReducer = combineSlices(
   errorSlice,
   informationSlice,
   pagesSlice,
+  integrationsApi,
 );
 
 const rootPersistConfig = {
@@ -136,6 +138,7 @@ export function setUpStore(preloadedState?: Partial<RootState>) {
             diffApi.middleware,
             smallCloudApi.middleware,
             pathApi.middleware,
+            integrationsApi.middleware,
           )
           .prepend(historyMiddleware.middleware)
           // .prepend(errorMiddleware.middleware)
