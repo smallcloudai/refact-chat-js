@@ -69,7 +69,7 @@ export const integrationsApi = createApi({
       },
     }),
     getIntegrationIcons: builder.query<IntegrationIcon[], undefined>({
-      async queryFn(arg, api, extraOptions, baseQuery) {
+      async queryFn(_arg, api, extraOptions, baseQuery) {
         const state = api.getState() as RootState;
         const port = state.config.lspPort as unknown as number;
         const url = `http://127.0.0.1:${port}${INTEGRATIONS_ICONS_URL}`;
