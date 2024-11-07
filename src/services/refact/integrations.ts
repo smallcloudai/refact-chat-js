@@ -116,28 +116,136 @@ export function isIntegrationIcon(json: unknown): json is IntegrationIcon {
   return true;
 }
 
+// export type Integration = {
+//   name: string;
+//   enabled: boolean;
+//   schema: null | Record<string, unknown>; // TODO: JSON schema
+//   value: {
+//     // Value = any json value :/
+//     [key: string]: unknown;
+//     detail?: string;
+//   };
+// };
+
+type IntegrationSchemaType =
+  | "string"
+  | "number"
+  | "integer"
+  | "boolean"
+  | "object"
+  | "array"
+  | "null";
+
+export type IntegrationSchema = {
+  $schema: string;
+  title: string;
+  type: IntegrationSchemaType | IntegrationSchemaType[];
+  required?: string[];
+  properties: Record<
+    string,
+    {
+      description: string;
+      type: IntegrationSchemaType | IntegrationSchemaType[];
+      items?: {
+        type: IntegrationSchemaType | IntegrationSchemaType[];
+        format?: string;
+        minimum?: number;
+      };
+      format?: string;
+      minimum?: number;
+    }
+  >;
+};
+
 export type Integration = {
   name: string;
   enabled: boolean;
-  schema: null | Record<string, unknown>; // TODO: JSON schema
-  value: {
-    // Value = any json value :/
-    [key: string]: unknown;
-    detail?: string;
-  };
+  schema: IntegrationSchema;
+  value: Record<string, unknown>;
 };
+
+export type ValidatedIntegration = {
+  warning?: string;
+} & Integration;
 
 function isIntegrations(json: unknown): json is Integration[] {
   if (!Array.isArray(json)) return false;
   return json.every(isIntegration);
 }
 export function isIntegration(json: unknown): json is Integration {
-  if (!json) return false;
-  if (typeof json !== "object") return false;
-  if (!("name" in json)) return false;
-  if (typeof json.name !== "string") return false;
-  if (!("enabled" in json)) return false;
-  if (!("schema" in json)) return false;
-  if (!("value" in json)) return false;
+  if (!json || typeof json !== "object") return false;
+
+  const obj = json as Record<string, unknown>;
+
+  if (typeof obj.name !== "string") return false;
+  if (typeof obj.enabled !== "boolean") return false;
+  if (!isIntegrationSchema(obj.schema)) return false;
+  if (typeof obj.value !== "object" || obj.value === null) return false;
+
+  return true;
+}
+
+function isIntegrationSchema(schema: unknown): schema is IntegrationSchema {
+  if (!schema || typeof schema !== "object") return false;
+
+  const schemaObj = schema as Record<string, unknown>;
+
+  if (typeof schemaObj.$schema !== "string") return false;
+  if (typeof schemaObj.title !== "string") return false;
+  if (!isValidTypeOrArrayOfTypes(schemaObj.type)) return false;
+  if (schemaObj.required && !Array.isArray(schemaObj.required)) return false;
+  if (typeof schemaObj.properties !== "object" || schemaObj.properties === null)
+    return false;
+
+  const properties = schemaObj.properties as Record<string, unknown>;
+
+  for (const key in properties) {
+    const property = properties[key] as Record<string, unknown>;
+    if (typeof property.description !== "string") return false;
+    if (!isValidTypeOrArrayOfTypes(property.type)) return false;
+    if (property.items && !isItemsSchema(property.items)) return false;
+    if (property.format && typeof property.format !== "string") return false;
+    if (property.minimum && typeof property.minimum !== "number") return false;
+  }
+
+  return true;
+}
+
+function isValidTypeOrArrayOfTypes(
+  type: unknown,
+): type is IntegrationSchemaType | IntegrationSchemaType[] {
+  if (typeof type === "string") {
+    return isValidType(type);
+  } else if (Array.isArray(type)) {
+    return type.every(isValidType);
+  }
+  return false;
+}
+
+function isValidType(type: unknown): type is IntegrationSchemaType {
+  return (
+    type === "string" ||
+    type === "number" ||
+    type === "integer" ||
+    type === "boolean" ||
+    type === "object" ||
+    type === "array" ||
+    type === "null"
+  );
+}
+
+function isItemsSchema(items: unknown): items is {
+  type: IntegrationSchemaType | IntegrationSchemaType[];
+  format?: string;
+  minimum?: number;
+} {
+  if (!items || typeof items !== "object") return false;
+
+  const itemsObj = items as Record<string, unknown>;
+
+  if (!isValidTypeOrArrayOfTypes(itemsObj.type)) return false;
+  if (itemsObj.format && typeof itemsObj.format !== "string") return false;
+  if (itemsObj.minimum && typeof itemsObj.minimum !== "number") return false;
+
   return true;
 }

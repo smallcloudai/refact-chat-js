@@ -1,3 +1,8 @@
+legend {
+  /* fallback to hide legend if TitleField doesn't disappear */
+  display: none;
+}
+
 .icon {
   max-width: 75px;
   object-fit: cover;
@@ -7,4 +12,23 @@
   padding: 1rem;
   height: 175px;
   min-width: calc(50% - 0.5rem);
+  cursor: pointer;
+  user-select: none;
+}
+
+.IntegrationForm {
+  width: 100%;
+  max-width: 100%;
+}
+
+.IntegrationWarning {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.WarningHoverCardContent {
+  background-color: var(--accent-a3);
+  color: var(--accent-a11);
 }
