@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback } from "react";
 import {
   ChatMessages,
   isChatContextFileMessage,
@@ -16,9 +16,7 @@ import { AssistantInput } from "./AssistantInput";
 import { useAutoScroll } from "./useAutoScroll";
 import { PlainText } from "./PlainText";
 import { useConfig, useEventsBusForIDE, useSendChatRequest } from "../../hooks";
-import { useAppSelector, useAppDispatch } from "../../hooks";
-import { RootState } from "../../app/store";
-import { next } from "../../features/TipOfTheDay";
+import { useAppSelector } from "../../hooks";
 import {
   selectIsStreaming,
   selectIsWaiting,
@@ -27,35 +25,18 @@ import {
 import { takeWhile } from "../../utils";
 import { GroupedDiffs } from "./DiffContent";
 import { ScrollToBottomButton } from "./ScrollToBottomButton";
-import {
-  selectCompleteManual,
-  selectHost,
-} from "../../features/Config/configSlice";
+import { currentTipOfTheDay } from "../../features/TipOfTheDay";
 
 const TipOfTheDay: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const state = useAppSelector((state: RootState) => state.tipOfTheDay);
-  const host = useAppSelector(selectHost);
-  const completeManual = useAppSelector(selectCompleteManual);
-
-  useEffect(() => {
-    console.log("Tip Mounted");
-    return () => console.log("Tip unmounted");
-  }, []);
-
-  // TODO: find out what this is about.
-  useEffect(() => {
-    dispatch(next({ host, completeManual }));
-  }, [completeManual, dispatch, host]);
+  const tip = useAppSelector(currentTipOfTheDay);
 
   return (
     <Text>
-      💡 <b>Tip of the day</b>: {state.tip}
+      💡 <b>Tip of the day</b>: {tip}
     </Text>
   );
 };
 
-// TODO: turn this into a component
 const PlaceHolderText: React.FC = () => {
   const config = useConfig();
   const hasVecDB = config.features?.vecdb ?? false;
@@ -126,21 +107,6 @@ export const ChatContent = React.forwardRef<HTMLDivElement>((_props, ref) => {
   const isWaiting = useAppSelector(selectIsWaiting);
   const { retryFromIndex } = useSendChatRequest();
 
-  // useEffect(() => {
-  //   console.log("Chat content props change");
-  //   console.log(_props);
-  // }, [_props]);
-
-  // useEffect(() => {
-  //   console.log("Chat Content, ref changed");
-  //   console.log(ref);
-  // }, [ref]);
-
-  useEffect(() => {
-    console.log("Chat Content Mounted");
-    return () => console.log("Chat Content unmounted");
-  }, []);
-
   const {
     innerRef,
     handleScroll,
@@ -155,7 +121,6 @@ export const ChatContent = React.forwardRef<HTMLDivElement>((_props, ref) => {
 
   const onRetryWrapper = useCallback(
     (index: number, question: UserMessage["content"]) => {
-      // props.onRetry(index, question);
       retryFromIndex(index, question);
       handleScrollButtonClick();
     },
