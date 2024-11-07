@@ -132,9 +132,9 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
     dispatch(push({ name: "history" }));
   };
 
-  const goBack = () => {
+  const goBack = useCallback(() => {
     dispatch(pop());
-  };
+  }, [dispatch]);
 
   const page = pages[pages.length - 1];
 
@@ -191,6 +191,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
         )}
         {page.name === "chat" && (
           <Chat
+            // Can be pushed down
             host={config.host}
             tabbed={config.tabbed}
             backFromChat={goBack}

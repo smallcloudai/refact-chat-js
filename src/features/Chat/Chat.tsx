@@ -8,12 +8,12 @@ import { selectMessages } from "./Thread";
 export type ChatProps = {
   host: Config["host"];
   tabbed: Config["tabbed"];
-  style?: React.CSSProperties;
+  // style?: React.CSSProperties;
   backFromChat: () => void;
 };
 
 export const Chat: React.FC<ChatProps> = ({
-  style,
+  // style,
   backFromChat,
   host,
   tabbed,
@@ -28,12 +28,12 @@ export const Chat: React.FC<ChatProps> = ({
   const messages = useAppSelector(selectMessages);
   useAutoSubmit();
 
-  const sendToSideBar = () => {
-    // TODO:
-  };
+  // const sendToSideBar = () => {
+  //   // TODO:
+  // };
 
-  const maybeSendToSideBar =
-    host === "vscode" && tabbed ? sendToSideBar : undefined;
+  // const maybeSendToSideBar =
+  //   host === "vscode" && tabbed ? sendToSideBar : undefined;
 
   // TODO: can be a selector
   const unCalledTools = React.useMemo(() => {
@@ -47,7 +47,9 @@ export const Chat: React.FC<ChatProps> = ({
 
   return (
     <ChatComponent
-      style={style}
+      // style isn't used
+      // style={style}
+      // host and tabbed can be lowered
       host={host}
       tabbed={tabbed}
       backFromChat={backFromChat}
@@ -60,7 +62,7 @@ export const Chat: React.FC<ChatProps> = ({
       //   available_caps: capsRequest.data?.code_chat_models ?? {},
       // }}
       // TODO: this can be removed
-      maybeSendToSidebar={maybeSendToSideBar}
+      // maybeSendToSidebar={maybeSendToSideBar}
       // TODO: This can be removed
       // requestPreviewFiles={() => ({})}
     />

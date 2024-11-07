@@ -36,14 +36,14 @@ export type ChatProps = {
   unCalledTools: boolean;
   // TODO: update this
   // caps: ChatFormProps["caps"];
-  maybeSendToSidebar: ChatFormProps["onClose"];
+  // maybeSendToSidebar: ChatFormProps["onClose"];
 };
 
 export const Chat: React.FC<ChatProps> = ({
   style,
   unCalledTools,
   // caps, // changes when clicking new chat :/
-  maybeSendToSidebar,
+  // maybeSendToSidebar,
 }) => {
   useEffect(() => {
     console.log("style changed");
@@ -56,9 +56,9 @@ export const Chat: React.FC<ChatProps> = ({
   //   console.log("caps changed");
   // }, [caps]);
 
-  useEffect(() => {
-    console.log("side fn changed");
-  }, [maybeSendToSidebar]);
+  // useEffect(() => {
+  //   console.log("side fn changed");
+  // }, [maybeSendToSidebar]);
 
   const [isViewingRawJSON, setIsViewingRawJSON] = useState(false);
   const chatContentRef = useRef<HTMLDivElement>(null);
@@ -185,7 +185,7 @@ export const Chat: React.FC<ChatProps> = ({
             available_caps: capsRequest.data?.code_chat_models ?? {},
           }}
           onStopStreaming={abort}
-          onClose={maybeSendToSidebar}
+          // onClose={maybeSendToSidebar}
           onTextAreaHeightChange={onTextAreaHeightChange}
           prompts={promptsRequest.data ?? {}}
           onSetSystemPrompt={onSetSelectedSystemPrompt}
