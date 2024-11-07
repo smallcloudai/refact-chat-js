@@ -129,13 +129,22 @@ startListening({
 });
 
 startListening({
-  matcher: isAnyOf(restoreChat, newChatAction),
-  effect: (_action, listenerApi) => {
+  matcher: isAnyOf(restoreChat, newChatAction, updateConfig),
+  effect: (action, listenerApi) => {
     const state = listenerApi.getState();
+    const isUpdate = updateConfig.match(action);
+
+    const host =
+      isUpdate && action.payload.host ? action.payload.host : state.config.host;
+
+    const completeManual = isUpdate
+      ? action.payload.keyBindings?.completeManual
+      : state.config.keyBindings?.completeManual;
+
     listenerApi.dispatch(
       nextTip({
-        host: state.config.host,
-        completeManual: state.config.keyBindings?.completeManual,
+        host,
+        completeManual,
       }),
     );
   },
