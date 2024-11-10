@@ -1,8 +1,3 @@
-legend {
-  /* fallback to hide legend if TitleField doesn't disappear */
-  display: none;
-}
-
 .icon {
   max-width: 75px;
   object-fit: cover;

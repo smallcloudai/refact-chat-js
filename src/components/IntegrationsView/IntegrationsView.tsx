@@ -22,11 +22,18 @@ import { useAppDispatch, useAppSelector } from "../../hooks";
 import { clearError, getErrorMessage } from "../../features/Errors/errorsSlice";
 import styles from "./IntegrationsView.module.css";
 import { fetchSchema, validateSchema } from "../../utils/jsonSchemaVerifier";
-import Form from "@rjsf/core";
+import Form, { IChangeEvent } from "@rjsf/core";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { ValidatorType } from "@rjsf/utils";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
-import { customFields, customWidgets } from "./CustomFieldsAndWidgets";
+import {
+  customFields,
+  customTemplates,
+  customWidgets,
+} from "./CustomFieldsAndWidgets";
+
+import "./JSONFormStyles.css";
+import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const validator: ValidatorType<any, IntegrationSchema> = customizeValidator<
@@ -73,6 +80,8 @@ export const IntegrationsView: React.FC<{
 }> = ({ integrationsData, integrationsIcons, isLoading, goBack }) => {
   const dispatch = useAppDispatch();
   const error = useAppSelector(getErrorMessage);
+  const { saveIntegrationMutationTrigger } = useSaveIntegrationData();
+
   const [validatedIntegrations, setValidatedIntegrations] = useState<
     ValidatedIntegration[]
   >([]);
@@ -82,37 +91,38 @@ export const IntegrationsView: React.FC<{
 
   useEffect(() => {
     const validateIntegrations = async () => {
-      if (integrationsData) {
-        if (validatedIntegrations.length >= 1) {
-          setValidatedIntegrations([]);
-        }
-        const validIntegrations: ValidatedIntegration[] = [];
-
-        for (const integration of integrationsData) {
-          try {
-            const schema = await fetchSchema(integration.schema.$schema);
-            if (!validateSchema(schema, integration.value)) {
-              const maybeWarningMessage = isDetailMessage(integration.value)
-                ? integration.value.detail
-                : "Current tool has unexpected error, check your settings";
-
-              validIntegrations.push({
-                ...integration,
-                warning: maybeWarningMessage,
-              });
-              continue;
-            }
-            validIntegrations.push(integration);
-          } catch (err) {
-            console.error(
-              `Failed to validate integration ${integration.name}:`,
-              err,
-            );
-          }
-        }
-        console.log(`[DEBUG]: validIntegrations: `, validIntegrations);
-        setValidatedIntegrations(validIntegrations);
+      if (!integrationsData) {
+        return;
       }
+      if (validatedIntegrations.length >= 1) {
+        setValidatedIntegrations([]);
+      }
+      const validIntegrations: ValidatedIntegration[] = [];
+
+      for (const integration of integrationsData) {
+        try {
+          const schema = await fetchSchema(integration.schema.$schema);
+          if (!validateSchema(schema, integration.value)) {
+            const maybeWarningMessage = isDetailMessage(integration.value)
+              ? integration.value.detail
+              : "Current tool has unexpected error, check your settings";
+
+            validIntegrations.push({
+              ...integration,
+              warning: maybeWarningMessage,
+            });
+            continue;
+          }
+          validIntegrations.push(integration);
+        } catch (err) {
+          console.error(
+            `Failed to validate integration ${integration.name}:`,
+            err,
+          );
+        }
+      }
+      console.log(`[DEBUG]: validIntegrations: `, validIntegrations);
+      setValidatedIntegrations(validIntegrations);
     };
 
     void validateIntegrations();
@@ -142,9 +152,34 @@ export const IntegrationsView: React.FC<{
     setCurrentIntegration(integration);
   };
 
-  const handleSubmit = (formData: unknown) => {
+  const handleSubmit = async (
+    formData: Record<string, unknown>,
+    integration: ValidatedIntegration,
+  ) => {
     console.log(`[DEBUG]: formData: `, formData);
+    console.log(`[DEBUG]: integration: `, integration);
+    const { enabled, name, schema } = integration;
+    await saveIntegrationMutationTrigger({
+      enabled,
+      name,
+      schema,
+      value: formData,
+    });
+    setCurrentIntegration(null);
   };
+
+  const handleFormChange = (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    event: IChangeEvent<any, IntegrationSchema>,
+  ) => {
+    console.log(`[Form DEBUG]: Updated formData:`, event.formData);
+  };
+
+  // const omitDetailField = (data: ValidatedIntegration["value"]) => {
+  //   const { detail, ...rest } = data;
+  //   console.log(`[DEBUG]: rest: `, rest);
+  //   return rest;
+  // };
 
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   if (error || !integrationsData || !integrationsIcons) {
@@ -171,12 +206,23 @@ export const IntegrationsView: React.FC<{
         {currentIntegration ? (
           <Flex direction="column" align="start">
             <Form
-              schema={currentIntegration.schema}
               validator={validator}
+              schema={currentIntegration.schema}
+              liveOmit={true}
+              omitExtraData={true}
+              // formData={omitDetailField(currentIntegration.value)}
+              formData={currentIntegration.value}
               className={styles.IntegrationForm}
-              onSubmit={(event) => handleSubmit(event.formData)}
+              onSubmit={(event) =>
+                void handleSubmit(
+                  event.formData as Record<string, unknown>,
+                  currentIntegration,
+                )
+              }
+              onChange={handleFormChange}
               fields={customFields}
               widgets={customWidgets}
+              templates={customTemplates}
             >
               <Flex gap="3" mt="4">
                 <Button color="green" variant="solid" type="submit">
