@@ -22,18 +22,20 @@ import { useAppDispatch, useAppSelector } from "../../hooks";
 import { clearError, getErrorMessage } from "../../features/Errors/errorsSlice";
 import styles from "./IntegrationsView.module.css";
 import { fetchSchema, validateSchema } from "../../utils/jsonSchemaVerifier";
-import Form from "@rjsf/core";
+// import Form from "@rjsf/core";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { ValidatorType } from "@rjsf/utils";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { customFields, customWidgets } from "./CustomFieldsAndWidgets";
+import { IntegrationsForm as Form } from "../IntegrationsForm/IntegrationsFrom";
+import validator from "@rjsf/validator-ajv8";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const validator: ValidatorType<any, IntegrationSchema> = customizeValidator<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  any,
-  IntegrationSchema
->();
+// // eslint-disable-next-line @typescript-eslint/no-explicit-any
+// const validator: ValidatorType<any, IntegrationSchema> = customizeValidator<
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   any,
+//   IntegrationSchema
+// >();
 
 const WarningHoverCard: React.FC<{
   label: React.ReactNode;
@@ -80,43 +82,43 @@ export const IntegrationsView: React.FC<{
   const [currentIntegration, setCurrentIntegration] =
     useState<ValidatedIntegration | null>(null);
 
-  useEffect(() => {
-    const validateIntegrations = async () => {
-      if (integrationsData) {
-        if (validatedIntegrations.length >= 1) {
-          setValidatedIntegrations([]);
-        }
-        const validIntegrations: ValidatedIntegration[] = [];
+  // useEffect(() => {
+  //   const validateIntegrations = async () => {
+  //     if (integrationsData) {
+  //       if (validatedIntegrations.length >= 1) {
+  //         setValidatedIntegrations([]);
+  //       }
+  //       const validIntegrations: ValidatedIntegration[] = [];
 
-        for (const integration of integrationsData) {
-          try {
-            const schema = await fetchSchema(integration.schema.$schema);
-            if (!validateSchema(schema, integration.value)) {
-              const maybeWarningMessage = isDetailMessage(integration.value)
-                ? integration.value.detail
-                : "Current tool has unexpected error, check your settings";
+  //       for (const integration of integrationsData) {
+  //         try {
+  //           const schema = await fetchSchema(integration.schema.$schema);
+  //           if (!validateSchema(schema, integration.value)) {
+  //             const maybeWarningMessage = isDetailMessage(integration.value)
+  //               ? integration.value.detail
+  //               : "Current tool has unexpected error, check your settings";
 
-              validIntegrations.push({
-                ...integration,
-                warning: maybeWarningMessage,
-              });
-              continue;
-            }
-            validIntegrations.push(integration);
-          } catch (err) {
-            console.error(
-              `Failed to validate integration ${integration.name}:`,
-              err,
-            );
-          }
-        }
-        console.log(`[DEBUG]: validIntegrations: `, validIntegrations);
-        setValidatedIntegrations(validIntegrations);
-      }
-    };
+  //             validIntegrations.push({
+  //               ...integration,
+  //               warning: maybeWarningMessage,
+  //             });
+  //             continue;
+  //           }
+  //           validIntegrations.push(integration);
+  //         } catch (err) {
+  //           console.error(
+  //             `Failed to validate integration ${integration.name}:`,
+  //             err,
+  //           );
+  //         }
+  //       }
+  //       console.log(`[DEBUG]: validIntegrations: `, validIntegrations);
+  //       setValidatedIntegrations(validIntegrations);
+  //     }
+  //   };
 
-    void validateIntegrations();
-  }, [integrationsData, validatedIntegrations.length]);
+  //   void validateIntegrations();
+  // }, [integrationsData, validatedIntegrations.length]);
 
   if (isLoading) {
     return <Spinner />;
@@ -175,8 +177,8 @@ export const IntegrationsView: React.FC<{
               validator={validator}
               className={styles.IntegrationForm}
               onSubmit={(event) => handleSubmit(event.formData)}
-              fields={customFields}
-              widgets={customWidgets}
+              // fields={customFields}
+              // widgets={customWidgets}
             >
               <Flex gap="3" mt="4">
                 <Button color="green" variant="solid" type="submit">
@@ -204,7 +206,7 @@ export const IntegrationsView: React.FC<{
           </Flex>
         ) : (
           <Flex align="start" justify="between" wrap="wrap" gap="4">
-            {validatedIntegrations.map((integration) => (
+            {integrationsData.map((integration) => (
               <Card
                 key={integration.name}
                 className={styles.integrationCard}
