@@ -129,6 +129,7 @@ export const Chat: React.FC<ChatProps> = ({
           key={`chat-content-${chatId}`}
           ref={chatContentRef}
           onRetry={retryFromIndex}
+          onStopStreaming={abort}
         />
         {!isStreaming && preventSend && unCalledTools && (
           <Container py="4" bottom="0" style={{ justifyContent: "flex-end" }}>
@@ -150,7 +151,6 @@ export const Chat: React.FC<ChatProps> = ({
           model={chatModel}
           onSetChatModel={onSetChatModel}
           caps={caps}
-          onStopStreaming={abort}
           onClose={maybeSendToSidebar}
           onTextAreaHeightChange={onTextAreaHeightChange}
           prompts={promptsRequest.data ?? {}}
