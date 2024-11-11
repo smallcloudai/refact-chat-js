@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect } from "react";
 
-import { Flex, Card, Text } from "@radix-ui/themes";
+import { Flex, Card, Text, Box } from "@radix-ui/themes";
 import styles from "./ChatForm.module.css";
 
 import { PaperPlaneButton, BackToSideBarButton } from "../Buttons/Buttons";
@@ -211,103 +211,109 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   }
 
   return (
-    <Card mt="1" style={{ flexShrink: 0, position: "static" }}>
-      {!isOnline && <Callout type="info" message="Offline" />}
-
+    <Box position="relative" m="0" p="0">
       {isStreaming && (
         <Button
           ml="auto"
           color="red"
           title="stop streaming"
           onClick={onStopStreaming}
+          style={{
+            position: "absolute",
+            top: "calc(var(--base-button-height) * -1) ",
+          }}
         >
           Stop
         </Button>
       )}
 
-      <Flex
-        ref={(x) => refs.setChat(x)}
-        style={{
-          // TODO: direction can be done with prop `direction`
-          flexDirection: "column",
-          alignSelf: "stretch",
-          flex: 1,
-          width: "100%",
-        }}
-      >
-        {helpInfo && (
-          <Flex mb="3" direction="column">
-            {helpInfo}
-          </Flex>
-        )}
-        <Form
-          disabled={isStreaming || !isOnline}
-          className={className}
-          onSubmit={() => handleSubmit()}
-        >
-          <FilesPreview files={previewFiles} />
+      <Card mt="1" style={{ flexShrink: 0, position: "static" }}>
+        {!isOnline && <Callout type="info" message="Offline" />}
 
-          <ComboBox
-            onHelpClick={handleHelpCommand}
-            commands={commands}
-            requestCommandsCompletion={requestCompletion}
-            value={value}
-            onChange={handleChange}
-            onSubmit={(event) => {
-              handleEnter(event);
-            }}
-            placeholder={
-              commands.completions.length < 1 ? "Type @ for commands" : ""
-            }
-            render={(props) => (
-              <TextArea
-                data-testid="chat-form-textarea"
-                required={true}
-                disabled={isStreaming}
-                {...props}
-                onTextAreaHeightChange={onTextAreaHeightChange}
-                autoFocus={true}
-                style={{ boxShadow: "none", outline: "none" }}
-              />
-            )}
-          />
-          <Flex gap="2" className={styles.buttonGroup}>
-            {onClose && (
-              <BackToSideBarButton
-                disabled={isStreaming}
-                title="return to sidebar"
-                size="1"
-                onClick={onClose}
-              />
-            )}
-            <AttachFileButton />
-            {/* TODO: Reserved space for microphone button coming later on */}
-            <PaperPlaneButton
-              disabled={isStreaming || !isOnline}
-              title="send"
-              size="1"
-              type="submit"
+        <Flex
+          ref={(x) => refs.setChat(x)}
+          style={{
+            // TODO: direction can be done with prop `direction`
+            flexDirection: "column",
+            alignSelf: "stretch",
+            flex: 1,
+            width: "100%",
+          }}
+        >
+          {helpInfo && (
+            <Flex mb="3" direction="column">
+              {helpInfo}
+            </Flex>
+          )}
+          <Form
+            disabled={isStreaming || !isOnline}
+            className={className}
+            onSubmit={() => handleSubmit()}
+          >
+            <FilesPreview files={previewFiles} />
+
+            <ComboBox
+              onHelpClick={handleHelpCommand}
+              commands={commands}
+              requestCommandsCompletion={requestCompletion}
+              value={value}
+              onChange={handleChange}
+              onSubmit={(event) => {
+                handleEnter(event);
+              }}
+              placeholder={
+                commands.completions.length < 1 ? "Type @ for commands" : ""
+              }
+              render={(props) => (
+                <TextArea
+                  data-testid="chat-form-textarea"
+                  required={true}
+                  disabled={isStreaming}
+                  {...props}
+                  onTextAreaHeightChange={onTextAreaHeightChange}
+                  autoFocus={true}
+                  style={{ boxShadow: "none", outline: "none" }}
+                />
+              )}
             />
-          </Flex>
-        </Form>
-      </Flex>
-      <FileList />
-      <ChatControls
-        host={config.host}
-        checkboxes={checkboxes}
-        showControls={showControls}
-        onCheckedChange={onToggleCheckbox}
-        selectProps={{
-          value: model || caps.default_cap,
-          onChange: onSetChatModel,
-          options: Object.keys(caps.available_caps),
-        }}
-        promptsProps={{
-          value: selectedSystemPrompt,
-          prompts: prompts,
-          onChange: onSetSystemPrompt,
-        }}
-      />
-    </Card>
+            <Flex gap="2" className={styles.buttonGroup}>
+              {onClose && (
+                <BackToSideBarButton
+                  disabled={isStreaming}
+                  title="return to sidebar"
+                  size="1"
+                  onClick={onClose}
+                />
+              )}
+              <AttachFileButton />
+              {/* TODO: Reserved space for microphone button coming later on */}
+              <PaperPlaneButton
+                disabled={isStreaming || !isOnline}
+                title="send"
+                size="1"
+                type="submit"
+              />
+            </Flex>
+          </Form>
+        </Flex>
+        <FileList />
+        <ChatControls
+          host={config.host}
+          checkboxes={checkboxes}
+          showControls={showControls}
+          onCheckedChange={onToggleCheckbox}
+          selectProps={{
+            value: model || caps.default_cap,
+            onChange: onSetChatModel,
+            options: Object.keys(caps.available_caps),
+          }}
+          promptsProps={{
+            value: selectedSystemPrompt,
+            prompts: prompts,
+            onChange: onSetSystemPrompt,
+          }}
+        />
+      </Card>
+    </Box>
   );
 };
