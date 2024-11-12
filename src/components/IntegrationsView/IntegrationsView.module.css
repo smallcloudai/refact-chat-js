@@ -3,6 +3,17 @@
   object-fit: cover;
 }
 
+.SetupIcon {
+  max-width: 30px;
+  object-fit: cover;
+}
+
+.SetupTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .integrationCard {
   padding: 1rem;
   height: 175px;

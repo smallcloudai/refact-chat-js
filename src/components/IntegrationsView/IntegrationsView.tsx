@@ -183,7 +183,11 @@ export const IntegrationsView: React.FC<{
 
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   if (error || !integrationsData || !integrationsIcons) {
-    return <ErrorCallout onClick={goBackAndClearError}>{error}</ErrorCallout>;
+    return (
+      <ErrorCallout onClick={goBackAndClearError}>
+        {error ?? "fetching integrations."}
+      </ErrorCallout>
+    );
   }
 
   return (
@@ -198,11 +202,24 @@ export const IntegrationsView: React.FC<{
           width: "inherit",
         }}
       >
-        <Heading as="h3" align="center" mb="5">
-          {currentIntegration
-            ? `Setup ${currentIntegration.name}`
-            : "Integrations Setup"}
-        </Heading>
+        {currentIntegration ? (
+          <Heading as="h3" className={styles.SetupTitle} mb="4">
+            Setup{" "}
+            <img
+              src={
+                integrationsIcons.find(
+                  (icon) => icon.name === currentIntegration.name,
+                )?.value ?? ""
+              }
+              className={styles.SetupIcon}
+              alt={currentIntegration.name}
+            />
+          </Heading>
+        ) : (
+          <Heading as="h3" align="center" mb="5">
+            Integrations Setup
+          </Heading>
+        )}
         {currentIntegration ? (
           <Flex direction="column" align="start">
             <Form

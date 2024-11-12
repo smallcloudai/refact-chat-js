@@ -15,6 +15,11 @@ fieldset {
   }
   .control-label {
     font-weight: 600;
+    font-size: 15px;
+  }
+  .field-description {
+    display: block;
+    opacity: 0.85;
   }
 }
 

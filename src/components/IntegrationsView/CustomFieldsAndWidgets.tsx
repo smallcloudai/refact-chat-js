@@ -9,19 +9,28 @@ import {
   Text,
 } from "@radix-ui/themes";
 import {
+  DescriptionFieldProps,
   FieldProps,
+  FieldTemplateProps,
   IconButtonProps,
-  TitleFieldProps,
   WidgetProps,
 } from "@rjsf/utils";
 import { IntegrationSchema } from "../../services/refact";
 
+function toPascalCase(value: string) {
+  return value
+    .split("_")
+    .map((str) => str.charAt(0).toUpperCase() + str.slice(1))
+    .join(" ")
+    .split("-")
+    .join(" ");
+}
+
 // Custom String Field
 const CustomStringField: React.FC<FieldProps<string, IntegrationSchema>> = ({
-  id,
-  label,
   onChange,
   formData,
+  name,
 }) => {
   const [inputValue, setInputValue] = useState<string>(formData ?? "");
 
@@ -36,9 +45,8 @@ const CustomStringField: React.FC<FieldProps<string, IntegrationSchema>> = ({
 
   return (
     <Box mb="3">
-      <label htmlFor={id}>{label}</label>
       <TextField.Root
-        id={id}
+        id={`root_${name}`}
         size="3"
         onChange={handleChange}
         value={inputValue}
@@ -51,6 +59,13 @@ const CustomTitleField: React.FC<FieldProps<string, IntegrationSchema>> = (
   props,
 ) => {
   return <h1 style={{ color: "red" }}>{props.title}</h1>;
+};
+
+const CustomDescriptionField: React.FC<
+  FieldProps<string, IntegrationSchema>
+> = (props) => {
+  const { name } = props;
+  return <Text style={{ color: "red" }}>{name}</Text>;
 };
 
 // Custom Textarea Widget
@@ -111,14 +126,10 @@ const CustomCheckboxWidget: React.FC<
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function AddButton(props: IconButtonProps<any, IntegrationSchema>) {
-  const { icon, onClick, registry } = props;
+  const { icon, onClick } = props;
 
-  const handleClick: React.MouseEventHandler<HTMLButtonElement> = (event) => {
-    console.log(`[DEBUG]: registry: `, registry);
-    onClick && onClick(event);
-  };
   return (
-    <Button size="1" color="green" onClick={handleClick}>
+    <Button size="1" color="green" onClick={onClick}>
       {icon} <Text>Add</Text>
     </Button>
   );
@@ -154,25 +165,65 @@ function MoveDownButton(props: IconButtonProps<any, IntegrationSchema>) {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function TitleFieldTemplate(props: TitleFieldProps<any, IntegrationSchema>) {
-  const { id, title } = props;
+function TitleFieldTemplate() {
+  return null;
+}
+
+function FieldTemplate(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  props: FieldTemplateProps<any, IntegrationSchema>,
+) {
+  const {
+    id,
+    classNames,
+    label,
+    help,
+    required,
+    description,
+    errors,
+    children,
+  } = props;
   return (
-    <header
-      id={id}
-      style={{
-        display: id === "root__title" ? "none" : "initial",
-        fontWeight: "600",
-      }}
-    >
-      {title}
-    </header>
+    <Box className={classNames}>
+      {id !== "root" && (
+        <label htmlFor={id} className="control-label">
+          {toPascalCase(label)}
+          {required ? "*" : null}
+        </label>
+      )}
+      {description}
+      {children}
+      {errors}
+      {help}
+    </Box>
   );
+}
+
+function DescriptionFieldTemplate(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  props: DescriptionFieldProps<any, IntegrationSchema>,
+) {
+  const { description, id } = props;
+
+  return (
+    <>
+      {id !== "root__description" && (
+        <Text id={id} size="3" my="2" className="field-description">
+          {description}
+        </Text>
+      )}
+    </>
+  );
+}
+
+function ArrayFieldDescriptionTemplate() {
+  return null;
 }
 
 export const customFields = {
   StringField: CustomStringField,
   TitleField: CustomTitleField,
+  DescriptionField: CustomDescriptionField,
 };
 
 export const customWidgets = {
@@ -189,4 +240,7 @@ export const customTemplates = {
   },
   // ArrayFieldTemplate
   TitleFieldTemplate,
+  FieldTemplate,
+  DescriptionFieldTemplate,
+  ArrayFieldDescriptionTemplate,
 };
