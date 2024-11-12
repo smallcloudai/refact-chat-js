@@ -243,14 +243,14 @@ export const IntegrationsView: React.FC<{
             >
               <Flex gap="3" mt="4">
                 <Button color="green" variant="solid" type="submit">
-                  Submit
+                  Apply
                 </Button>
                 <Button
                   color="ruby"
                   onClick={() => setCurrentIntegration(null)}
                   type="button"
                 >
-                  Cancel
+                  Return
                 </Button>
               </Flex>
             </Form>
