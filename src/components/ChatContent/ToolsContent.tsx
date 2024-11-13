@@ -18,7 +18,7 @@ import {
   selectToolResultById,
 } from "../../features/Chat/Thread/selectors";
 import { ScrollArea } from "../ScrollArea";
-import { partition, takeWhile } from "../../utils";
+import { takeWhile } from "../../utils";
 
 type ResultProps = {
   children: string;
@@ -66,11 +66,23 @@ function resultToMarkdown(result?: ToolResult): string {
   return images.join("\n");
 }
 
-// const SingleModelToolMessage: React.FC<{
-//   toolCall: ToolCall;
-//   toolResult: SingleModelToolResult;
-// }> = ({ toolCall, toolResult }) => {};
+function toolCallArgsToString(toolCallArgs: string) {
+  try {
+    const json = JSON.parse(toolCallArgs) as unknown as Parameters<
+      typeof Object.entries
+    >;
+    if (Array.isArray(json)) {
+      return json.join(", ");
+    }
+    return Object.entries(json)
+      .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
+      .join(", ");
+  } catch {
+    return toolCallArgs;
+  }
+}
 
+// TODO: Sort of duplicated
 const ToolMessage: React.FC<{
   toolCall: ToolCall;
 }> = ({ toolCall }) => {
@@ -83,19 +95,7 @@ const ToolMessage: React.FC<{
   );
 
   const argsString = React.useMemo(() => {
-    try {
-      const json = JSON.parse(
-        toolCall.function.arguments,
-      ) as unknown as Parameters<typeof Object.entries>;
-      if (Array.isArray(json)) {
-        return json.join(", ");
-      }
-      return Object.entries(json)
-        .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
-        .join(", ");
-    } catch {
-      return toolCall.function.arguments;
-    }
+    return toolCallArgsToString(toolCall.function.arguments);
   }, [toolCall.function.arguments]);
 
   if (maybeResult && isMultiModalToolResult(maybeResult)) {
@@ -270,9 +270,27 @@ function processToolCalls(
   const result = toolResults.find((result) => result.tool_call_id === head.id);
 
   if (result && isMultiModalToolResult(result)) {
-    // TODO: render multi-modal tool call and result.
-    const elem = <MultiModalToolContent toolCall={head} toolResult={result} />;
-    return processToolCalls(tail, toolResults, [...processed, elem]);
+    const restInTail = takeWhile(tail, (toolCall) => {
+      const nextResult = toolResults.find(
+        (res) => res.tool_call_id === toolCall.id,
+      );
+      return nextResult !== undefined && isMultiModalToolResult(nextResult);
+    });
+
+    const nextTail = tail.slice(restInTail.length);
+    const multiModalToolCalls = [head, ...restInTail];
+    const ids = multiModalToolCalls.map((d) => d.id);
+    const multiModalToolResults: MultiModalToolResult[] = toolResults
+      .filter(isMultiModalToolResult)
+      .filter((toolResult) => ids.includes(toolResult.tool_call_id));
+
+    const elem = (
+      <MultiModalToolContent
+        toolCalls={multiModalToolCalls}
+        toolResults={multiModalToolResults}
+      />
+    );
+    return processToolCalls(nextTail, toolResults, [...processed, elem]);
   }
 
   const restInTail = takeWhile(tail, (toolCall) => {
@@ -288,53 +306,140 @@ function processToolCalls(
 }
 
 const MultiModalToolContent: React.FC<{
-  toolCall: ToolCall;
-  toolResult: MultiModalToolResult;
-}> = ({ toolCall, toolResult }) => {
+  toolCalls: ToolCall[];
+  toolResults: MultiModalToolResult[];
+}> = ({ toolCalls, toolResults }) => {
   const [open, setOpen] = React.useState(false);
-  const [texts, images] = partition(toolResult.content, (content) =>
-    content.m_type.startsWith("image/"),
+
+  // const content = toolResults.map((toolResult) => toolResult.content);
+
+  const hasImages = toolResults.some((toolResult) =>
+    toolResult.content.some((content) => content.m_type.startsWith("image/")),
   );
 
-  const text = texts
-    .filter((text) => text.m_type === "text")
-    .map((text) => text.m_content)
-    .join("\n");
+  // TOOD: duplicated
+  const toolNames = toolCalls.reduce<string[]>((acc, toolCall) => {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (toolCall === null) {
+      // eslint-disable-next-line no-console
+      console.error("toolCall is null");
+      return acc;
+    }
+    if (!toolCall.function.name) return acc;
+    if (acc.includes(toolCall.function.name)) return acc;
+    return [...acc, toolCall.function.name];
+  }, []);
+
+  // TODO: duplicated
+  const toolUsageAmount = toolNames.map<ToolUsage>((toolName) => {
+    return {
+      functionName: toolName,
+      amountOfCalls: toolCalls.filter(
+        (toolCall) => toolCall.function.name === toolName,
+      ).length,
+    };
+  });
 
   return (
     <Container>
       <Collapsible.Root open={open} onOpenChange={setOpen}>
         <Collapsible.Trigger asChild>
+          {/**TODO: duplicated */}
           <Flex gap="2" align="end">
             <Flex gap="1" align="start" direction="column">
               <Text weight="light" size="1">
                 🔨{" "}
-                <ToolUsageDisplay
-                  functionName={toolCall.function.name ?? ""}
-                  amountOfCalls={1}
-                />
+                {toolUsageAmount.map(
+                  ({ functionName, amountOfCalls }, index) => (
+                    <span key={functionName}>
+                      <ToolUsageDisplay
+                        functionName={functionName}
+                        amountOfCalls={amountOfCalls}
+                      />
+                      {index === toolUsageAmount.length - 1 ? "" : ", "}
+                    </span>
+                  ),
+                )}
               </Text>
             </Flex>
             <Chevron open={open} />
           </Flex>
         </Collapsible.Trigger>
-
         <Collapsible.Content>
-          <ResultMarkdown>{text}</ResultMarkdown>
+          {/** TODO: tool call name and text result */}
+          <Box py="2">
+            {toolCalls.map((toolCall, i) => {
+              const result = toolResults.find(
+                (toolResult) => toolResult.tool_call_id === toolCall.id,
+              );
+              if (!result) return null;
+
+              const texts = result.content
+                .filter((content) => content.m_type === "text")
+                .map((result) => result.m_content)
+                .join("\n");
+
+              const name = toolCall.function.name ?? "";
+              const argsString = toolCallArgsToString(
+                toolCall.function.arguments,
+              );
+
+              const functionCalled =
+                "```python\n" + name + "(" + argsString + ")\n```";
+
+              // TODO: sort of duplicated
+              return (
+                <Flex
+                  direction="column"
+                  key={`tool-call-command-${toolCall.id}-${i}`}
+                >
+                  <ScrollArea scrollbars="horizontal" style={{ width: "100%" }}>
+                    <Box>
+                      <CommandMarkdown isInsideScrollArea>
+                        {functionCalled}
+                      </CommandMarkdown>
+                    </Box>
+                  </ScrollArea>
+                  <ScrollArea
+                    scrollbars="horizontal"
+                    style={{ width: "100%" }}
+                    asChild
+                  >
+                    <Box>
+                      <Result hasImages={false} isInsideScrollArea>
+                        {/** Could have no results? */}
+                        {/** Could have images added ? */}
+                        {texts}
+                      </Result>
+                    </Box>
+                  </ScrollArea>
+                </Flex>
+              );
+            })}
+          </Box>
         </Collapsible.Content>
       </Collapsible.Root>
-      <Flex gap="2">
-        {images.map((image, i) => {
-          const dataUrl = `data:${image.m_type};base64,${image.m_content}`;
-          return (
-            <Avatar size="8" key={`image-${i}`} src={dataUrl} fallback={""} />
-          );
-        })}
-      </Flex>
+      {hasImages && (
+        <Flex py="2" gap="2" wrap="wrap">
+          {toolCalls.map((toolCall, index) => {
+            const toolResult = toolResults.find(
+              (toolResult) => toolResult.tool_call_id === toolCall.id,
+            );
+            if (!toolResult) return null;
 
-      {/* <Flex>
-        <Result hasImages={false}>{text}</Result>
-      </Flex> */}
+            const images = toolResult.content.filter((content) =>
+              content.m_type.startsWith("image/"),
+            );
+            if (images.length === 0) return null;
+
+            return images.map((image, idx) => {
+              const dataUrl = `data:${image.m_type};base64,${image.m_content}`;
+              const key = `tool-image-${toolResult.tool_call_id}-${index}-${idx}`;
+              return <Avatar key={key} size="8" src={dataUrl} fallback="" />;
+            });
+          })}
+        </Flex>
+      )}
     </Container>
   );
 };
