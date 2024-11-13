@@ -7,3 +7,4 @@ export * from "./takeWhile";
 export * from "./takeFromEndWhile";
 export * from "./scanForDuplicates";
 export * from "./extractFilePathFromPin";
+export * from "./partition";
