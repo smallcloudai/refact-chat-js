@@ -54,7 +54,7 @@ export const CHAT_WITH_MULTI_MODAL: ChatThread = {
           {
             m_type: "text",
             m_content:
-              "Start new chrome process.\nNo opened tabs.\nopened a new tab: tab_id `1` device `desktop` uri `about:blank`\n\nnavigate_to successful: tab_id `1` device `desktop` uri `file:///Users/kot/code_aprojects/huddle/index.html`\nmade a screenshot of tab_id `1` device `desktop` uri `file:///Users/kot/code_aprojects/huddle/index.html`\nopened a new tab: tab_id `2` device `mobile` uri `about:blank`\n\nnavigate_to successful: tab_id `2` device `mobile` uri `file:///Users/kot/code_aprojects/huddle/index.html`\nmade a screenshot of tab_id `2` device `mobile` uri `file:///Users/kot/code_aprojects/huddle/index.html`",
+              "Start new chrome process.\nNo opened tabs.\nopened a new tab: tab_id `1` device `desktop` uri `about:blank`\n\nnavigate_to successful: tab_id `1` device `desktop` uri `file:///Users/kot/code_aprojects/huddle/index.html`\nmade a screenshot of tab_id `1` device `desktop` uri `file:///Users/kot/code_aprojects/huddle/index.html`\nopened a new tab: tab_id `2` device `mobile` uri `about:blank`\n\nnavigate_to successful: tab_id `2` device `mobile` uri `file:///Users/kot/code_aprojects/huddle/index.html`\nmade a screenshot of tab_id `2` device `mobile` uri `file:///Users/kot/code_aprojects/huddle/index.html`\n test tripple ticks \n```\nstuff\n```\n might escape",
           },
           {
             m_type: "image/jpeg",

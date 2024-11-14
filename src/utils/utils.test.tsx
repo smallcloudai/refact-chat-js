@@ -7,6 +7,7 @@ import {
   takeFromEndWhile,
   scanFoDuplicatesWith,
   partition,
+  fenceBackTicks,
 } from ".";
 
 const spaces = "    ";
@@ -142,4 +143,13 @@ describe("partition", () => {
       expect(result).toEqual(expected);
     },
   );
+});
+
+describe("fencedBackTicks", () => {
+  test("it should wrap triple backticks with quadruple backticks", () => {
+    const input = "```python\nprint('hello')\n```";
+    const expected = "````\n```python\nprint('hello')\n````\n```";
+    const result = fenceBackTicks(input);
+    expect(result).toEqual(expected);
+  });
 });

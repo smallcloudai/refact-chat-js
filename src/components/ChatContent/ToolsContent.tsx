@@ -18,22 +18,20 @@ import {
   selectToolResultById,
 } from "../../features/Chat/Thread/selectors";
 import { ScrollArea } from "../ScrollArea";
-import { takeWhile } from "../../utils";
+import { takeWhile, fenceBackTicks } from "../../utils";
 
 type ResultProps = {
   children: string;
   isInsideScrollArea?: boolean;
-  hasImages: boolean;
 };
 
 const Result: React.FC<ResultProps> = ({
   children,
   isInsideScrollArea = false,
-  hasImages,
 }) => {
   const lines = children.split("\n");
   return (
-    <Reveal defaultOpen={!hasImages && lines.length < 9}>
+    <Reveal defaultOpen={lines.length < 9}>
       <ResultMarkdown
         className={styles.tool_result}
         isInsideScrollArea={isInsideScrollArea}
@@ -44,26 +42,12 @@ const Result: React.FC<ResultProps> = ({
   );
 };
 
-function resultToMarkdown(result?: ToolResult): string {
-  if (!result) return "";
-  if (!result.content) return "";
+function resultToMarkdown(content?: string): string {
+  if (!content) return "";
 
-  if (typeof result.content === "string") {
-    const escapedBackticks = result.content.replace(/`+/g, (match) => {
-      if (match === "```") return match;
-      return "\\" + "`";
-    });
+  const escapedBackticks = fenceBackTicks(content);
 
-    return "```\n" + escapedBackticks + "\n```";
-  }
-
-  const images = result.content
-    .filter((image) => image.m_type.startsWith("image/"))
-    .map((image) => {
-      const base64url = `data:${image.m_type};base64,${image.m_content}`;
-      return `![](${base64url})`;
-    });
-  return images.join("\n");
+  return "```\n" + escapedBackticks + "\n```";
 }
 
 function toolCallArgsToString(toolCallArgs: string) {
@@ -103,8 +87,7 @@ const ToolMessage: React.FC<{
     return null;
   }
 
-  const results = resultToMarkdown(maybeResult);
-  const hasImages = false;
+  const results = resultToMarkdown(maybeResult?.content);
 
   const functionCalled = "```python\n" + name + "(" + argsString + ")\n```";
 
@@ -117,9 +100,7 @@ const ToolMessage: React.FC<{
       </ScrollArea>
       <ScrollArea scrollbars="horizontal" style={{ width: "100%" }} asChild>
         <Box>
-          <Result hasImages={hasImages} isInsideScrollArea>
-            {results}
-          </Result>
+          <Result isInsideScrollArea>{results}</Result>
         </Box>
       </ScrollArea>
     </Flex>
@@ -384,6 +365,8 @@ const MultiModalToolContent: React.FC<{
                 toolCall.function.arguments,
               );
 
+              const md = resultToMarkdown(texts);
+
               const functionCalled =
                 "```python\n" + name + "(" + argsString + ")\n```";
 
@@ -392,6 +375,7 @@ const MultiModalToolContent: React.FC<{
                 <Flex
                   direction="column"
                   key={`tool-call-command-${toolCall.id}-${i}`}
+                  py="2"
                 >
                   <ScrollArea scrollbars="horizontal" style={{ width: "100%" }}>
                     <Box>
@@ -406,11 +390,7 @@ const MultiModalToolContent: React.FC<{
                     asChild
                   >
                     <Box>
-                      <Result hasImages={false} isInsideScrollArea>
-                        {/** Could have no results? */}
-                        {/** Could have images added ? */}
-                        {texts}
-                      </Result>
+                      <Result>{md}</Result>
                     </Box>
                   </ScrollArea>
                 </Flex>

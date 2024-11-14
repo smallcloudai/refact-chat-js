@@ -8,3 +8,4 @@ export * from "./takeFromEndWhile";
 export * from "./scanForDuplicates";
 export * from "./extractFilePathFromPin";
 export * from "./partition";
+export * from "./fencedBackticks";
