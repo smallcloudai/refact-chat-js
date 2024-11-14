@@ -233,9 +233,10 @@ export type ToolContentProps = {
 };
 
 export const ToolContent: React.FC<ToolContentProps> = ({ toolCalls }) => {
-  const ids = toolCalls
-    .map((toolCall) => toolCall.id)
-    .filter((id) => id !== undefined);
+  const ids = toolCalls.reduce<string[]>((acc, cur) => {
+    if (cur.id !== undefined) return [...acc, cur.id];
+    return acc;
+  }, []);
   const allToolResults = useAppSelector(selectManyToolResultsByIds(ids));
 
   return processToolCalls(toolCalls, allToolResults);
