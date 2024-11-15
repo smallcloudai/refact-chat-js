@@ -11,6 +11,7 @@ import {
   UserMessage,
   isAssistantDelta,
   isAssistantMessage,
+  isCDInstructionResponse,
   isChatContextFileDelta,
   isChatResponseChoice,
   isContextFileResponse,
@@ -158,6 +159,10 @@ export function formatChatResponse(
   }
 
   if (isPlainTextResponse(response)) {
+    return [...messages, { role: response.role, content: response.content }];
+  }
+
+  if (isCDInstructionResponse(response)) {
     return [...messages, { role: response.role, content: response.content }];
   }
 
@@ -336,6 +341,10 @@ function finishToolCallInMessages(
 
 export function formatMessagesForLsp(messages: ChatMessages): LspChatMessage[] {
   return messages.reduce<LspChatMessage[]>((acc, message) => {
+    if (isUserMessage(message)) {
+      return acc.concat([message]);
+    }
+
     if (isAssistantMessage(message)) {
       return acc.concat([
         {

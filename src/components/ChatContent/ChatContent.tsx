@@ -1,23 +1,22 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback } from "react";
 import {
   ChatMessages,
   isChatContextFileMessage,
   isDiffMessage,
   isToolMessage,
+  UserMessage,
 } from "../../services/refact";
 import { UserInput } from "./UserInput";
 import { ScrollArea } from "../ScrollArea";
 import { Spinner } from "../Spinner";
-import { Flex, Text, Container, Link } from "@radix-ui/themes";
+import { Flex, Text, Container, Link, Button } from "@radix-ui/themes";
 import styles from "./ChatContent.module.css";
 import { ContextFiles } from "./ContextFiles";
 import { AssistantInput } from "./AssistantInput";
 import { useAutoScroll } from "./useAutoScroll";
 import { PlainText } from "./PlainText";
 import { useConfig, useEventsBusForIDE } from "../../hooks";
-import { useAppSelector, useAppDispatch } from "../../hooks";
-import { RootState } from "../../app/store";
-import { next } from "../../features/TipOfTheDay";
+import { useAppSelector } from "../../hooks";
 import {
   selectIsStreaming,
   selectIsWaiting,
@@ -26,25 +25,18 @@ import {
 import { takeWhile } from "../../utils";
 import { GroupedDiffs } from "./DiffContent";
 import { ScrollToBottomButton } from "./ScrollToBottomButton";
+import { currentTipOfTheDay } from "../../features/TipOfTheDay";
 
-export const TipOfTheDay: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const config = useConfig();
-  const state = useAppSelector((state: RootState) => state.tipOfTheDay);
-
-  // TODO: find out what this is about.
-  useEffect(() => {
-    dispatch(next(config));
-  }, [dispatch, config]);
+const TipOfTheDay: React.FC = () => {
+  const tip = useAppSelector(currentTipOfTheDay);
 
   return (
     <Text>
-      💡 <b>Tip of the day</b>: {state.tip}
+      💡 <b>Tip of the day</b>: {tip}
     </Text>
   );
 };
 
-// TODO: turn this into a component
 const PlaceHolderText: React.FC = () => {
   const config = useConfig();
   const hasVecDB = config.features?.vecdb ?? false;
@@ -110,7 +102,8 @@ const PlaceHolderText: React.FC = () => {
 };
 
 export type ChatContentProps = {
-  onRetry: (index: number, question: string) => void;
+  onRetry: (index: number, question: UserMessage["content"]) => void;
+  onStopStreaming: () => void;
 };
 
 export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
@@ -131,7 +124,10 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
       isStreaming,
     });
 
-    const onRetryWrapper = (index: number, question: string) => {
+    const onRetryWrapper = (
+      index: number,
+      question: UserMessage["content"],
+    ) => {
       props.onRetry(index, question);
       handleScrollButtonClick();
     };
@@ -146,15 +142,25 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
         <Flex direction="column" className={styles.content} p="2" gap="1">
           {messages.length === 0 && <PlaceHolderText />}
           {renderMessages(messages, onRetryWrapper)}
-          {isWaiting && (
-            <Container py="4">
-              <Spinner />
-            </Container>
-          )}
+          <Container py="4">
+            <Spinner spinning={isWaiting} />
+          </Container>
           <div ref={innerRef} />
         </Flex>
         {!isScrolledTillBottom && (
           <ScrollToBottomButton onClick={handleScrollButtonClick} />
+        )}
+
+        {isStreaming && (
+          <Button
+            ml="auto"
+            color="red"
+            title="stop streaming"
+            onClick={props.onStopStreaming}
+            style={{ position: "absolute", bottom: 15 }}
+          >
+            Stop
+          </Button>
         )}
       </ScrollArea>
     );
@@ -165,7 +171,7 @@ ChatContent.displayName = "ChatContent";
 
 function renderMessages(
   messages: ChatMessages,
-  onRetry: (index: number, question: string) => void,
+  onRetry: (index: number, question: UserMessage["content"]) => void,
   memo: React.ReactNode[] = [],
   index = 0,
 ) {
@@ -197,6 +203,7 @@ function renderMessages(
 
   if (head.role === "user") {
     const key = "user-input-" + index;
+
     const nextMemo = [
       ...memo,
       <UserInput onRetry={onRetry} key={key} messageIndex={index}>
