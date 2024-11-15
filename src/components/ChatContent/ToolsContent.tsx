@@ -268,6 +268,7 @@ function processToolCalls(
 
     const elem = (
       <MultiModalToolContent
+        key={`multi-model-tool-content-${processed.length}`}
         toolCalls={multiModalToolCalls}
         toolResults={multiModalToolResults}
       />
@@ -283,7 +284,12 @@ function processToolCalls(
   });
   const nextTail = tail.slice(restInTail.length);
 
-  const elem = <SingleModelToolContent toolCalls={[head, ...restInTail]} />;
+  const elem = (
+    <SingleModelToolContent
+      key={`single-model-tool-call-${processed.length}`}
+      toolCalls={[head, ...restInTail]}
+    />
+  );
   return processToolCalls(nextTail, toolResults, [...processed, elem]);
 }
 
@@ -333,7 +339,7 @@ const MultiModalToolContent: React.FC<{
                 🔨{" "}
                 {toolUsageAmount.map(
                   ({ functionName, amountOfCalls }, index) => (
-                    <span key={functionName}>
+                    <span key={`${functionName}-${index}`}>
                       <ToolUsageDisplay
                         functionName={functionName}
                         amountOfCalls={amountOfCalls}
