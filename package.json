@@ -48,11 +48,7 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.2.7",
-    "@rjsf/core": "^5.22.3",
-    "@rjsf/utils": "^5.22.3",
-    "@rjsf/validator-ajv8": "^5.22.3",
     "@types/react": "^18.2.43",
-    "ajv": "^8.17.1",
     "react-redux": "^9.1.2"
   },
   "devDependencies": {
