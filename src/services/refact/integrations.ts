@@ -3,8 +3,8 @@ import { RootState } from "../../app/store";
 import { isLspChatMessage, LspChatMessage } from "./chat";
 
 const INTEGRATIONS_URL = "/v1/integrations";
-const INTEGRATIONS_GET_URL = "/v1/integrations-get";
-const INTEGRATIONS_SAVE_URL = "/v1/integrations-save";
+const INTEGRATION_GET_URL = "/v1/integration-get";
+const INTEGRATION_SAVE_URL = "/v1/integration-save";
 
 export const integrationsApi = createApi({
   reducerPath: "integrationsApi",
@@ -57,9 +57,10 @@ export const integrationsApi = createApi({
       async queryFn(pathArg, api, extraOptions, baseQuery) {
         const state = api.getState() as RootState;
         const port = state.config.lspPort as unknown as number;
-        const url = `http://127.0.0.1:${port}${INTEGRATIONS_GET_URL}`;
+        const url = `http://127.0.0.1:${port}${INTEGRATION_GET_URL}`;
         const response = await baseQuery({
           url,
+          method: "POST",
           body: {
             integr_config_path: pathArg,
           },
@@ -96,7 +97,7 @@ export const integrationsApi = createApi({
       async queryFn(arg, api, extraOptions, baseQuery) {
         const state = api.getState() as RootState;
         const port = state.config.lspPort;
-        const url = `http://127.0.0.1:${port}${INTEGRATIONS_SAVE_URL}`;
+        const url = `http://127.0.0.1:${port}${INTEGRATION_SAVE_URL}`;
         const response = await baseQuery({
           ...extraOptions,
           url,
