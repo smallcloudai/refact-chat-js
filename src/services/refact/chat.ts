@@ -1,16 +1,28 @@
 import { CHAT_URL } from "./consts";
 import { ToolCommand } from "./tools";
-import { ChatRole, ToolCall, UserMessage } from "./types";
+import { ChatRole, ToolCall, ToolResult, UserMessage } from "./types";
 
 export type LspChatMessage =
   | {
       role: ChatRole;
-      // TODO make this a union type for usermessage
+      // TODO make this a union type for user message
       content: string | null;
       tool_calls?: Omit<ToolCall, "index">[];
       tool_call_id?: string;
     }
-  | UserMessage;
+  | UserMessage
+  | { role: "tool"; content: ToolResult["content"]; tool_call_id: string };
+
+// could be more narrow.
+export function isLspChatMessage(json: unknown): json is LspChatMessage {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  if (!("role" in json)) return false;
+  if (typeof json.role !== "string") return false;
+  if (!("content" in json)) return false;
+  if (json.content !== null || typeof json.content !== "string") return false;
+  return true;
+}
 
 type StreamArgs =
   | {

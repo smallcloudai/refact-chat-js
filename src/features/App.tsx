@@ -6,7 +6,7 @@ import { SelfHostingSetup } from "../components/SelfHostingSetup";
 import { Flex } from "@radix-ui/themes";
 import { Chat, newChatAction, selectChatId, selectIsStreaming } from "./Chat";
 import { Sidebar } from "../components/Sidebar/Sidebar";
-import { useEventsBusForIDE, useConfig } from "../hooks";
+import { useEventsBusForIDE, useConfig, useEffectOnce } from "../hooks";
 
 import { useAppSelector, useAppDispatch } from "../hooks";
 import { FIMDebug } from "./FIM";
@@ -34,6 +34,7 @@ import { Tab } from "../components/Toolbar/Toolbar";
 import { PageWrapper } from "../components/PageWrapper";
 import { ThreadHistory } from "./ThreadHistory";
 import { Integrations } from "./Integrations";
+import { UserSurvey } from "./UserSurvey";
 
 export interface AppProps {
   style?: React.CSSProperties;
@@ -50,7 +51,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
     [pages],
   );
 
-  const { setupHost, chatPageChange, setIsChatStreaming } =
+  const { setupHost, chatPageChange, setIsChatStreaming, setIsChatReady } =
     useEventsBusForIDE();
   const tourState = useAppSelector((state: RootState) => state.tour);
   const historyState = useAppSelector((state: RootState) => state.history);
@@ -99,6 +100,10 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
   useEffect(() => {
     setIsChatStreaming(isStreaming);
   }, [isStreaming, setIsChatStreaming]);
+
+  useEffectOnce(() => {
+    setIsChatReady(true);
+  });
 
   const onPressNext = (host: Host) => {
     if (host === "cloud") {
@@ -158,6 +163,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
       }}
     >
       <PageWrapper host={config.host}>
+        <UserSurvey />
         {activeTab && <Toolbar activeTab={activeTab} />}
         {page.name === "initial setup" && (
           <InitialSetup onPressNext={onPressNext} />

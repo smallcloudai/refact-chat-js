@@ -1,35 +1,74 @@
 import React from "react";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { Container, Flex, Text, Box, Spinner } from "@radix-ui/themes";
-import { ToolCall, ToolUsage } from "../../services/refact";
+import { ToolCall, ToolResult, ToolUsage } from "../../services/refact";
 import styles from "./ChatContent.module.css";
 import { CommandMarkdown, ResultMarkdown } from "../Command";
 import { Chevron } from "../Collapsible";
 import { Reveal } from "../Reveal";
 import { useAppSelector } from "../../hooks";
 import { selectToolResultById } from "../../features/Chat/Thread/selectors";
+import { ScrollArea } from "../ScrollArea";
 
-const Result: React.FC<{ children: string }> = ({ children }) => {
+type ResultProps = {
+  children: string;
+  isInsideScrollArea?: boolean;
+  hasImages: boolean;
+};
+
+const Result: React.FC<ResultProps> = ({
+  children,
+  isInsideScrollArea = false,
+  hasImages,
+}) => {
   const lines = children.split("\n");
   return (
-    <Reveal defaultOpen={lines.length < 9}>
-      <ResultMarkdown className={styles.tool_result}>{children}</ResultMarkdown>
+    <Reveal defaultOpen={!hasImages && lines.length < 9}>
+      <ResultMarkdown
+        className={styles.tool_result}
+        isInsideScrollArea={isInsideScrollArea}
+      >
+        {children}
+      </ResultMarkdown>
     </Reveal>
   );
 };
 
+function resultToMarkdown(result?: ToolResult): string {
+  if (!result) return "";
+  if (!result.content) return "";
+
+  if (typeof result.content === "string") {
+    const escapedBackticks = result.content.replace(/`+/g, (match) => {
+      if (match === "```") return match;
+      return "\\" + "`";
+    });
+
+    return "```\n" + escapedBackticks + "\n```";
+  }
+
+  const images = result.content
+    .filter((image) => image.m_type.startsWith("image/"))
+    .map((image) => {
+      const base64url = `data:${image.m_type};base64,${image.m_content}`;
+      return `![](${base64url})`;
+    });
+  return images.join("\n");
+}
+
 const ToolMessage: React.FC<{
   toolCall: ToolCall;
 }> = ({ toolCall }) => {
-  // const results = result?.content ?? "";
   const name = toolCall.function.name ?? "";
 
-  // add a selector for tool result
   const maybeResult = useAppSelector((state) =>
     selectToolResultById(state, toolCall.id),
   );
 
-  const results = maybeResult?.content ?? "";
+  const results = resultToMarkdown(maybeResult);
+  const hasImages =
+    Array.isArray(maybeResult?.content) &&
+    maybeResult.content.some((image) => image.m_type.startsWith("image/"));
 
   const argsString = React.useMemo(() => {
     try {
@@ -49,15 +88,20 @@ const ToolMessage: React.FC<{
 
   const functionCalled = "```python\n" + name + "(" + argsString + ")\n```";
 
-  const escapedBackticks = results.replace(/`+/g, (match) => {
-    if (match === "```") return match;
-    return "\\" + "`";
-  });
-
   return (
     <Flex direction="column">
-      <CommandMarkdown>{functionCalled}</CommandMarkdown>
-      <Result>{"```\n" + escapedBackticks + "\n```"}</Result>
+      <ScrollArea scrollbars="horizontal" style={{ width: "100%" }}>
+        <Box>
+          <CommandMarkdown isInsideScrollArea>{functionCalled}</CommandMarkdown>
+        </Box>
+      </ScrollArea>
+      <ScrollArea scrollbars="horizontal" style={{ width: "100%" }} asChild>
+        <Box>
+          <Result hasImages={hasImages} isInsideScrollArea>
+            {results}
+          </Result>
+        </Box>
+      </ScrollArea>
     </Flex>
   );
 };

@@ -8,7 +8,6 @@ import { TextArea, TextAreaProps } from "../TextArea";
 import { Form } from "./Form";
 import { useOnPressedEnter, useIsOnline, useConfig } from "../../hooks";
 import { ErrorCallout, Callout } from "../Callout";
-import { Button } from "@radix-ui/themes";
 import { ComboBox } from "../ComboBox";
 import { CodeChatModel, SystemPrompts } from "../../services/refact";
 import { FilesPreview } from "./FilesPreview";
@@ -25,6 +24,8 @@ import {
   getInformationMessage,
 } from "../../features/Errors/informationSlice";
 import { InformationCallout } from "../Callout/Callout";
+import { ToolConfirmation } from "./ToolConfirmation";
+import { getPauseReasonsWithPauseStatus } from "../../features/ToolConfirmation/confirmationSlice";
 import { AttachFileButton, FileList } from "../Dropzone";
 
 export type ChatFormProps = {
@@ -40,13 +41,13 @@ export type ChatFormProps = {
   model: string;
   onSetChatModel: (model: string) => void;
   isStreaming: boolean;
-  onStopStreaming: () => void;
   onTextAreaHeightChange: TextAreaProps["onTextAreaHeightChange"];
   showControls: boolean;
   prompts: SystemPrompts;
   onSetSystemPrompt: (prompt: SystemPrompts) => void;
   selectedSystemPrompt: SystemPrompts;
   chatId: string;
+  onToolConfirm: () => void;
 };
 
 export const ChatForm: React.FC<ChatFormProps> = ({
@@ -57,17 +58,18 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   model,
   onSetChatModel,
   isStreaming,
-  onStopStreaming,
   onTextAreaHeightChange,
   showControls,
   prompts,
   onSetSystemPrompt,
   selectedSystemPrompt,
+  onToolConfirm,
 }) => {
   const dispatch = useAppDispatch();
   const config = useConfig();
   const error = useAppSelector(getErrorMessage);
   const information = useAppSelector(getInformationMessage);
+  const pauseReasonsWithPause = useAppSelector(getPauseReasonsWithPauseStatus);
   const [helpInfo, setHelpInfo] = React.useState<React.ReactNode | null>(null);
   const onClearError = useCallback(() => dispatch(clearError()), [dispatch]);
   const {
@@ -166,6 +168,10 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     [handleHelpInfo, setValue, setFileInteracted, setLineSelectionInteracted],
   );
 
+  const handleToolConfirmation = useCallback(() => {
+    onToolConfirm();
+  }, [onToolConfirm]);
+
   useEffect(() => {
     if (isSendImmediately) {
       handleSubmit();
@@ -192,20 +198,18 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     );
   }
 
+  if (!isStreaming && pauseReasonsWithPause.pause) {
+    return (
+      <ToolConfirmation
+        pauseReasons={pauseReasonsWithPause.pauseReasons}
+        onConfirm={handleToolConfirmation}
+      />
+    );
+  }
+
   return (
     <Card mt="1" style={{ flexShrink: 0, position: "static" }}>
       {!isOnline && <Callout type="info" message="Offline" />}
-
-      {isStreaming && (
-        <Button
-          ml="auto"
-          color="red"
-          title="stop streaming"
-          onClick={onStopStreaming}
-        >
-          Stop
-        </Button>
-      )}
 
       <Flex
         ref={(x) => refs.setChat(x)}

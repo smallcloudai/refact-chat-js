@@ -21,6 +21,7 @@ import { pingApi } from "../services/refact/ping";
 import { clearError, setError } from "../features/Errors/errorsSlice";
 import { updateConfig } from "../features/Config/configSlice";
 import { resetAttachedImagesSlice } from "../features/AttachedImages";
+import { nextTip } from "../features/TipOfTheDay";
 
 export const listenerMiddleware = createListenerMiddleware();
 const startListening = listenerMiddleware.startListening.withTypes<
@@ -72,6 +73,15 @@ startListening({
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : "fetching tools from lsp.";
+      listenerApi.dispatch(setError(errorMessage));
+    }
+    if (
+      toolsApi.endpoints.checkForConfirmation.matchRejected(action) &&
+      !action.meta.condition
+    ) {
+      const errorMessage = isDetailMessage(action.payload?.data)
+        ? action.payload.data.detail
+        : "confirmation check from lsp";
       listenerApi.dispatch(setError(errorMessage));
     }
     if (
@@ -128,5 +138,27 @@ startListening({
     if (action.payload.id === state.chat.thread.id) {
       listenerApi.dispatch(resetAttachedImagesSlice());
     }
+  },
+});
+
+startListening({
+  matcher: isAnyOf(restoreChat, newChatAction, updateConfig),
+  effect: (action, listenerApi) => {
+    const state = listenerApi.getState();
+    const isUpdate = updateConfig.match(action);
+
+    const host =
+      isUpdate && action.payload.host ? action.payload.host : state.config.host;
+
+    const completeManual = isUpdate
+      ? action.payload.keyBindings?.completeManual
+      : state.config.keyBindings?.completeManual;
+
+    listenerApi.dispatch(
+      nextTip({
+        host,
+        completeManual,
+      }),
+    );
   },
 });
