@@ -13,6 +13,17 @@ export type LspChatMessage =
   | UserMessage
   | { role: "tool"; content: ToolResult["content"]; tool_call_id: string };
 
+// could be more narrow.
+export function isLspChatMessage(json: unknown): json is LspChatMessage {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  if (!("role" in json)) return false;
+  if (typeof json.role !== "string") return false;
+  if (!("content" in json)) return false;
+  if (json.content !== null || typeof json.content !== "string") return false;
+  return true;
+}
+
 type StreamArgs =
   | {
       stream: true;

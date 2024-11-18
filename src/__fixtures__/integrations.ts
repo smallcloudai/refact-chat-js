@@ -1,132 +1,87 @@
 import type { Integration } from "../services/refact";
 
-export const INTEGRATIONS_RESPONSE: Integration[] = [
-  {
-    name: "github",
-    enabled: true,
-    schema: {
-      $schema: "http://json-schema.org/draft-07/schema#",
-      title: "IntegrationGitHub",
-      type: "object",
-      required: ["GH_TOKEN"],
-      properties: {
-        GH_TOKEN: {
-          description: "GitHub token for authentication.",
-          type: "string",
-        },
-        gh_binary_path: {
-          description: "Path to the GitHub CLI binary.",
-          type: ["string", "null"],
-        },
+export const INTEGRATIONS_RESPONSE: Integration = {
+  project_path: "",
+  integr_name: "postgres",
+  integr_config_path: "/Users/user/.config/refact/integrations.d/postgres.yaml",
+  integr_schema: {
+    fields: {
+      host: {
+        f_type: "string",
+        f_desc:
+          "Connect to this host, for example 127.0.0.1 or docker container name.",
+        f_placeholder: "marketing_db_container",
       },
-    },
-    value: {
-      detail:
-        "Problem constructing tool from /Users/valaises/.cache/refact/integrations.d/github.yaml: missing field `GH_TOKEN`",
-    },
-  },
-  {
-    name: "gitlab",
-    enabled: false,
-    schema: {
-      $schema: "http://json-schema.org/draft-07/schema#",
-      title: "IntegrationGitLab",
-      type: "object",
-      required: ["GITLAB_TOKEN"],
-      properties: {
-        GITLAB_TOKEN: {
-          description: "GitLab token for authentication.",
-          type: "string",
-        },
-        glab_binary_path: {
-          description: "Path to the GitLab CLI binary.",
-          type: ["string", "null"],
-        },
+      port: {
+        f_type: "int",
+        f_desc: "Which port to use.",
+        f_default: "5432",
       },
-    },
-    value: {
-      detail:
-        "Problem constructing tool from /Users/valaises/.cache/refact/integrations.d/gitlab.yaml: missing field `GITLAB_TOKEN`",
-    },
-  },
-  {
-    name: "pdb",
-    enabled: true,
-    schema: {
-      $schema: "http://json-schema.org/draft-07/schema#",
-      title: "IntegrationPdb",
-      type: "object",
-      properties: {
-        python_path: {
-          description: "Path to the Python binary.",
-          type: ["string", "null"],
-        },
+      user: {
+        f_type: "string",
+        f_placeholder: "john_doe",
       },
-    },
-    value: {
-      python_path: null,
-    },
-  },
-  {
-    name: "postgres",
-    enabled: false,
-    schema: {
-      $schema: "http://json-schema.org/draft-07/schema#",
-      title: "IntegrationPostgres",
-      type: "object",
-      required: ["connection_string"],
-      properties: {
-        connection_string: {
-          description: "Connection string for the PostgreSQL database.",
-          type: "string",
-        },
-        psql_binary_path: {
-          description: "Path to the psql binary.",
-          type: ["string", "null"],
-        },
-      },
-    },
-    value: {
-      detail:
-        "Problem constructing tool from /Users/valaises/.cache/refact/integrations.d/postgres.yaml: missing field `connection_string`",
-    },
-  },
-  {
-    name: "chrome",
-    enabled: true,
-    schema: {
-      $schema: "http://json-schema.org/draft-07/schema#",
-      title: "IntegrationChrome",
-      type: "object",
-      properties: {
-        chrome_path: {
-          description:
-            "Path to the Chrome binary or WebSocket URL for remote debugging.",
-          type: ["string", "null"],
-        },
-        idle_browser_timeout: {
-          description: "Idle timeout for the Chrome browser in seconds.",
-          type: ["integer", "null"],
-          format: "uint32",
-          minimum: 0.0,
-        },
-        window_size: {
-          description:
-            "Window size for the Chrome browser in the format [width, height].",
-          type: ["array", "null"],
-          items: {
-            type: "integer",
-            format: "uint32",
-            minimum: 0.0,
+      password: {
+        f_type: "string",
+        f_default: "$POSTGRES_PASSWORD",
+        smartlinks: [
+          {
+            sl_label: "Open passwords.yaml",
+            sl_goto: "EDITOR:passwords.yaml",
           },
-        },
+        ],
+      },
+      database: {
+        f_type: "string",
+        f_placeholder: "marketing_db",
       },
     },
-    value: {
-      chrome_path:
-        "/Users/valaises/temp/chrome/mac_arm-130.0.6723.69/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-      window_size: [1024, 768],
-      idle_browser_timeout: 600,
+    available: {
+      on_your_laptop_possible: true,
+      when_isolated_possible: true,
+    },
+    smartlinks: [
+      {
+        sl_label: "Test",
+        sl_chat: [
+          {
+            role: "user",
+            content:
+              "🔧 Use postgres database to briefly list the tables available, express satisfaction and relief if it works, and change nothing.\nIf it doesn't work, go through the usual plan in the system prompt.\nThe current config file is @file %CURRENT_CONFIG%\n",
+          },
+        ],
+      },
+    ],
+    docker: {
+      new_container_default: {
+        image: "postgres:13",
+        environment: {
+          POSTGRES_DB: "marketing_db",
+          POSTGRES_USER: "john_doe",
+          POSTGRES_PASSWORD: "$POSTGRES_PASSWORD",
+        },
+      },
+      smartlinks: [
+        {
+          sl_label: "Add Database Container",
+          sl_chat: [
+            {
+              role: "user",
+              content:
+                '🔧 Your job is to create a new section under "docker" that will define a new postgres container, inside the current config file %CURRENT_CONFIG%. Follow the system prompt.\n',
+            },
+          ],
+        },
+      ],
     },
   },
-];
+  integr_values: {
+    psql_binary_path: "",
+    host: "",
+    port: 0,
+    user: "",
+    password: "",
+    database: "",
+  },
+  error_log: [],
+};
