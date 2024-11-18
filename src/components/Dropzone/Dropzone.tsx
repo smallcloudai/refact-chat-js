@@ -5,6 +5,7 @@ import { DropzoneInputProps, FileRejection, useDropzone } from "react-dropzone";
 import { useAttachedImages } from "../../hooks/useAttachedImages";
 import { TruncateLeft } from "../Text";
 import { ImageFile } from "../../features/AttachedImages/imagesSlice";
+import utif from "utif2";
 
 export const FileUploadContext = createContext<{
   open: () => void;
@@ -175,7 +176,20 @@ function scaleImage(file: File, maxSize: number): Promise<string> {
         resolve(canvas.toDataURL(file.type));
       };
       img.onerror = reject;
-      img.src = reader.result as string;
+      // image could be a tiff
+      //
+      if (file.type === "image/tiff") {
+        const decoded = decodeTiff(reader.result);
+        bufferToBase64(decoded)
+          .then((base64) => {
+            img.src = base64;
+          })
+          .catch(() => {
+            reject("could not decode tiff");
+          });
+      } else {
+        img.src = reader.result as string;
+      }
     };
 
     reader.onabort = () => reject("aborted");
@@ -183,3 +197,45 @@ function scaleImage(file: File, maxSize: number): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
+
+function readerResultToBuffer(readerResult: FileReader["result"]): Uint8Array {
+  if (readerResult === null) {
+    return new Uint8Array();
+  }
+
+  if (typeof readerResult === "string") {
+    return new TextEncoder().encode(readerResult);
+  }
+
+  return new Uint8Array(readerResult);
+}
+
+function decodeTiff(
+  readerResult: Buffer | ArrayBuffer | null | string,
+): Uint8Array {
+  const buffer = readerResultToBuffer(readerResult);
+  const ifds = utif.decode(buffer);
+
+  ifds.forEach((ifd) => {
+    utif.decodeImage(buffer, ifd);
+  });
+
+  const data = utif.toRGBA8(ifds[0]);
+
+  return data;
+}
+
+async function bufferToBase64(
+  buffer: Uint8Array | ArrayBuffer,
+): Promise<string> {
+  const base64url = await new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.readAsDataURL(new Blob([buffer]));
+  });
+
+  return base64url;
+}
+
+// example use:
+await bufferToBase64(new Uint8Array([1, 2, 3, 100, 200]));

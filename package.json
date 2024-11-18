@@ -114,6 +114,7 @@
     "typescript": "^5.2.2",
     "typescript-plugin-css-modules": "^5.0.2",
     "usehooks-ts": "^2.14.0",
+    "utif2": "^4.1.0",
     "uuid": "^9.0.1",
     "vite": "^5.0.8",
     "vite-plugin-dts": "^3.7.0",
