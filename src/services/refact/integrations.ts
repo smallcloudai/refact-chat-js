@@ -255,8 +255,8 @@ function isDockerSetting(json: unknown): json is DockerSetting {
 type IntegrationWithIconRecord = {
   project_path: string;
   integr_name: string;
-  integr_configPath: string;
-  integr_configExists: boolean;
+  integr_config_path: string;
+  integr_config_exists: boolean;
   on_your_laptop: boolean;
   when_isolated: boolean;
   // unparsed: unknown;
@@ -271,10 +271,10 @@ function isInterIntegrationWithIconRecord(
   if (typeof json.project_path !== "string") return false;
   if (!("integr_name" in json)) return false;
   if (typeof json.integr_name !== "string") return false;
-  if (!("integr_configPath" in json)) return false;
-  if (typeof json.integr_configPath !== "string") return false;
-  if (!("integr_configExists" in json)) return false;
-  if (typeof json.integr_configExists !== "boolean") return false;
+  if (!("integr_config_path" in json)) return false;
+  if (typeof json.integr_config_path !== "string") return false;
+  if (!("integr_config_exists" in json)) return false;
+  if (typeof json.integr_config_exists !== "boolean") return false;
   if (!("on_your_laptop" in json)) return false;
   if (typeof json.on_your_laptop !== "boolean") return false;
   if (!("when_isolated" in json)) return false;
