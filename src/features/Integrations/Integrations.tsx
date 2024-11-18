@@ -32,15 +32,15 @@ export const Integrations: React.FC<IntegrationsProps> = ({
           xl: "9",
         };
 
-  const { integrations, icons } = useGetIntegrationsQuery();
+  const { integrations } = useGetIntegrationsQuery();
 
   useEffect(() => {
     console.log(`[DEBUG]: integrations: `, integrations);
   }, [integrations]);
 
-  useEffect(() => {
-    console.log(`[DEBUG]: icons: `, icons);
-  }, [icons]);
+  // useEffect(() => {
+  //   console.log(`[DEBUG]: icons: `, icons);
+  // }, [icons]);
 
   return (
     <PageWrapper host={host}>
@@ -72,9 +72,9 @@ export const Integrations: React.FC<IntegrationsProps> = ({
           }}
         >
           <IntegrationsView
-            integrationsData={integrations.data}
-            integrationsIcons={icons.data}
-            isLoading={integrations.isLoading || icons.isLoading}
+            integrationsMap={integrations.data}
+            // integrationsIcons={icons.data}
+            isLoading={integrations.isLoading}
             goBack={backFromIntegrations}
           />
         </Flex>

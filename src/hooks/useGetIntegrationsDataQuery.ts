@@ -7,9 +7,13 @@ export const useGetIntegrationsQuery = () => {
   const integrations = integrationsApi.useGetAllIntegrationsQuery(undefined, {
     skip,
   });
-  const icons = integrationsApi.useGetIntegrationIconsQuery(undefined, {
-    skip,
-  });
 
-  return { integrations, icons };
+  // const icons = integrationsApi.useGetIntegrationIconsQuery(undefined, {
+  //   skip,
+  // });
+
+  return {
+    integrations,
+    // icons
+  };
 };

@@ -1,135 +1,85 @@
 import React, { useEffect, useState } from "react";
 import {
-  Badge,
+  // Badge,
   Box,
-  Button,
   Card,
   Flex,
   Heading,
-  HoverCard,
+  // HoverCard,
   Text,
 } from "@radix-ui/themes";
 import {
-  isDetailMessage,
-  type Integration,
-  type IntegrationIcon,
-  type IntegrationSchema,
-  type ValidatedIntegration,
+  IntegrationWithIconResponse,
+  // isDetailMessage,
 } from "../../services/refact";
 import { Spinner } from "../Spinner";
 import { ErrorCallout } from "../Callout";
 import { useAppDispatch, useAppSelector } from "../../hooks";
 import { clearError, getErrorMessage } from "../../features/Errors/errorsSlice";
 import styles from "./IntegrationsView.module.css";
-import { fetchSchema, validateSchema } from "../../utils/jsonSchemaVerifier";
-import Form, { IChangeEvent } from "@rjsf/core";
-import { customizeValidator } from "@rjsf/validator-ajv8";
-import type { ValidatorType } from "@rjsf/utils";
-import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
-import {
-  customFields,
-  customTemplates,
-  customWidgets,
-} from "./CustomFieldsAndWidgets";
+// import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
+// import {
+//   customFields,
+//   customTemplates,
+//   customWidgets,
+// } from "./CustomFieldsAndWidgets";
 
 import "./JSONFormStyles.css";
-import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
+// import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
+import { IntegrationForm } from "./IntegrationForm";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const validator: ValidatorType<any, IntegrationSchema> = customizeValidator<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  any,
-  IntegrationSchema
->();
+// TODO: do we really need this?
 
-const WarningHoverCard: React.FC<{
-  label: React.ReactNode;
-  warning: string;
-}> = ({ label, warning }) => {
-  return (
-    <HoverCard.Root>
-      <HoverCard.Trigger>{label}</HoverCard.Trigger>
-      <HoverCard.Content
-        maxWidth="340px"
-        data-accent-color="orange"
-        className={styles.WarningHoverCardContent}
-      >
-        <Box>
-          <Flex justify="between" wrap="nowrap">
-            <ExclamationTriangleIcon />
-            <Text
-              size="1"
-              style={{
-                maxWidth: "90%",
-              }}
-            >
-              {warning}
-            </Text>
-          </Flex>
-        </Box>
-      </HoverCard.Content>
-    </HoverCard.Root>
-  );
-};
+// const WarningHoverCard: React.FC<{
+//   label: React.ReactNode;
+//   warning: string;
+// }> = ({ label, warning }) => {
+//   return (
+//     <HoverCard.Root>
+//       <HoverCard.Trigger>{label}</HoverCard.Trigger>
+//       <HoverCard.Content
+//         maxWidth="340px"
+//         data-accent-color="orange"
+//         className={styles.WarningHoverCardContent}
+//       >
+//         <Box>
+//           <Flex justify="between" wrap="nowrap">
+//             <ExclamationTriangleIcon />
+//             <Text
+//               size="1"
+//               style={{
+//                 maxWidth: "90%",
+//               }}
+//             >
+//               {warning}
+//             </Text>
+//           </Flex>
+//         </Box>
+//       </HoverCard.Content>
+//     </HoverCard.Root>
+//   );
+// };
 
 export const IntegrationsView: React.FC<{
-  integrationsData?: Integration[];
-  integrationsIcons?: IntegrationIcon[];
+  integrationsMap?: IntegrationWithIconResponse;
+  // integrationsIcons?: IntegrationIcon[];
   isLoading: boolean;
   goBack?: () => void;
-}> = ({ integrationsData, integrationsIcons, isLoading, goBack }) => {
+}> = ({ integrationsMap, isLoading, goBack }) => {
   const dispatch = useAppDispatch();
   const error = useAppSelector(getErrorMessage);
-  const { saveIntegrationMutationTrigger } = useSaveIntegrationData();
+  // const { saveIntegrationMutationTrigger } = useSaveIntegrationData();
 
-  const [validatedIntegrations, setValidatedIntegrations] = useState<
-    ValidatedIntegration[]
-  >([]);
-
-  const [currentIntegration, setCurrentIntegration] =
-    useState<ValidatedIntegration | null>(null);
+  const [currentIntegration, setCurrentIntegration] = useState<
+    IntegrationWithIconResponse["integrations"][number] | null
+  >(null);
 
   useEffect(() => {
-    const validateIntegrations = async () => {
-      if (!integrationsData) {
-        return;
-      }
-      if (validatedIntegrations.length >= 1) {
-        setValidatedIntegrations([]);
-      }
-      const validIntegrations: ValidatedIntegration[] = [];
-
-      for (const integration of integrationsData) {
-        try {
-          const schema = await fetchSchema(integration.schema.$schema);
-          if (!validateSchema(schema, integration.value)) {
-            const maybeWarningMessage = isDetailMessage(integration.value)
-              ? integration.value.detail
-              : "Current tool has unexpected error, check your settings";
-
-            validIntegrations.push({
-              ...integration,
-              warning: maybeWarningMessage,
-            });
-            continue;
-          }
-          validIntegrations.push(integration);
-        } catch (err) {
-          console.error(
-            `Failed to validate integration ${integration.name}:`,
-            err,
-          );
-        }
-      }
-      console.log(`[DEBUG]: validIntegrations: `, validIntegrations);
-      setValidatedIntegrations(validIntegrations);
-    };
-
-    void validateIntegrations();
-  }, [integrationsData, validatedIntegrations.length]);
+    console.log(`[DEBUG]: integrationsData: `, integrationsMap);
+  }, [integrationsMap]);
 
   if (isLoading) {
-    return <Spinner />;
+    return <Spinner spinning />;
   }
 
   const goBackAndClearError = () => {
@@ -138,51 +88,35 @@ export const IntegrationsView: React.FC<{
     setCurrentIntegration(null);
   };
 
-  const handleIntegrationShowUp = (integration: ValidatedIntegration) => {
-    // if (!validatedIntegrations.find((i) => i.name === integration.name)) {
-    //   console.error(
-    //     `[ERROR]: Integration is not valid. Error: ${
-    //       integration.value.detail as string
-    //     }`,
-    //   );
-    //   setCurrentIntegration(null);
-    //   return;
-    // }
+  const handleIntegrationShowUp = (
+    integration: IntegrationWithIconResponse["integrations"][number],
+  ) => {
     console.log(`[DEBUG]: open form: `, integration);
     setCurrentIntegration(integration);
   };
 
-  const handleSubmit = async (
-    formData: Record<string, unknown>,
-    integration: ValidatedIntegration,
-  ) => {
-    console.log(`[DEBUG]: formData: `, formData);
-    console.log(`[DEBUG]: integration: `, integration);
-    const { enabled, name, schema } = integration;
-    await saveIntegrationMutationTrigger({
-      enabled,
-      name,
-      schema,
-      value: formData,
-    });
-    setCurrentIntegration(null);
-  };
+  // const handleSubmit = async (
+  //   formData: Record<string, unknown>,
+  //   integration: IntegrationWithIconResponse["integrations"][number],
+  // ) => {
+  //   console.log(`[DEBUG]: formData: `, formData);
+  //   console.log(`[DEBUG]: integration: `, integration);
+  //   // const {  } = integration;
+  //   // await saveIntegrationMutationTrigger({
+  //   //   enabled,
+  //   //   name,
+  //   //   schema,
+  //   //   value: formData,
+  //   // });
+  //   setCurrentIntegration(null);
+  // };
 
-  const handleFormChange = (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    event: IChangeEvent<any, IntegrationSchema>,
-  ) => {
-    console.log(`[Form DEBUG]: Updated formData:`, event.formData);
-  };
-
-  // const omitDetailField = (data: ValidatedIntegration["value"]) => {
-  //   const { detail, ...rest } = data;
-  //   console.log(`[DEBUG]: rest: `, rest);
-  //   return rest;
+  // const handleFormChange = () => {
+  //   console.log(`[DEBUG]: form changed`);
   // };
 
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-  if (error || !integrationsData || !integrationsIcons) {
+  if (error || !integrationsMap) {
     return (
       <ErrorCallout onClick={goBackAndClearError}>
         {error ?? "fetching integrations."}
@@ -207,12 +141,13 @@ export const IntegrationsView: React.FC<{
             Setup{" "}
             <img
               src={
-                integrationsIcons.find(
-                  (icon) => icon.name === currentIntegration.name,
-                )?.value ?? ""
+                integrationsMap.integrations.find(
+                  (integration) =>
+                    integration.integr_name === currentIntegration.integr_name,
+                )?.project_path ?? ""
               }
               className={styles.SetupIcon}
-              alt={currentIntegration.name}
+              alt={currentIntegration.integr_name}
             />
           </Heading>
         ) : (
@@ -222,7 +157,10 @@ export const IntegrationsView: React.FC<{
         )}
         {currentIntegration ? (
           <Flex direction="column" align="start">
-            <Form
+            <IntegrationForm
+              integrationPath={currentIntegration.integr_config_path}
+            />
+            {/* <Form
               validator={validator}
               schema={currentIntegration.schema}
               liveOmit={true}
@@ -253,8 +191,8 @@ export const IntegrationsView: React.FC<{
                   Return
                 </Button>
               </Flex>
-            </Form>
-            {currentIntegration.warning && (
+            </Form> */}
+            {/* {currentIntegration.warning && (
               <WarningHoverCard
                 label={
                   <Badge className={styles.IntegrationWarning} color="orange">
@@ -263,13 +201,13 @@ export const IntegrationsView: React.FC<{
                 }
                 warning={currentIntegration.warning}
               />
-            )}
+            )} */}
           </Flex>
         ) : (
           <Flex align="start" justify="between" wrap="wrap" gap="4">
-            {validatedIntegrations.map((integration) => (
+            {integrationsMap.integrations.map((integration, index) => (
               <Card
-                key={integration.name}
+                key={`${index}-${integration.integr_config_path}`}
                 className={styles.integrationCard}
                 onClick={() => handleIntegrationShowUp(integration)}
               >
@@ -280,7 +218,7 @@ export const IntegrationsView: React.FC<{
                   width="100%"
                   height="100%"
                 >
-                  <img
+                  {/* <img
                     src={
                       integrationsIcons.find(
                         (icon) => icon.name === integration.name,
@@ -288,8 +226,8 @@ export const IntegrationsView: React.FC<{
                     }
                     alt={integration.name}
                     className={styles.icon}
-                  />
-                  <Text>{integration.name}</Text>
+                  /> */}
+                  <Text>{integration.integr_name}</Text>
                 </Flex>
               </Card>
             ))}

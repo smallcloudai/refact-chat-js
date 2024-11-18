@@ -3,7 +3,7 @@ import { RootState } from "../../app/store";
 import { isLspChatMessage, LspChatMessage } from "./chat";
 
 const INTEGRATIONS_URL = "/v1/integrations";
-const INTEGRATIONS_GET_URL = "/v1/integrations-get";
+const INTEGRATION_GET_URL = "/v1/integration-get";
 const INTEGRATIONS_SAVE_URL = "/v1/integrations-save";
 
 export const integrationsApi = createApi({
@@ -39,6 +39,7 @@ export const integrationsApi = createApi({
         }
 
         if (!isIntegrationWithIconResponse(response.data)) {
+          console.log(`[DEBUG]: not integrations`);
           return {
             error: {
               status: "CUSTOM_ERROR",
@@ -58,14 +59,17 @@ export const integrationsApi = createApi({
       async queryFn(pathArg, api, extraOptions, baseQuery) {
         const state = api.getState() as RootState;
         const port = state.config.lspPort as unknown as number;
-        const url = `http://127.0.0.1:${port}${INTEGRATIONS_GET_URL}`;
+        const url = `http://127.0.0.1:${port}${INTEGRATION_GET_URL}`;
         const response = await baseQuery({
           url,
+          method: "POST",
           body: {
             integr_config_path: pathArg,
           },
           ...extraOptions,
         });
+
+        console.log(`[DEBUG]: response: `, response);
 
         if (response.error) {
           return { error: response.error };
@@ -256,8 +260,8 @@ function isDockerSetting(json: unknown): json is DockerSetting {
 type IntegrationWithIconRecord = {
   project_path: string;
   integr_name: string;
-  integr_configPath: string;
-  integr_configExists: boolean;
+  integr_config_path: string;
+  integr_config_exists: boolean;
   on_your_laptop: boolean;
   when_isolated: boolean;
   // unparsed: unknown;
@@ -272,10 +276,10 @@ function isInterIntegrationWithIconRecord(
   if (typeof json.project_path !== "string") return false;
   if (!("integr_name" in json)) return false;
   if (typeof json.integr_name !== "string") return false;
-  if (!("integr_configPath" in json)) return false;
-  if (typeof json.integr_configPath !== "string") return false;
-  if (!("integr_configExists" in json)) return false;
-  if (typeof json.integr_configExists !== "boolean") return false;
+  if (!("integr_config_path" in json)) return false;
+  if (typeof json.integr_config_path !== "string") return false;
+  if (!("integr_config_exists" in json)) return false;
+  if (typeof json.integr_config_exists !== "boolean") return false;
   if (!("on_your_laptop" in json)) return false;
   if (typeof json.on_your_laptop !== "boolean") return false;
   if (!("when_isolated" in json)) return false;
@@ -301,7 +305,7 @@ function isYamlError(json: unknown): json is YamlError {
   return true;
 }
 
-type IntegrationWithIconResponse = {
+export type IntegrationWithIconResponse = {
   integrations: IntegrationWithIconRecord[];
   error_log: YamlError[];
 };
