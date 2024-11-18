@@ -15,3 +15,12 @@
   background: none;
   padding: 0;
 }
+
+.image {
+  max-width: 100%;
+}
+
+.isInsideScrollArea {
+  width: fit-content;
+  min-width: 100%;
+}
