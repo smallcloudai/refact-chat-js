@@ -9,7 +9,7 @@ import {
 
 // NOTE: this function can be useful for making titles of fields look better (Pascal Case)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function toPascalCase(value: string) {
+export function toPascalCase(value: string) {
   return value
     .split("_")
     .map((str) => str.charAt(0).toUpperCase() + str.slice(1))

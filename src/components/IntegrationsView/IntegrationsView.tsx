@@ -18,15 +18,12 @@ import { useAppDispatch, useAppSelector } from "../../hooks";
 import { clearError, getErrorMessage } from "../../features/Errors/errorsSlice";
 import styles from "./IntegrationsView.module.css";
 // import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
-// import {
-//   customFields,
-//   customTemplates,
-//   customWidgets,
-// } from "./CustomFieldsAndWidgets";
 
 import "./JSONFormStyles.css";
 // import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
 import { IntegrationForm } from "./IntegrationForm";
+import { Markdown } from "../Markdown";
+import { toPascalCase } from "./CustomFieldsAndWidgets";
 
 // TODO: do we really need this?
 
@@ -124,6 +121,25 @@ export const IntegrationsView: React.FC<{
     );
   }
 
+  const globalIntegrations = integrationsMap.integrations.filter(
+    (integration) => integration.project_path === "",
+  );
+
+  const projectSpecificIntegrations = integrationsMap.integrations.filter(
+    (integration) => integration.project_path !== "",
+  );
+
+  const groupedProjectIntegrations = projectSpecificIntegrations.reduce<
+    Record<string, IntegrationWithIconResponse["integrations"]>
+  >((acc, integration) => {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!acc[integration.project_path]) {
+      acc[integration.project_path] = [];
+    }
+    acc[integration.project_path].push(integration);
+    return acc;
+  }, {});
+
   return (
     <Box
       style={{
@@ -160,38 +176,6 @@ export const IntegrationsView: React.FC<{
             <IntegrationForm
               integrationPath={currentIntegration.integr_config_path}
             />
-            {/* <Form
-              validator={validator}
-              schema={currentIntegration.schema}
-              liveOmit={true}
-              omitExtraData={true}
-              // formData={omitDetailField(currentIntegration.value)}
-              formData={currentIntegration.value}
-              className={styles.IntegrationForm}
-              onSubmit={(event) =>
-                void handleSubmit(
-                  event.formData as Record<string, unknown>,
-                  currentIntegration,
-                )
-              }
-              onChange={handleFormChange}
-              fields={customFields}
-              widgets={customWidgets}
-              templates={customTemplates}
-            >
-              <Flex gap="3" mt="4">
-                <Button color="green" variant="solid" type="submit">
-                  Apply
-                </Button>
-                <Button
-                  color="ruby"
-                  onClick={() => setCurrentIntegration(null)}
-                  type="button"
-                >
-                  Return
-                </Button>
-              </Flex>
-            </Form> */}
             {/* {currentIntegration.warning && (
               <WarningHoverCard
                 label={
@@ -204,34 +188,100 @@ export const IntegrationsView: React.FC<{
             )} */}
           </Flex>
         ) : (
-          <Flex align="start" justify="between" wrap="wrap" gap="4">
-            {integrationsMap.integrations.map((integration, index) => (
-              <Card
-                key={`${index}-${integration.integr_config_path}`}
-                className={styles.integrationCard}
-                onClick={() => handleIntegrationShowUp(integration)}
+          <>
+            <Flex
+              align="start"
+              direction="column"
+              justify="between"
+              wrap="wrap"
+              gap="4"
+              width="100%"
+              mb="8"
+            >
+              <Heading
+                as="h5"
+                size="4"
+                align="center"
+                mb="2"
+                style={{
+                  width: "100%",
+                }}
               >
-                <Flex
-                  direction="column"
-                  align="center"
-                  justify="between"
-                  width="100%"
-                  height="100%"
-                >
-                  {/* <img
-                    src={
-                      integrationsIcons.find(
-                        (icon) => icon.name === integration.name,
-                      )?.value ?? ""
-                    }
-                    alt={integration.name}
-                    className={styles.icon}
-                  /> */}
-                  <Text>{integration.integr_name}</Text>
-                </Flex>
-              </Card>
-            ))}
-          </Flex>
+                Global Configurations
+              </Heading>
+              {globalIntegrations.map((integration, index) => {
+                return (
+                  <Card
+                    key={`${index}-${integration.integr_config_path}`}
+                    className={styles.integrationCard}
+                    onClick={() => handleIntegrationShowUp(integration)}
+                  >
+                    <Flex
+                      direction="column"
+                      align="center"
+                      justify="between"
+                      width="100%"
+                      height="100%"
+                    >
+                      <img
+                        src={"https://placehold.jp/150x150.png"}
+                        className={styles.SetupIcon}
+                        alt={integration.integr_name}
+                      />
+                      <Text>{toPascalCase(integration.integr_name)}</Text>
+                    </Flex>
+                  </Card>
+                );
+              })}
+            </Flex>
+            {Object.entries(groupedProjectIntegrations).map(
+              ([projectPath, integrations], index) => {
+                const formattedProjectName =
+                  "```" +
+                  projectPath.split("\\")[projectPath.split("\\").length - 1] +
+                  "```";
+
+                return (
+                  <Flex
+                    key={`project-group-${index}`}
+                    mb="4"
+                    direction="column"
+                  >
+                    <Heading as="h5" size="4" align="center" mb="2">
+                      <Flex align="center" gap="3" justify="center">
+                        Project
+                        <Markdown>{formattedProjectName}</Markdown>
+                      </Flex>
+                    </Heading>
+                    <Flex align="start" justify="between" wrap="wrap" gap="4">
+                      {integrations.map((integration, subIndex) => (
+                        <Card
+                          key={`project-${index}-${subIndex}-${integration.integr_config_path}`}
+                          className={styles.integrationCard}
+                          onClick={() => handleIntegrationShowUp(integration)}
+                        >
+                          <Flex
+                            direction="column"
+                            align="center"
+                            justify="between"
+                            width="100%"
+                            height="100%"
+                          >
+                            <img
+                              src={"https://placehold.jp/150x150.png"}
+                              className={styles.SetupIcon}
+                              alt={integration.integr_name}
+                            />
+                            <Text>{toPascalCase(integration.integr_name)}</Text>
+                          </Flex>
+                        </Card>
+                      ))}
+                    </Flex>
+                  </Flex>
+                );
+              },
+            )}
+          </>
         )}
       </Flex>
     </Box>
