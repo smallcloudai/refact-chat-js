@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useRef } from "react";
 import {
   ChatMessages,
   isChatContextFileMessage,
@@ -13,7 +13,8 @@ import { Flex, Text, Container, Link, Button } from "@radix-ui/themes";
 import styles from "./ChatContent.module.css";
 import { ContextFiles } from "./ContextFiles";
 import { AssistantInput } from "./AssistantInput";
-import { useAutoScroll } from "./useAutoScroll";
+// import { useAutoScroll } from "./useAutoScroll";
+import { useAutoScroll } from "./useAutoScroll2";
 import { PlainText } from "./PlainText";
 import { useConfig, useEventsBusForIDE } from "../../hooks";
 import { useAppSelector } from "../../hooks";
@@ -107,21 +108,23 @@ export type ChatContentProps = {
 };
 
 export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
-  (props, ref) => {
+  (props, _containerRef) => {
+    const refToFollow = useRef<HTMLDivElement>(null);
     const messages = useAppSelector(selectMessages);
     const isStreaming = useAppSelector(selectIsStreaming);
     const isWaiting = useAppSelector(selectIsWaiting);
 
     const {
-      innerRef,
       handleScroll,
       handleWheel,
       handleScrollButtonClick,
+      // handleMouseDown,
       isScrolledTillBottom,
     } = useAutoScroll({
-      ref,
-      messages,
-      isStreaming,
+      ref: refToFollow,
+      // containerRef,
+      // messages,
+      // isStreaming,
     });
 
     const onRetryWrapper = (
@@ -129,7 +132,7 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
       question: UserMessage["content"],
     ) => {
       props.onRetry(index, question);
-      handleScrollButtonClick();
+      // handleScrollButtonClick();
     };
 
     return (
@@ -138,6 +141,7 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
         scrollbars="vertical"
         onScroll={handleScroll}
         onWheel={handleWheel}
+        type={isStreaming ? "auto" : "hover"}
       >
         <Flex direction="column" className={styles.content} p="2" gap="1">
           {messages.length === 0 && <PlaceHolderText />}
@@ -145,7 +149,7 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
           <Container py="4">
             <Spinner spinning={isWaiting} />
           </Container>
-          <div ref={innerRef} />
+          <div ref={refToFollow} />
         </Flex>
         {!isScrolledTillBottom && (
           <ScrollToBottomButton onClick={handleScrollButtonClick} />

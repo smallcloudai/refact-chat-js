@@ -84,6 +84,7 @@ export const Chat: React.FC<ChatProps> = ({
     [submit, isViewingRawJSON],
   );
 
+  // TODO: this could cause issues
   const onTextAreaHeightChange = useCallback(() => {
     if (!chatContentRef.current) return;
     // TODO: handle preventing scroll if the user is not on the bottom of the chat
