@@ -34,12 +34,10 @@ export const integrationsApi = createApi({
         });
 
         if (response.error) {
-          console.log(`[DEBUG]: error: `, response.error);
           return { error: response.error };
         }
 
         if (!isIntegrationWithIconResponse(response.data)) {
-          console.log(`[DEBUG]: not integrations`);
           return {
             error: {
               status: "CUSTOM_ERROR",
@@ -68,8 +66,6 @@ export const integrationsApi = createApi({
           },
           ...extraOptions,
         });
-
-        console.log(`[DEBUG]: response: `, response);
 
         if (response.error) {
           return { error: response.error };
@@ -156,13 +152,27 @@ function isIntegration(json: unknown): json is Integration {
   if (!("integr_values" in json)) return false;
   if (!json.integr_values) return false;
   if (!(typeof json.integr_values === "object")) return false;
-  if (!Object.values(json.integr_values).every(isPrimitive)) return false;
+  const integrValues = json.integr_values as Record<string, unknown>;
+  if (
+    // Check if every value in integrValues is either a primitive or an object
+    // where all nested values are primitives.
+    !Object.values(integrValues).every(
+      (value) =>
+        isPrimitive(value) ||
+        (typeof value === "object" &&
+          value !== null &&
+          Object.values(value).every(isPrimitive)),
+    )
+  ) {
+    return false;
+  }
 
   if (!("error_log" in json)) return false;
   if (!json.error_log) return false;
   if (!(typeof json.error_log === "object")) return false;
   if (!Array.isArray(json.error_log)) return false;
   if (!json.error_log.every(isYamlError)) return false;
+
   return true;
 }
 
@@ -196,7 +206,18 @@ function isIntegrationSchema(json: unknown): json is IntegrationSchema {
   if (!("docker" in json)) return false;
   if (!json.docker) return false;
   if (!(typeof json.docker === "object")) return false;
-  if (!Object.values(json.docker).every(isDockerSetting)) return false;
+  if (!("smartlinks" in json.docker)) return false;
+  if (!Array.isArray(json.docker.smartlinks)) return false;
+  if (!json.docker.smartlinks.every(isSmartLink)) return false;
+  if (
+    // Filter out the "smartlinks" key from the docker object, map the remaining entries to their values,
+    // and check if every value is a valid DockerSetting using the isDockerSetting type guard.
+    !Object.entries(json.docker)
+      .filter(([key, _]) => key !== "smartlinks")
+      .map(([_, value]) => value)
+      .every(isDockerSetting)
+  )
+    return false;
   return true;
 }
 

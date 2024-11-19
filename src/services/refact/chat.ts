@@ -20,7 +20,7 @@ export function isLspChatMessage(json: unknown): json is LspChatMessage {
   if (!("role" in json)) return false;
   if (typeof json.role !== "string") return false;
   if (!("content" in json)) return false;
-  if (json.content !== null || typeof json.content !== "string") return false;
+  if (json.content !== null && typeof json.content !== "string") return false;
   return true;
 }
 
