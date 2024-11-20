@@ -90,7 +90,6 @@ export function useAutoScroll({ ref, scrollRef }: useAutoScrollProps) {
   // reset on unmount
   useEffect(() => {
     return () => {
-      console.log("reseting");
       setFollowRef(false);
       setIsScrolledTillBottom(false);
     };
