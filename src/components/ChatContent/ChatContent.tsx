@@ -110,6 +110,7 @@ export type ChatContentProps = {
 export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
   (props, _containerRef) => {
     const refToFollow = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
     const messages = useAppSelector(selectMessages);
     const isStreaming = useAppSelector(selectIsStreaming);
     const isWaiting = useAppSelector(selectIsWaiting);
@@ -123,6 +124,7 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
       showFollowButton,
     } = useAutoScroll({
       ref: refToFollow,
+      scrollRef,
       // containerRef,
       // messages,
       // isStreaming,
@@ -138,11 +140,13 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
 
     return (
       <ScrollArea
+        ref={scrollRef}
         style={{ flexGrow: 1, height: "auto", position: "relative" }}
         scrollbars="vertical"
         onScroll={handleScroll}
         onWheel={handleWheel}
-        type={isStreaming ? "auto" : "hover"}
+        type="hover"
+        // type={isStreaming ? "auto" : "hover"}
       >
         <Flex direction="column" className={styles.content} p="2" gap="1">
           {messages.length === 0 && <PlaceHolderText />}

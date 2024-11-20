@@ -8,6 +8,7 @@ import {
 
 type useAutoScrollProps = {
   ref: React.RefObject<HTMLDivElement>;
+  scrollRef: React.RefObject<HTMLDivElement>;
 };
 
 function isAtBottom(element: HTMLDivElement | null) {
@@ -16,10 +17,16 @@ function isAtBottom(element: HTMLDivElement | null) {
   return Math.abs(scrollHeight - (scrollTop + clientHeight)) <= 1;
 }
 
-export function useAutoScroll({ ref }: useAutoScrollProps) {
+function isOverflowing(element: HTMLDivElement | null) {
+  if (element === null) return false;
+  const { scrollHeight, clientHeight } = element;
+  return scrollHeight > clientHeight;
+}
+
+export function useAutoScroll({ ref, scrollRef }: useAutoScrollProps) {
   const [followRef, setFollowRef] = useState(false);
 
-  const [isScrolledTillBottom, setIsScrolledTillBottom] = useState(true);
+  const [isScrolledTillBottom, setIsScrolledTillBottom] = useState(false);
 
   const messages = useAppSelector(selectMessages);
   const isStreaming = useAppSelector(selectIsStreaming);
@@ -27,7 +34,6 @@ export function useAutoScroll({ ref }: useAutoScrollProps) {
 
   const scrollIntoView = useCallback(() => {
     if (ref.current) {
-      // Also calls onScroll handler :/ could be debounced
       ref.current.scrollIntoView({ behavior: "instant", block: "start" });
     }
   }, [ref]);
@@ -38,9 +44,12 @@ export function useAutoScroll({ ref }: useAutoScrollProps) {
   }, [isStreaming, scrollIntoView]);
 
   // Check if at the bottom of the page.
-  const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
-    setIsScrolledTillBottom(isAtBottom(event.currentTarget));
-  }, []);
+  const handleScroll = useCallback(
+    (_event: React.UIEvent<HTMLDivElement>) => {
+      setIsScrolledTillBottom(isAtBottom(ref.current));
+    },
+    [ref],
+  );
 
   const handleWheel = useCallback(
     (event: React.WheelEvent<HTMLDivElement>) => {
@@ -58,24 +67,43 @@ export function useAutoScroll({ ref }: useAutoScrollProps) {
     }
   }, [followRef, scrollIntoView]);
 
-  // Scroll when more messages come in and following
+  // Scroll when more messages come in
   useEffect(() => {
-    if (isStreaming && followRef) {
+    if ((isWaiting || isStreaming) && followRef) {
       scrollIntoView();
+    } else if ((isWaiting || isStreaming) && isOverflowing(scrollRef.current)) {
+      const bottom = isAtBottom(ref.current);
+
+      setIsScrolledTillBottom(bottom);
     }
-  }, [isStreaming, followRef, messages, scrollIntoView]);
+  }, [
+    isStreaming,
+    followRef,
+    messages,
+    scrollIntoView,
+    isWaiting,
+    scrollRef,
+    ref,
+  ]);
 
   // reset on unmount
   useEffect(() => {
     return () => {
+      console.log("reseting");
       setFollowRef(false);
       setIsScrolledTillBottom(false);
     };
   }, []);
 
   const showFollowButton = useMemo(() => {
-    return !followRef && !isScrolledTillBottom && (isStreaming || isWaiting);
-  }, [followRef, isScrolledTillBottom, isStreaming, isWaiting]);
+    if (!isStreaming || !isWaiting) return false;
+    if (!isOverflowing(scrollRef.current)) return false;
+    if (followRef) return false;
+    return !isScrolledTillBottom;
+    // if(!isScrolledTillBottom) return false; // issue here?
+    // return !followRef && !isScrolledTillBottom;
+    // return true;
+  }, [followRef, isScrolledTillBottom, isStreaming, isWaiting, scrollRef]);
 
   return {
     handleScroll,
