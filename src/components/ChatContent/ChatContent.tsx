@@ -128,7 +128,6 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
       question: UserMessage["content"],
     ) => {
       props.onRetry(index, question);
-      // handleScrollButtonClick();
     };
 
     return (
@@ -138,8 +137,7 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
         scrollbars="vertical"
         onScroll={handleScroll}
         onWheel={handleWheel}
-        type="hover"
-        // type={isStreaming ? "auto" : "hover"}
+        type={isWaiting || isStreaming ? "auto" : "hover"}
       >
         <Flex direction="column" className={styles.content} p="2" gap="1">
           {messages.length === 0 && <PlaceHolderText />}
