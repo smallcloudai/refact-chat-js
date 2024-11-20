@@ -12,15 +12,27 @@ type useAutoScrollProps = {
 function isAtBottom(element: HTMLDivElement | null) {
   if (element === null) return true;
   const { scrollHeight, scrollTop, clientHeight } = element;
+  //   console.log({
+  //     element,
+  //     scrollHeight,
+  //     scrollTop,
+  //     clientHeight,
+  //     result: Math.abs(scrollHeight - (scrollTop + clientHeight)),
+  //   });
+  // if (scrollHeight === 0 && scrollTop === 0 && clientHeight === 0) return true;
   return Math.abs(scrollHeight - (scrollTop + clientHeight)) <= 1;
 }
 
 export function useAutoScroll({ ref }: useAutoScrollProps) {
   const [followRef, setFollowRef] = useState(false);
 
-  const [isScrolledTillBottom, setIsScrolledTillBottom] = useState(
-    isAtBottom(ref.current),
-  );
+  // console.log({ atBottom: isAtBottom(ref.current), elem: ref.current });
+  const [_isScrolledTillBottom, setIsScrolledTillBottom] = useState(true);
+
+  useEffect(() => {
+    const bottom = isAtBottom(ref.current);
+    setIsScrolledTillBottom(bottom);
+  }, [ref]);
 
   const messages = useAppSelector(selectMessages);
   const isStreaming = useAppSelector(selectIsStreaming);
@@ -78,6 +90,7 @@ export function useAutoScroll({ ref }: useAutoScrollProps) {
     handleWheel,
     handleScrollButtonClick,
     // rename this for showing the button
-    isScrolledTillBottom: isScrolledTillBottom && !followRef,
+    // isScrolledTillBottom: isScrolledTillBottom && !isStreaming && !followRef,
+    isScrolledTillBottom: !isStreaming && !followRef,
   };
 }
