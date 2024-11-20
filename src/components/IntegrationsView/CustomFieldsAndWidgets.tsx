@@ -7,36 +7,87 @@ import {
   Text,
 } from "@radix-ui/themes";
 
-// NOTE: this function can be useful for making titles of fields look better (Pascal Case)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function toPascalCase(value: string) {
-  return value
-    .split("_")
-    .map((str) => str.charAt(0).toUpperCase() + str.slice(1))
-    .join(" ")
-    .split("-")
-    .join(" ");
-}
-
-// Custom String Field
-const CustomStringField = () => {
+// Custom Input Field
+export const CustomInputField = ({
+  value,
+  defaultValue,
+  placeholder,
+  type,
+  id,
+  name,
+}: {
+  id?: string;
+  type?:
+    | "number"
+    | "search"
+    | "time"
+    | "text"
+    | "hidden"
+    | "tel"
+    | "url"
+    | "email"
+    | "date"
+    | "password"
+    | "datetime-local"
+    | "month"
+    | "week";
+  value?: string;
+  name?: string;
+  defaultValue?: string | number;
+  placeholder?: string;
+}) => {
   return (
     <Box mb="3">
-      <TextField.Root size="3" />
+      <TextField.Root
+        id={id}
+        name={name}
+        type={type}
+        size="2"
+        value={value}
+        defaultValue={defaultValue}
+        placeholder={placeholder}
+      />
     </Box>
   );
 };
 
-const CustomTitleField = () => {
-  return <h1 style={{ color: "red" }}>TEST</h1>;
+export const CustomLabel = ({
+  label,
+  htmlFor,
+}: {
+  label: string;
+  htmlFor?: string;
+}) => {
+  return (
+    <label
+      htmlFor={htmlFor}
+      style={{
+        display: "block",
+        fontWeight: 500,
+        fontSize: 14,
+        lineHeight: 1.15,
+        marginBottom: "0.5rem",
+      }}
+    >
+      {label}
+    </label>
+  );
 };
 
-const CustomDescriptionField = () => {
-  return <Text style={{ color: "red" }}>Test</Text>;
+export const CustomDescriptionField = ({
+  children = "",
+}: {
+  children?: string;
+}) => {
+  return (
+    <Text size="2" mb="2" style={{ display: "block", opacity: 0.85 }}>
+      {children}
+    </Text>
+  );
 };
 
 // Custom Textarea Widget
-const CustomTextareaWidget = () => {
+export const CustomTextareaWidget = () => {
   return (
     <Box>
       <label htmlFor={"d"}>Test label * required</label>
@@ -46,7 +97,7 @@ const CustomTextareaWidget = () => {
 };
 
 // Custom Checkbox Widget
-const CustomCheckboxWidget = () => {
+export const CustomCheckboxWidget = () => {
   return (
     <Box>
       <label htmlFor={"d"}>
@@ -58,7 +109,7 @@ const CustomCheckboxWidget = () => {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function AddButton() {
+export function AddButton() {
   return (
     <Button size="1" color="green">
       <Text>Add</Text>
@@ -67,7 +118,7 @@ function AddButton() {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function RemoveButton() {
+export function RemoveButton() {
   return (
     <Button size="1" color="ruby" type="button">
       <Text>Remove</Text>
@@ -76,7 +127,7 @@ function RemoveButton() {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function MoveUpButton() {
+export function MoveUpButton() {
   return (
     <Button size="1" color="gray" highContrast type="button">
       <Text>Move Up</Text>
@@ -85,61 +136,10 @@ function MoveUpButton() {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function MoveDownButton() {
+export function MoveDownButton() {
   return (
     <Button size="1" color="gray" highContrast type="button">
       <Text>Move Down</Text>
     </Button>
   );
 }
-
-function TitleFieldTemplate() {
-  return null;
-}
-
-function FieldTemplate() {
-  return (
-    <Box>
-      <label htmlFor={"d"} className="control-label">
-        label *
-      </label>
-    </Box>
-  );
-}
-
-function DescriptionFieldTemplate() {
-  return (
-    <Text id={"d"} size="3" my="2" className="field-description">
-      description
-    </Text>
-  );
-}
-
-function ArrayFieldDescriptionTemplate() {
-  return null;
-}
-
-export const customFields = {
-  StringField: CustomStringField,
-  TitleField: CustomTitleField,
-  DescriptionField: CustomDescriptionField,
-};
-
-export const customWidgets = {
-  TextareaWidget: CustomTextareaWidget,
-  CheckboxWidget: CustomCheckboxWidget,
-};
-
-export const customTemplates = {
-  ButtonTemplates: {
-    AddButton,
-    RemoveButton,
-    MoveUpButton,
-    MoveDownButton,
-  },
-  // ArrayFieldTemplate
-  TitleFieldTemplate,
-  FieldTemplate,
-  DescriptionFieldTemplate,
-  ArrayFieldDescriptionTemplate,
-};

@@ -1,11 +1,11 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useState } from "react";
 import { Flex, Button } from "@radix-ui/themes";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { ScrollArea } from "../../components/ScrollArea";
 import { PageWrapper } from "../../components/PageWrapper";
 import type { Config } from "../Config/configSlice";
 import { useGetIntegrationsQuery } from "../../hooks/useGetIntegrationsDataQuery";
-import { IntegrationsView } from "../../components/IntegrationsView/IntegrationsView";
+import { IntegrationsView } from "../../components/IntegrationsView";
 
 export type IntegrationsProps = {
   onCloseIntegrations?: () => void;
@@ -33,33 +33,38 @@ export const Integrations: React.FC<IntegrationsProps> = ({
         };
 
   const { integrations } = useGetIntegrationsQuery();
-
-  useEffect(() => {
-    console.log(`[DEBUG]: integrations: `, integrations);
-  }, [integrations]);
+  const [isBackButtonVisible, setIsBackButtonVisible] = useState<boolean>(true);
 
   // useEffect(() => {
   //   console.log(`[DEBUG]: icons: `, icons);
   // }, [icons]);
 
+  const handleChangeBackButtonVisibility = useCallback((state: boolean) => {
+    setIsBackButtonVisible(state);
+  }, []);
+
   return (
     <PageWrapper host={host}>
-      {host === "vscode" && !tabbed ? (
-        <Flex gap="2" pb="3">
-          <Button variant="surface" onClick={backFromIntegrations}>
-            <ArrowLeftIcon width="16" height="16" />
-            Back
-          </Button>
-        </Flex>
-      ) : (
-        <Button
-          mr="auto"
-          variant="outline"
-          onClick={onCloseIntegrations}
-          mb="4"
-        >
-          Back
-        </Button>
+      {isBackButtonVisible && (
+        <>
+          {host === "vscode" && !tabbed ? (
+            <Flex gap="2" pb="3">
+              <Button variant="surface" onClick={backFromIntegrations}>
+                <ArrowLeftIcon width="16" height="16" />
+                Back
+              </Button>
+            </Flex>
+          ) : (
+            <Button
+              mr="auto"
+              variant="outline"
+              onClick={onCloseIntegrations}
+              mb="4"
+            >
+              Back
+            </Button>
+          )}
+        </>
       )}
       <ScrollArea scrollbars="vertical">
         <Flex
@@ -72,6 +77,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({
           }}
         >
           <IntegrationsView
+            handleBackButtonVisibility={handleChangeBackButtonVisibility}
             integrationsMap={integrations.data}
             // integrationsIcons={icons.data}
             isLoading={integrations.isLoading}

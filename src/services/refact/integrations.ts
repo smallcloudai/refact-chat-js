@@ -4,7 +4,7 @@ import { isLspChatMessage, LspChatMessage } from "./chat";
 
 const INTEGRATIONS_URL = "/v1/integrations";
 const INTEGRATION_GET_URL = "/v1/integration-get";
-const INTEGRATIONS_SAVE_URL = "/v1/integrations-save";
+const INTEGRATION_SAVE_URL = "/v1/integration-save";
 
 export const integrationsApi = createApi({
   reducerPath: "integrationsApi",
@@ -97,7 +97,7 @@ export const integrationsApi = createApi({
       async queryFn(arg, api, extraOptions, baseQuery) {
         const state = api.getState() as RootState;
         const port = state.config.lspPort;
-        const url = `http://127.0.0.1:${port}${INTEGRATIONS_SAVE_URL}`;
+        const url = `http://127.0.0.1:${port}${INTEGRATION_SAVE_URL}`;
         const response = await baseQuery({
           ...extraOptions,
           url,
@@ -114,7 +114,7 @@ export const integrationsApi = createApi({
   }),
 });
 
-type IntegrationPrimitive = string | number | boolean | null;
+export type IntegrationPrimitive = string | number | boolean | null;
 function isPrimitive(json: unknown): json is IntegrationPrimitive {
   return (
     typeof json === "string" ||
@@ -221,7 +221,7 @@ function isIntegrationSchema(json: unknown): json is IntegrationSchema {
   return true;
 }
 
-type IntegrationField<T extends IntegrationPrimitive> = {
+export type IntegrationField<T extends IntegrationPrimitive> = {
   f_type: T;
   f_desc?: string;
   f_placeholder?: T; // should match f_type

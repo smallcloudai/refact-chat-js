@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { FormEvent, FC } from "react";
 import {
   // Badge,
   Box,
@@ -9,6 +10,7 @@ import {
   Text,
 } from "@radix-ui/themes";
 import {
+  Integration,
   IntegrationWithIconResponse,
   // isDetailMessage,
 } from "../../services/refact";
@@ -20,10 +22,10 @@ import styles from "./IntegrationsView.module.css";
 // import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 
 import "./JSONFormStyles.css";
-// import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
+import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
 import { IntegrationForm } from "./IntegrationForm";
 import { Markdown } from "../Markdown";
-import { toPascalCase } from "./CustomFieldsAndWidgets";
+import { toPascalCase } from "../../utils/toPascalCase";
 
 // TODO: do we really need this?
 
@@ -57,23 +59,133 @@ import { toPascalCase } from "./CustomFieldsAndWidgets";
 //   );
 // };
 
-export const IntegrationsView: React.FC<{
+type IntegrationViewProps = {
   integrationsMap?: IntegrationWithIconResponse;
   // integrationsIcons?: IntegrationIcon[];
   isLoading: boolean;
   goBack?: () => void;
-}> = ({ integrationsMap, isLoading, goBack }) => {
+  handleBackButtonVisibility: (state: boolean) => void;
+};
+
+export const IntegrationsView: FC<IntegrationViewProps> = ({
+  integrationsMap,
+  isLoading,
+  goBack,
+  handleBackButtonVisibility,
+}) => {
   const dispatch = useAppDispatch();
   const error = useAppSelector(getErrorMessage);
-  // const { saveIntegrationMutationTrigger } = useSaveIntegrationData();
+  const { saveIntegrationMutationTrigger } = useSaveIntegrationData();
 
   const [currentIntegration, setCurrentIntegration] = useState<
     IntegrationWithIconResponse["integrations"][number] | null
   >(null);
 
+  const [currentIntegrationSchema, setCurrentIntegrationSchema] = useState<
+    Integration["integr_schema"] | null
+  >(null);
+
   useEffect(() => {
     console.log(`[DEBUG]: integrationsData: `, integrationsMap);
   }, [integrationsMap]);
+
+  useEffect(() => {
+    if (currentIntegration) {
+      handleBackButtonVisibility(false);
+    } else {
+      handleBackButtonVisibility(true);
+    }
+  }, [currentIntegration, handleBackButtonVisibility]);
+
+  const globalIntegrations = useMemo(() => {
+    if (integrationsMap?.integrations) {
+      return integrationsMap.integrations.filter(
+        (integration) => integration.project_path === "",
+      );
+    }
+  }, [integrationsMap]);
+
+  const projectSpecificIntegrations = useMemo(() => {
+    if (integrationsMap?.integrations) {
+      return integrationsMap.integrations.filter(
+        (integration) => integration.project_path !== "",
+      );
+    }
+  }, [integrationsMap]);
+
+  const groupedProjectIntegrations = useMemo(() => {
+    if (projectSpecificIntegrations) {
+      return projectSpecificIntegrations.reduce<
+        Record<string, IntegrationWithIconResponse["integrations"]>
+      >((acc, integration) => {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (!acc[integration.project_path]) {
+          acc[integration.project_path] = [];
+        }
+        acc[integration.project_path].push(integration);
+        return acc;
+      }, {});
+    }
+  }, [projectSpecificIntegrations]);
+
+  const handleSetCurrentIntegrationSchema = (
+    schema: Integration["integr_schema"],
+  ) => {
+    if (!currentIntegration) return;
+
+    setCurrentIntegrationSchema(schema);
+  };
+
+  const handleFormReturn = useCallback(() => {
+    setCurrentIntegration(null);
+  }, []);
+
+  const handleSubmit = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      if (!currentIntegration) return;
+      console.log(`[DEBUG]: schema: `, currentIntegrationSchema);
+      if (!currentIntegrationSchema) return;
+      event.preventDefault();
+
+      console.log(`[DEBUG]: event: `, event);
+
+      const formData = new FormData(event.currentTarget);
+      const rawFormValues = Object.fromEntries(formData.entries());
+
+      // Adjust types of data based on f_type of each field in schema
+      const formValues: Integration["integr_values"] = Object.keys(
+        rawFormValues,
+      ).reduce<Integration["integr_values"]>((acc, key) => {
+        const field = currentIntegrationSchema.fields[key];
+        switch (field.f_type) {
+          case "int":
+            acc[key] = parseInt(rawFormValues[key] as string, 10);
+            break;
+          case "string":
+          default:
+            acc[key] = rawFormValues[key] as string;
+            break;
+        }
+        return acc;
+      }, {});
+
+      console.log(`[DEBUG]: formValues: `, formValues);
+
+      const response = await saveIntegrationMutationTrigger({
+        filePath: currentIntegration.integr_config_path,
+        values: formValues,
+      });
+
+      console.log(`[DEBUG]: response: `, response);
+      setCurrentIntegration(null);
+      setCurrentIntegrationSchema(null);
+    },
+    [
+      currentIntegration,
+      saveIntegrationMutationTrigger,
+      currentIntegrationSchema,
+    ],
+  );
 
   if (isLoading) {
     return <Spinner spinning />;
@@ -92,22 +204,6 @@ export const IntegrationsView: React.FC<{
     setCurrentIntegration(integration);
   };
 
-  // const handleSubmit = async (
-  //   formData: Record<string, unknown>,
-  //   integration: IntegrationWithIconResponse["integrations"][number],
-  // ) => {
-  //   console.log(`[DEBUG]: formData: `, formData);
-  //   console.log(`[DEBUG]: integration: `, integration);
-  //   // const {  } = integration;
-  //   // await saveIntegrationMutationTrigger({
-  //   //   enabled,
-  //   //   name,
-  //   //   schema,
-  //   //   value: formData,
-  //   // });
-  //   setCurrentIntegration(null);
-  // };
-
   // const handleFormChange = () => {
   //   console.log(`[DEBUG]: form changed`);
   // };
@@ -121,25 +217,6 @@ export const IntegrationsView: React.FC<{
     );
   }
 
-  const globalIntegrations = integrationsMap.integrations.filter(
-    (integration) => integration.project_path === "",
-  );
-
-  const projectSpecificIntegrations = integrationsMap.integrations.filter(
-    (integration) => integration.project_path !== "",
-  );
-
-  const groupedProjectIntegrations = projectSpecificIntegrations.reduce<
-    Record<string, IntegrationWithIconResponse["integrations"]>
-  >((acc, integration) => {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (!acc[integration.project_path]) {
-      acc[integration.project_path] = [];
-    }
-    acc[integration.project_path].push(integration);
-    return acc;
-  }, {});
-
   return (
     <Box
       style={{
@@ -149,13 +226,13 @@ export const IntegrationsView: React.FC<{
       <Flex
         direction="column"
         style={{
-          width: "inherit",
+          width: "100%",
         }}
       >
         {currentIntegration ? (
           <Heading as="h3" className={styles.SetupTitle} mb="4">
             Setup{" "}
-            <img
+            {/* <img
               src={
                 integrationsMap.integrations.find(
                   (integration) =>
@@ -165,6 +242,8 @@ export const IntegrationsView: React.FC<{
               className={styles.SetupIcon}
               alt={currentIntegration.integr_name}
             />
+             */}
+            {currentIntegration.integr_name}
           </Heading>
         ) : (
           <Heading as="h3" align="center" mb="5">
@@ -174,7 +253,10 @@ export const IntegrationsView: React.FC<{
         {currentIntegration ? (
           <Flex direction="column" align="start">
             <IntegrationForm
+              handleSubmit={(event) => void handleSubmit(event)}
               integrationPath={currentIntegration.integr_config_path}
+              onReturn={handleFormReturn}
+              onSchema={handleSetCurrentIntegrationSchema}
             />
             {/* {currentIntegration.warning && (
               <WarningHoverCard
@@ -209,78 +291,84 @@ export const IntegrationsView: React.FC<{
               >
                 Global Configurations
               </Heading>
-              {globalIntegrations.map((integration, index) => {
-                return (
-                  <Card
-                    key={`${index}-${integration.integr_config_path}`}
-                    className={styles.integrationCard}
-                    onClick={() => handleIntegrationShowUp(integration)}
-                  >
-                    <Flex
-                      direction="column"
-                      align="center"
-                      justify="between"
-                      width="100%"
-                      height="100%"
+              {!!globalIntegrations &&
+                globalIntegrations.map((integration, index) => {
+                  return (
+                    <Card
+                      key={`${index}-${integration.integr_config_path}`}
+                      className={styles.integrationCard}
+                      onClick={() => handleIntegrationShowUp(integration)}
                     >
-                      <img
-                        src={"https://placehold.jp/150x150.png"}
-                        className={styles.SetupIcon}
-                        alt={integration.integr_name}
-                      />
-                      <Text>{toPascalCase(integration.integr_name)}</Text>
-                    </Flex>
-                  </Card>
-                );
-              })}
-            </Flex>
-            {Object.entries(groupedProjectIntegrations).map(
-              ([projectPath, integrations], index) => {
-                const formattedProjectName =
-                  "```" +
-                  projectPath.split("\\")[projectPath.split("\\").length - 1] +
-                  "```";
-
-                return (
-                  <Flex
-                    key={`project-group-${index}`}
-                    mb="4"
-                    direction="column"
-                  >
-                    <Heading as="h5" size="4" align="center" mb="2">
-                      <Flex align="center" gap="3" justify="center">
-                        Project
-                        <Markdown>{formattedProjectName}</Markdown>
+                      <Flex
+                        direction="column"
+                        align="center"
+                        justify="between"
+                        width="100%"
+                        height="100%"
+                      >
+                        <img
+                          src={"https://placehold.jp/150x150.png"}
+                          className={styles.SetupIcon}
+                          alt={integration.integr_name}
+                        />
+                        <Text>{toPascalCase(integration.integr_name)}</Text>
                       </Flex>
-                    </Heading>
-                    <Flex align="start" justify="between" wrap="wrap" gap="4">
-                      {integrations.map((integration, subIndex) => (
-                        <Card
-                          key={`project-${index}-${subIndex}-${integration.integr_config_path}`}
-                          className={styles.integrationCard}
-                          onClick={() => handleIntegrationShowUp(integration)}
-                        >
-                          <Flex
-                            direction="column"
-                            align="center"
-                            justify="between"
-                            width="100%"
-                            height="100%"
+                    </Card>
+                  );
+                })}
+            </Flex>
+            {groupedProjectIntegrations &&
+              Object.entries(groupedProjectIntegrations).map(
+                ([projectPath, integrations], index) => {
+                  const formattedProjectName =
+                    "```" +
+                    projectPath.split("\\")[
+                      projectPath.split("\\").length - 1
+                    ] +
+                    "```";
+
+                  return (
+                    <Flex
+                      key={`project-group-${index}`}
+                      mb="4"
+                      direction="column"
+                    >
+                      <Heading as="h5" size="4" align="center" mb="2">
+                        <Flex align="center" gap="3" justify="center">
+                          Project
+                          <Markdown>{formattedProjectName}</Markdown>
+                        </Flex>
+                      </Heading>
+                      <Flex align="start" justify="between" wrap="wrap" gap="4">
+                        {integrations.map((integration, subIndex) => (
+                          <Card
+                            key={`project-${index}-${subIndex}-${integration.integr_config_path}`}
+                            className={styles.integrationCard}
+                            onClick={() => handleIntegrationShowUp(integration)}
                           >
-                            <img
-                              src={"https://placehold.jp/150x150.png"}
-                              className={styles.SetupIcon}
-                              alt={integration.integr_name}
-                            />
-                            <Text>{toPascalCase(integration.integr_name)}</Text>
-                          </Flex>
-                        </Card>
-                      ))}
+                            <Flex
+                              direction="column"
+                              align="center"
+                              justify="between"
+                              width="100%"
+                              height="100%"
+                            >
+                              <img
+                                src={"https://placehold.jp/150x150.png"}
+                                className={styles.SetupIcon}
+                                alt={integration.integr_name}
+                              />
+                              <Text>
+                                {toPascalCase(integration.integr_name)}
+                              </Text>
+                            </Flex>
+                          </Card>
+                        ))}
+                      </Flex>
                     </Flex>
-                  </Flex>
-                );
-              },
-            )}
+                  );
+                },
+              )}
           </>
         )}
       </Flex>
