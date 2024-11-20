@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useAppSelector } from "../../hooks";
 import {
   selectIsStreaming,
@@ -33,10 +33,11 @@ export function useAutoScroll({ ref, scrollRef }: useAutoScrollProps) {
   const isWaiting = useAppSelector(selectIsWaiting);
 
   const scrollIntoView = useCallback(() => {
-    if (ref.current) {
-      ref.current.scrollIntoView({ behavior: "instant", block: "start" });
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop =
+        scrollRef.current.scrollHeight - scrollRef.current.clientHeight;
     }
-  }, [ref]);
+  }, [scrollRef]);
 
   const handleScrollButtonClick = useCallback(() => {
     setFollowRef(isStreaming);
@@ -46,9 +47,10 @@ export function useAutoScroll({ ref, scrollRef }: useAutoScrollProps) {
   // Check if at the bottom of the page.
   const handleScroll = useCallback(
     (_event: React.UIEvent<HTMLDivElement>) => {
-      setIsScrolledTillBottom(isAtBottom(ref.current));
+      const bottom = isAtBottom(scrollRef.current);
+      setIsScrolledTillBottom(bottom);
     },
-    [ref],
+    [scrollRef],
   );
 
   const handleWheel = useCallback(
@@ -72,8 +74,7 @@ export function useAutoScroll({ ref, scrollRef }: useAutoScrollProps) {
     if ((isWaiting || isStreaming) && followRef) {
       scrollIntoView();
     } else if ((isWaiting || isStreaming) && isOverflowing(scrollRef.current)) {
-      const bottom = isAtBottom(ref.current);
-
+      const bottom = isAtBottom(scrollRef.current);
       setIsScrolledTillBottom(bottom);
     }
   }, [
@@ -95,15 +96,8 @@ export function useAutoScroll({ ref, scrollRef }: useAutoScrollProps) {
     };
   }, []);
 
-  const showFollowButton = useMemo(() => {
-    if (!isStreaming || !isWaiting) return false;
-    if (!isOverflowing(scrollRef.current)) return false;
-    if (followRef) return false;
-    return !isScrolledTillBottom;
-    // if(!isScrolledTillBottom) return false; // issue here?
-    // return !followRef && !isScrolledTillBottom;
-    // return true;
-  }, [followRef, isScrolledTillBottom, isStreaming, isWaiting, scrollRef]);
+  const showFollowButton =
+    !followRef && isOverflowing(scrollRef.current) && !isScrolledTillBottom;
 
   return {
     handleScroll,
