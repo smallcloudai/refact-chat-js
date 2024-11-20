@@ -109,7 +109,6 @@ export type ChatContentProps = {
 
 export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
   (props, _containerRef) => {
-    const refToFollow = useRef<HTMLDivElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const messages = useAppSelector(selectMessages);
     const isStreaming = useAppSelector(selectIsStreaming);
@@ -119,15 +118,9 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
       handleScroll,
       handleWheel,
       handleScrollButtonClick,
-      // handleMouseDown,
-      // isScrolledTillBottom,
       showFollowButton,
     } = useAutoScroll({
-      ref: refToFollow,
       scrollRef,
-      // containerRef,
-      // messages,
-      // isStreaming,
     });
 
     const onRetryWrapper = (
@@ -154,7 +147,6 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
           <Container py="4">
             <Spinner spinning={isWaiting} />
           </Container>
-          <div ref={refToFollow} />
         </Flex>
         {showFollowButton && (
           <ScrollToBottomButton onClick={handleScrollButtonClick} />

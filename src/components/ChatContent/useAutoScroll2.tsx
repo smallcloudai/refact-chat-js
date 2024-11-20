@@ -7,7 +7,6 @@ import {
 } from "../../features/Chat/Thread/selectors";
 
 type useAutoScrollProps = {
-  ref: React.RefObject<HTMLDivElement>;
   scrollRef: React.RefObject<HTMLDivElement>;
 };
 
@@ -23,7 +22,7 @@ function isOverflowing(element: HTMLDivElement | null) {
   return scrollHeight > clientHeight;
 }
 
-export function useAutoScroll({ ref, scrollRef }: useAutoScrollProps) {
+export function useAutoScroll({ scrollRef }: useAutoScrollProps) {
   const [followRef, setFollowRef] = useState(false);
 
   const [isScrolledTillBottom, setIsScrolledTillBottom] = useState(false);
@@ -77,15 +76,7 @@ export function useAutoScroll({ ref, scrollRef }: useAutoScrollProps) {
       const bottom = isAtBottom(scrollRef.current);
       setIsScrolledTillBottom(bottom);
     }
-  }, [
-    isStreaming,
-    followRef,
-    messages,
-    scrollIntoView,
-    isWaiting,
-    scrollRef,
-    ref,
-  ]);
+  }, [isStreaming, followRef, messages, scrollIntoView, isWaiting, scrollRef]);
 
   // reset on unmount
   useEffect(() => {
