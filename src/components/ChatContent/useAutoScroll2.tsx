@@ -19,13 +19,7 @@ function isAtBottom(element: HTMLDivElement | null) {
 export function useAutoScroll({ ref }: useAutoScrollProps) {
   const [followRef, setFollowRef] = useState(false);
 
-  // console.log({ atBottom: isAtBottom(ref.current), elem: ref.current });
   const [isScrolledTillBottom, setIsScrolledTillBottom] = useState(true);
-
-  useEffect(() => {
-    const bottom = isAtBottom(ref.current);
-    setIsScrolledTillBottom(bottom);
-  }, [ref]);
 
   const messages = useAppSelector(selectMessages);
   const isStreaming = useAppSelector(selectIsStreaming);
@@ -44,8 +38,8 @@ export function useAutoScroll({ ref }: useAutoScrollProps) {
   }, [isStreaming, scrollIntoView]);
 
   // Check if at the bottom of the page.
-  const handleScroll = useCallback((_event: React.UIEvent<HTMLDivElement>) => {
-    // setIsScrolledTillBottom(isAtBottom(event.currentTarget));
+  const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
+    setIsScrolledTillBottom(isAtBottom(event.currentTarget));
   }, []);
 
   const handleWheel = useCallback(
@@ -75,13 +69,12 @@ export function useAutoScroll({ ref }: useAutoScrollProps) {
   useEffect(() => {
     return () => {
       setFollowRef(false);
-      // setIsScrolledTillBottom(false);
+      setIsScrolledTillBottom(false);
     };
   }, []);
 
   const showFollowButton = useMemo(() => {
-    // if (isAtBottom(ref.current)) return false;
-    return !followRef && (isStreaming || isWaiting) && !isScrolledTillBottom;
+    return !followRef && !isScrolledTillBottom && (isStreaming || isWaiting);
   }, [followRef, isScrolledTillBottom, isStreaming, isWaiting]);
 
   return {
