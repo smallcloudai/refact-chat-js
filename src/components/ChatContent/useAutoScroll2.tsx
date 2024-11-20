@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useAppSelector } from "../../hooks";
 import {
   selectIsStreaming,
+  selectIsWaiting,
   selectMessages,
 } from "../../features/Chat/Thread/selectors";
 
@@ -12,14 +13,6 @@ type useAutoScrollProps = {
 function isAtBottom(element: HTMLDivElement | null) {
   if (element === null) return true;
   const { scrollHeight, scrollTop, clientHeight } = element;
-  //   console.log({
-  //     element,
-  //     scrollHeight,
-  //     scrollTop,
-  //     clientHeight,
-  //     result: Math.abs(scrollHeight - (scrollTop + clientHeight)),
-  //   });
-  // if (scrollHeight === 0 && scrollTop === 0 && clientHeight === 0) return true;
   return Math.abs(scrollHeight - (scrollTop + clientHeight)) <= 1;
 }
 
@@ -27,7 +20,7 @@ export function useAutoScroll({ ref }: useAutoScrollProps) {
   const [followRef, setFollowRef] = useState(false);
 
   // console.log({ atBottom: isAtBottom(ref.current), elem: ref.current });
-  const [_isScrolledTillBottom, setIsScrolledTillBottom] = useState(true);
+  const [isScrolledTillBottom, setIsScrolledTillBottom] = useState(true);
 
   useEffect(() => {
     const bottom = isAtBottom(ref.current);
@@ -36,6 +29,7 @@ export function useAutoScroll({ ref }: useAutoScrollProps) {
 
   const messages = useAppSelector(selectMessages);
   const isStreaming = useAppSelector(selectIsStreaming);
+  const isWaiting = useAppSelector(selectIsWaiting);
 
   const scrollIntoView = useCallback(() => {
     if (ref.current) {
@@ -50,8 +44,8 @@ export function useAutoScroll({ ref }: useAutoScrollProps) {
   }, [isStreaming, scrollIntoView]);
 
   // Check if at the bottom of the page.
-  const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
-    setIsScrolledTillBottom(isAtBottom(event.currentTarget));
+  const handleScroll = useCallback((_event: React.UIEvent<HTMLDivElement>) => {
+    // setIsScrolledTillBottom(isAtBottom(event.currentTarget));
   }, []);
 
   const handleWheel = useCallback(
@@ -81,16 +75,19 @@ export function useAutoScroll({ ref }: useAutoScrollProps) {
   useEffect(() => {
     return () => {
       setFollowRef(false);
-      setIsScrolledTillBottom(false);
+      // setIsScrolledTillBottom(false);
     };
   }, []);
+
+  const showFollowButton = useMemo(() => {
+    // if (isAtBottom(ref.current)) return false;
+    return !followRef && (isStreaming || isWaiting) && !isScrolledTillBottom;
+  }, [followRef, isScrolledTillBottom, isStreaming, isWaiting]);
 
   return {
     handleScroll,
     handleWheel,
     handleScrollButtonClick,
-    // rename this for showing the button
-    // isScrolledTillBottom: isScrolledTillBottom && !isStreaming && !followRef,
-    isScrolledTillBottom: !isStreaming && !followRef,
+    showFollowButton,
   };
 }

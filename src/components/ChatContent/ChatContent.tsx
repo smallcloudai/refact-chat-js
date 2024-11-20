@@ -119,7 +119,8 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
       handleWheel,
       handleScrollButtonClick,
       // handleMouseDown,
-      isScrolledTillBottom,
+      // isScrolledTillBottom,
+      showFollowButton,
     } = useAutoScroll({
       ref: refToFollow,
       // containerRef,
@@ -151,7 +152,7 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
           </Container>
           <div ref={refToFollow} />
         </Flex>
-        {!isScrolledTillBottom && (
+        {showFollowButton && (
           <ScrollToBottomButton onClick={handleScrollButtonClick} />
         )}
 
