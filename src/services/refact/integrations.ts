@@ -244,7 +244,7 @@ function isIntegrationField<T extends IntegrationPrimitive>(
   return true;
 }
 
-type SmartLink = {
+export type SmartLink = {
   sl_label: string;
   sl_chat?: LspChatMessage[];
   sl_goto?: string;

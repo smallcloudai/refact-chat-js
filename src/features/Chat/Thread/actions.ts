@@ -34,7 +34,9 @@ export const chatAskedQuestion = createAction<PayloadWithId>(
 );
 
 export const backUpMessages = createAction<
-  PayloadWithId & { messages: ChatThread["messages"] }
+  PayloadWithId & {
+    messages: ChatThread["messages"];
+  }
 >("chatThread/backUpMessages");
 
 // TODO: add history actions to this, maybe not used any more
@@ -75,6 +77,10 @@ export const setToolUse = createAction<ToolUse>("chatThread/setToolUse");
 export const saveTitle = createAction<PayloadWithIdAndTitle>(
   "chatThread/saveTitle",
 );
+
+export const setIsConfigFlag = createAction<
+  PayloadWithId & { isConfig: boolean }
+>("chatThread/setConfig");
 // TODO: This is the circular dep when imported from hooks :/
 const createAppAsyncThunk = createAsyncThunk.withTypes<{
   state: RootState;
@@ -186,16 +192,25 @@ function checkForToolLoop(message: ChatMessages): boolean {
 
   return hasDuplicates;
 }
-
+// TODO: add props for config chat
 export const chatAskQuestionThunk = createAppAsyncThunk<
   unknown,
   {
     messages: ChatMessages;
     chatId: string;
     tools: ToolCommand[] | null;
+    // TODO: make a separate function for this... and it'll need to be saved.
   }
 >("chatThread/sendChat", ({ messages, chatId, tools }, thunkAPI) => {
   const state = thunkAPI.getState();
+
+  const thread =
+    chatId in state.chat.cache
+      ? state.chat.cache[chatId]
+      : state.chat.thread.id === chatId
+        ? state.chat.thread
+        : null;
+  const isConfig = thread?.isConfig ?? false;
 
   const onlyDeterministicMessages = checkForToolLoop(messages);
 
@@ -211,6 +226,7 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
     apiKey: state.config.apiKey,
     port: state.config.lspPort,
     onlyDeterministicMessages,
+    isConfig,
   })
     .then((response) => {
       if (!response.ok) {
@@ -236,3 +252,8 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
       thunkAPI.dispatch(doneStreaming({ id: chatId }));
     });
 });
+
+// export const sendConfigurationThunk = createAppAsyncThunk(
+//   "chatThread/checkConfiguration",
+
+// );

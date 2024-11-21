@@ -7,6 +7,7 @@ import {
   useAppDispatch,
   useSendChatRequest,
   useGetPromptsQuery,
+  useAutoSend,
 } from "../../hooks";
 import type { Config } from "../../features/Config/configSlice";
 import {
@@ -56,6 +57,8 @@ export const Chat: React.FC<ChatProps> = ({
   const chatToolUse = useAppSelector(getSelectedToolUse);
   const dispatch = useAppDispatch();
   const messages = useAppSelector(selectMessages);
+
+  useAutoSend();
 
   const promptsRequest = useGetPromptsQuery();
   const selectedSystemPrompt = useAppSelector(getSelectedSystemPrompt);
