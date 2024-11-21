@@ -1,12 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import classNames from "classnames";
 import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrationDataByPathQuery";
 
 import type { FC, FormEvent } from "react";
 import type {
+  // ChatMessage,
+  ChatMessages,
   Integration,
   IntegrationField,
   IntegrationPrimitive,
+  // UserMessage,
 } from "../../../services/refact";
 
 import styles from "./IntegrationForm.module.css";
@@ -18,6 +21,10 @@ import {
   CustomLabel,
 } from "../CustomFieldsAndWidgets";
 import { toPascalCase } from "../../../utils/toPascalCase";
+import { type SmartLink } from "../../../services/refact";
+import { useAppDispatch, useSendChatRequest } from "../../../hooks";
+import { setToolUse } from "../../../features/Chat/Thread/actions";
+import { push } from "../../../features/Pages/pagesSlice";
 
 type IntegrationFormProps = {
   integrationPath: string;
@@ -128,6 +135,50 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
           </Button>
         </Flex>
       </form>
+      {/** smart links */}
+      <div>
+        <h3>Smart Links</h3>
+        {integration.data.integr_schema.smartlinks.map((smartlink, index) => {
+          return <SmartLink key={`smartlink-${index}`} smartlink={smartlink} />;
+        })}
+      </div>
     </div>
+  );
+};
+
+const SmartLink: React.FC<{ smartlink: SmartLink }> = ({ smartlink }) => {
+  // TODO: send chat on click and navigate away
+  const dispatch = useAppDispatch();
+
+  const { sendMessages } = useSendChatRequest();
+  const handleClick = React.useCallback(() => {
+    const messages = (smartlink.sl_chat ?? []).reduce<ChatMessages>(
+      (acc, message) => {
+        if (message.role === "user" && typeof message.content === "string") {
+          return [...acc, { role: message.role, content: message.content }];
+        }
+
+        // TODO: Other types.
+        return acc;
+      },
+      [],
+    );
+    dispatch(setToolUse("agent"));
+    // TODO: make another version of this because it'll modify an active chat
+    dispatch(push({ name: "chat" }));
+    // eslint-disable-next-line no-console
+    void sendMessages(messages, true).catch(console.error);
+  }, [dispatch, sendMessages, smartlink.sl_chat]);
+
+  const title = (smartlink.sl_chat ?? []).reduce<string[]>((acc, cur) => {
+    if (typeof cur.content === "string")
+      return [...acc, `${cur.role}: ${cur.content}`];
+    return acc;
+  }, []);
+
+  return (
+    <Button onClick={handleClick} title={title.join("\n")}>
+      {smartlink.sl_label}
+    </Button>
   );
 };

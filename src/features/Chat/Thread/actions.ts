@@ -186,15 +186,17 @@ function checkForToolLoop(message: ChatMessages): boolean {
 
   return hasDuplicates;
 }
-
+// TODO: add props for config chat
 export const chatAskQuestionThunk = createAppAsyncThunk<
   unknown,
   {
     messages: ChatMessages;
     chatId: string;
     tools: ToolCommand[] | null;
+    // TODO: make a separate function for this... and it'll need to be saved.
+    isConfig: boolean;
   }
->("chatThread/sendChat", ({ messages, chatId, tools }, thunkAPI) => {
+>("chatThread/sendChat", ({ messages, chatId, tools, isConfig }, thunkAPI) => {
   const state = thunkAPI.getState();
 
   const onlyDeterministicMessages = checkForToolLoop(messages);
@@ -211,6 +213,7 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
     apiKey: state.config.apiKey,
     port: state.config.lspPort,
     onlyDeterministicMessages,
+    isConfig,
   })
     .then((response) => {
       if (!response.ok) {
@@ -236,3 +239,8 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
       thunkAPI.dispatch(doneStreaming({ id: chatId }));
     });
 });
+
+// export const sendConfigurationThunk = createAppAsyncThunk(
+//   "chatThread/checkConfiguration",
+
+// );

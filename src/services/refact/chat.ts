@@ -41,6 +41,7 @@ type SendChatArgs = {
   tools: ToolCommand[] | null;
   port?: number;
   apiKey?: string | null;
+  isConfig?: boolean;
 } & StreamArgs;
 
 type GetChatTitleArgs = {
@@ -94,7 +95,7 @@ export type Usage = {
   prompt_tokens: number;
   total_tokens: number;
 };
-
+// TODO: add config url
 export async function sendChat({
   messages,
   model,
@@ -107,6 +108,7 @@ export async function sendChat({
   tools,
   port = 8001,
   apiKey,
+  isConfig = false,
 }: SendChatArgs): Promise<Response> {
   // const toolsResponse = await getAvailableTools();
 
@@ -137,7 +139,11 @@ export async function sendChat({
     ...(apiKey ? { Authorization: "Bearer " + apiKey } : {}),
   };
 
-  const url = `http://127.0.0.1:${port}${CHAT_URL}`;
+  const url = `http://127.0.0.1:${port}${
+    isConfig ? "/v1/chat-configuration" : CHAT_URL
+  }`;
+
+  console.log({ isConfig });
 
   return fetch(url, {
     method: "POST",

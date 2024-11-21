@@ -77,7 +77,7 @@ export const useSendChatRequest = () => {
   }, [currentMessages, systemPrompt]);
 
   const sendMessages = useCallback(
-    async (messages: ChatMessages) => {
+    async (messages: ChatMessages, isConfig = false) => {
       let tools = await triggerGetTools(undefined).unwrap();
       if (isToolUse(toolUse)) {
         dispatch(setToolUse(toolUse));
@@ -115,6 +115,7 @@ export const useSendChatRequest = () => {
         messages,
         tools,
         chatId,
+        isConfig,
       });
 
       const dispatchedAction = dispatch(action);
@@ -240,5 +241,45 @@ export const useSendChatRequest = () => {
     retry,
     retryFromIndex,
     confirmToolUsage,
+    sendMessages,
   };
 };
+
+// NOTE: only use this once
+export function useAutoSend() {
+  const streaming = useAppSelector(selectIsStreaming);
+  const currentMessages = useAppSelector(selectMessages);
+  const errored = useAppSelector(selectChatError);
+  const preventSend = useAppSelector(selectPreventSend);
+  const areToolsConfirmed = useAppSelector(getToolsConfirmationStatus);
+  const { sendMessages, abort } = useSendChatRequest();
+
+  useEffect(() => {
+    if (!streaming && currentMessages.length > 0 && !errored && !preventSend) {
+      const lastMessage = currentMessages.slice(-1)[0];
+      if (
+        isAssistantMessage(lastMessage) &&
+        lastMessage.tool_calls &&
+        lastMessage.tool_calls.length > 0
+      ) {
+        if (!areToolsConfirmed) {
+          abort();
+          if (recallCounter < 1) {
+            recallCounter++;
+            return;
+          }
+        }
+        void sendMessages(currentMessages);
+        recallCounter = 0;
+      }
+    }
+  }, [
+    errored,
+    currentMessages,
+    preventSend,
+    sendMessages,
+    abort,
+    streaming,
+    areToolsConfirmed,
+  ]);
+}
