@@ -16,6 +16,7 @@ import {
   restoreChat,
   setPreventSend,
   saveTitle,
+  setIsConfigFlag,
 } from "./actions";
 import { formatChatResponse } from "./utils";
 
@@ -26,6 +27,7 @@ const createChatThread = (tool_use: ToolUse): ChatThread => {
     title: "",
     model: "",
     tool_use,
+    isConfig: false,
   };
   return chat;
 };
@@ -181,5 +183,14 @@ export const chatReducer = createReducer(initialState, (builder) => {
     if (state.thread.id !== action.payload.id) return state;
     state.thread.title = action.payload.title;
     state.thread.isTitleGenerated = action.payload.isTitleGenerated;
+  });
+
+  builder.addCase(setIsConfigFlag, (state, action) => {
+    if (state.thread.id === action.payload.id) {
+      state.thread.isConfig = action.payload.isConfig;
+    }
+    if (action.payload.id in state.cache) {
+      state.cache[action.payload.id].isConfig = action.payload.isConfig;
+    }
   });
 });

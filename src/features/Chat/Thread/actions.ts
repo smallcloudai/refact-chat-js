@@ -34,7 +34,9 @@ export const chatAskedQuestion = createAction<PayloadWithId>(
 );
 
 export const backUpMessages = createAction<
-  PayloadWithId & { messages: ChatThread["messages"] }
+  PayloadWithId & {
+    messages: ChatThread["messages"];
+  }
 >("chatThread/backUpMessages");
 
 // TODO: add history actions to this, maybe not used any more
@@ -75,6 +77,10 @@ export const setToolUse = createAction<ToolUse>("chatThread/setToolUse");
 export const saveTitle = createAction<PayloadWithIdAndTitle>(
   "chatThread/saveTitle",
 );
+
+export const setIsConfigFlag = createAction<
+  PayloadWithId & { isConfig: boolean }
+>("chatThread/setConfig");
 // TODO: This is the circular dep when imported from hooks :/
 const createAppAsyncThunk = createAsyncThunk.withTypes<{
   state: RootState;
@@ -194,10 +200,17 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
     chatId: string;
     tools: ToolCommand[] | null;
     // TODO: make a separate function for this... and it'll need to be saved.
-    isConfig: boolean;
   }
->("chatThread/sendChat", ({ messages, chatId, tools, isConfig }, thunkAPI) => {
+>("chatThread/sendChat", ({ messages, chatId, tools }, thunkAPI) => {
   const state = thunkAPI.getState();
+
+  const thread =
+    chatId in state.chat.cache
+      ? state.chat.cache[chatId]
+      : state.chat.thread.id === chatId
+        ? state.chat.thread
+        : null;
+  const isConfig = thread?.isConfig ?? false;
 
   const onlyDeterministicMessages = checkForToolLoop(messages);
 

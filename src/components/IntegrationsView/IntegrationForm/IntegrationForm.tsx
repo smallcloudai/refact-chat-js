@@ -22,9 +22,17 @@ import {
 } from "../CustomFieldsAndWidgets";
 import { toPascalCase } from "../../../utils/toPascalCase";
 import { type SmartLink } from "../../../services/refact";
-import { useAppDispatch, useSendChatRequest } from "../../../hooks";
-import { setToolUse } from "../../../features/Chat/Thread/actions";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useSendChatRequest,
+} from "../../../hooks";
+import {
+  setIsConfigFlag,
+  setToolUse,
+} from "../../../features/Chat/Thread/actions";
 import { push } from "../../../features/Pages/pagesSlice";
+import { selectChatId } from "../../../features/Chat";
 
 type IntegrationFormProps = {
   integrationPath: string;
@@ -149,6 +157,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
 const SmartLink: React.FC<{ smartlink: SmartLink }> = ({ smartlink }) => {
   // TODO: send chat on click and navigate away
   const dispatch = useAppDispatch();
+  const chatId = useAppSelector(selectChatId);
 
   const { sendMessages } = useSendChatRequest();
   const handleClick = React.useCallback(() => {
@@ -163,12 +172,19 @@ const SmartLink: React.FC<{ smartlink: SmartLink }> = ({ smartlink }) => {
       },
       [],
     );
+
+    // dispatch(newChatAction()); id is out of date
     dispatch(setToolUse("agent"));
-    // TODO: make another version of this because it'll modify an active chat
-    dispatch(push({ name: "chat" }));
+    dispatch(setIsConfigFlag({ id: chatId, isConfig: true }));
+    // TODO: make another version of send messages so there's no need to converting the messages
     // eslint-disable-next-line no-console
-    void sendMessages(messages, true).catch(console.error);
-  }, [dispatch, sendMessages, smartlink.sl_chat]);
+    void sendMessages(messages)
+      .then(() => {
+        dispatch(push({ name: "chat" }));
+      })
+      // eslint-disable-next-line no-console
+      .catch(console.error);
+  }, [chatId, dispatch, sendMessages, smartlink.sl_chat]);
 
   const title = (smartlink.sl_chat ?? []).reduce<string[]>((acc, cur) => {
     if (typeof cur.content === "string")

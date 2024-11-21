@@ -12,6 +12,7 @@ export type ChatThread = {
   tool_use?: ToolUse;
   read?: boolean;
   isTitleGenerated?: boolean;
+  isConfig?: boolean;
 };
 
 export type ToolUse = "quick" | "explore" | "agent";
