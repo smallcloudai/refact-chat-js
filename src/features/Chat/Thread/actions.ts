@@ -210,7 +210,7 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
       : state.chat.thread.id === chatId
         ? state.chat.thread
         : null;
-  const isConfig = thread?.isConfig ?? false;
+  const isConfig = (thread?.isConfig ?? false) as boolean;
 
   const onlyDeterministicMessages = checkForToolLoop(messages);
 

@@ -245,7 +245,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   if (globalError || !integrationsMap) {
     return (
-      <ErrorCallout onClick={goBackAndClearError}>
+      <ErrorCallout mx="0" onClick={goBackAndClearError}>
         {globalError ?? "fetching integrations."}
       </ErrorCallout>
     );

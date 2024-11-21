@@ -15,17 +15,20 @@ import { ContextFiles } from "./ContextFiles";
 import { AssistantInput } from "./AssistantInput";
 import { useAutoScroll } from "./useAutoScroll";
 import { PlainText } from "./PlainText";
-import { useConfig, useEventsBusForIDE } from "../../hooks";
+import { useAppDispatch, useConfig, useEventsBusForIDE } from "../../hooks";
 import { useAppSelector } from "../../hooks";
 import {
   selectIsStreaming,
   selectIsWaiting,
   selectMessages,
+  selectThread,
 } from "../../features/Chat/Thread/selectors";
 import { takeWhile } from "../../utils";
 import { GroupedDiffs } from "./DiffContent";
 import { ScrollToBottomButton } from "./ScrollToBottomButton";
 import { currentTipOfTheDay } from "../../features/TipOfTheDay";
+import { setIsConfigFlag } from "../../features/Chat";
+import { popBackTo } from "../../features/Pages/pagesSlice";
 
 const TipOfTheDay: React.FC = () => {
   const tip = useAppSelector(currentTipOfTheDay);
@@ -108,8 +111,11 @@ export type ChatContentProps = {
 
 export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
   (props, ref) => {
+    const dispatch = useAppDispatch();
     const messages = useAppSelector(selectMessages);
     const isStreaming = useAppSelector(selectIsStreaming);
+    const thread = useAppSelector(selectThread);
+    const isConfig = (thread.isConfig ?? false) as boolean;
     const isWaiting = useAppSelector(selectIsWaiting);
 
     const {
@@ -131,6 +137,14 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
       props.onRetry(index, question);
       handleScrollButtonClick();
     };
+
+    const handleReturnToConfigurationClick = useCallback(() => {
+      // eslint-disable-next-line no-console
+      console.log(`[DEBUG]: going back to configuration page`);
+      props.onStopStreaming();
+      dispatch(setIsConfigFlag({ id: thread.id, isConfig: false }));
+      dispatch(popBackTo("integrations page"));
+    }, [dispatch, thread.id, props]);
 
     return (
       <ScrollArea
@@ -160,6 +174,17 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
             style={{ position: "absolute", bottom: 15 }}
           >
             Stop
+          </Button>
+        )}
+        {isConfig && (
+          <Button
+            ml="auto"
+            color="blue"
+            title="Return to configuration page"
+            onClick={handleReturnToConfigurationClick}
+            style={{ position: "absolute", bottom: 15, right: 0 }}
+          >
+            Return
           </Button>
         )}
       </ScrollArea>

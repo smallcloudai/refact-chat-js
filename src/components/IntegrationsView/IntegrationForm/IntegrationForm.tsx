@@ -25,6 +25,7 @@ import { type SmartLink } from "../../../services/refact";
 import {
   useAppDispatch,
   useAppSelector,
+  useEventsBusForIDE,
   useSendChatRequest,
 } from "../../../hooks";
 import {
@@ -33,6 +34,7 @@ import {
 } from "../../../features/Chat/Thread/actions";
 import { push } from "../../../features/Pages/pagesSlice";
 import { selectChatId } from "../../../features/Chat";
+import { clearInformation } from "../../../features/Errors/informationSlice";
 
 type IntegrationFormProps = {
   integrationPath: string;
@@ -76,12 +78,14 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         id: fieldKey,
         name: fieldKey,
         defaultValue: values[fieldKey]
-          ? values[fieldKey].toString() // Use the value from 'values' if present
+          ? values[fieldKey]?.toString() // Use the value from 'values' if present
           : field.f_type === "int"
             ? Number(field.f_default)
             : field.f_default?.toString(), // Otherwise, use the default value from the schema
         placeholder: field.f_placeholder?.toString(),
       };
+
+      const maybeSmartlinks = field.smartlinks;
 
       return (
         <div key={fieldKey}>
@@ -91,6 +95,17 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
             {...commonProps}
             type={field.f_type === "int" ? "number" : "text"}
           />
+          {maybeSmartlinks && (
+            <Flex mb="3">
+              {maybeSmartlinks.map((smartlink, index) => (
+                <SmartLink
+                  isSmall
+                  key={`smartlink-${fieldKey}-${index}`}
+                  smartlink={smartlink}
+                />
+              ))}
+            </Flex>
+          )}
         </div>
       );
     },
@@ -162,46 +177,68 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   );
 };
 
-const SmartLink: React.FC<{ smartlink: SmartLink }> = ({ smartlink }) => {
+const SmartLink: FC<{ smartlink: SmartLink; isSmall?: boolean }> = ({
+  smartlink,
+  isSmall = false,
+}) => {
   // TODO: send chat on click and navigate away
   const dispatch = useAppDispatch();
   const chatId = useAppSelector(selectChatId);
 
+  const { queryPathThenOpenFile } = useEventsBusForIDE();
+
+  const { sl_goto, sl_chat } = smartlink;
+
   const { sendMessages } = useSendChatRequest();
   const handleClick = React.useCallback(() => {
-    const messages = (smartlink.sl_chat ?? []).reduce<ChatMessages>(
-      (acc, message) => {
-        if (message.role === "user" && typeof message.content === "string") {
-          return [...acc, { role: message.role, content: message.content }];
-        }
+    if (sl_goto) {
+      console.log(`[DEBUG]: sl_goto: `, sl_goto);
+      const [action, fileName] = sl_goto.split(":");
+      if (action.toLowerCase() === "editor") {
+        void queryPathThenOpenFile({ file_name: fileName });
+        console.log(`[DEBUG]: opening path of ${fileName}`);
+      }
+      return;
+    }
+    if (!sl_chat) return;
 
-        // TODO: Other types.
-        return acc;
-      },
-      [],
-    );
+    const messages = sl_chat.reduce<ChatMessages>((acc, message) => {
+      if (message.role === "user" && typeof message.content === "string") {
+        return [...acc, { role: message.role, content: message.content }];
+      }
 
+      // TODO: Other types.
+      return acc;
+    }, []);
     // dispatch(newChatAction()); id is out of date
     dispatch(setToolUse("agent"));
     dispatch(setIsConfigFlag({ id: chatId, isConfig: true }));
+    dispatch(clearInformation());
     // TODO: make another version of send messages so there's no need to converting the messages
-    // eslint-disable-next-line no-console
-    void sendMessages(messages)
+    // eslint-disable-next-line no-console, @typescript-eslint/no-unsafe-call
+    sendMessages(messages)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       .then(() => {
         dispatch(push({ name: "chat" }));
       })
-      // eslint-disable-next-line no-console
+      // eslint-disable-next-line no-console, @typescript-eslint/no-unsafe-member-access
       .catch(console.error);
-  }, [chatId, dispatch, sendMessages, smartlink.sl_chat]);
+  }, [chatId, dispatch, sendMessages, sl_chat, sl_goto, queryPathThenOpenFile]);
 
-  const title = (smartlink.sl_chat ?? []).reduce<string[]>((acc, cur) => {
+  const title = sl_chat?.reduce<string[]>((acc, cur) => {
     if (typeof cur.content === "string")
       return [...acc, `${cur.role}: ${cur.content}`];
     return acc;
   }, []);
 
   return (
-    <Button onClick={handleClick} title={title.join("\n")}>
+    <Button
+      size={isSmall ? "1" : "2"}
+      onClick={handleClick}
+      title={title ? title.join("\n") : ""}
+      color={isSmall ? "gray" : "blue"}
+      type="button"
+    >
       {smartlink.sl_label}
     </Button>
   );
