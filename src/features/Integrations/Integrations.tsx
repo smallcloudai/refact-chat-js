@@ -66,7 +66,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({
           )}
         </>
       )}
-      <ScrollArea scrollbars="vertical">
+      <ScrollArea scrollbars="vertical" fullHeight>
         <Flex
           direction="column"
           justify="between"
@@ -74,6 +74,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({
           mr={LeftRightPadding}
           style={{
             width: "inherit",
+            height: "100%",
           }}
         >
           <IntegrationsView

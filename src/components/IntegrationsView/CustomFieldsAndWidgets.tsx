@@ -6,6 +6,7 @@ import {
   Button,
   Text,
 } from "@radix-ui/themes";
+import { Markdown } from "../Markdown";
 
 // Custom Input Field
 export const CustomInputField = ({
@@ -81,7 +82,7 @@ export const CustomDescriptionField = ({
 }) => {
   return (
     <Text size="2" mb="2" style={{ display: "block", opacity: 0.85 }}>
-      {children}
+      <Markdown>{children}</Markdown>
     </Text>
   );
 };

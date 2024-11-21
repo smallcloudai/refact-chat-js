@@ -12,6 +12,7 @@ import {
 import {
   Integration,
   IntegrationWithIconResponse,
+  isDetailMessage,
   // isDetailMessage,
 } from "../../services/refact";
 import { Spinner } from "../Spinner";
@@ -26,6 +27,13 @@ import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
 import { IntegrationForm } from "./IntegrationForm";
 import { Markdown } from "../Markdown";
 import { toPascalCase } from "../../utils/toPascalCase";
+import {
+  clearInformation,
+  getInformationMessage,
+  setInformation,
+} from "../../features/Errors/informationSlice";
+import { InformationCallout } from "../Callout/Callout";
+import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 
 // TODO: do we really need this?
 
@@ -74,7 +82,8 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   handleBackButtonVisibility,
 }) => {
   const dispatch = useAppDispatch();
-  const error = useAppSelector(getErrorMessage);
+  const globalError = useAppSelector(getErrorMessage);
+  const information = useAppSelector(getInformationMessage);
   const { saveIntegrationMutationTrigger } = useSaveIntegrationData();
 
   const [currentIntegration, setCurrentIntegration] = useState<
@@ -84,6 +93,11 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   const [currentIntegrationSchema, setCurrentIntegrationSchema] = useState<
     Integration["integr_schema"] | null
   >(null);
+
+  const [isApplyingIntegrationForm, setIsApplyingIntegrationForm] =
+    useState<boolean>(false);
+
+  const [localError, setLocalError] = useState<string>("");
 
   useEffect(() => {
     console.log(`[DEBUG]: integrationsData: `, integrationsMap);
@@ -137,8 +151,11 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   };
 
   const handleFormReturn = useCallback(() => {
-    setCurrentIntegration(null);
-  }, []);
+    currentIntegration && setCurrentIntegration(null);
+    information && dispatch(clearInformation());
+    globalError && dispatch(clearError());
+    localError && setLocalError("");
+  }, [dispatch, localError, globalError, information, currentIntegration]);
 
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -146,6 +163,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       console.log(`[DEBUG]: schema: `, currentIntegrationSchema);
       if (!currentIntegrationSchema) return;
       event.preventDefault();
+      setIsApplyingIntegrationForm(true);
 
       console.log(`[DEBUG]: event: `, event);
 
@@ -177,13 +195,29 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       });
 
       console.log(`[DEBUG]: response: `, response);
-      setCurrentIntegration(null);
-      setCurrentIntegrationSchema(null);
+      if (response.error) {
+        const error = response.error as FetchBaseQueryError;
+        console.log(`[DEBUG]: error is present, error: `, error);
+        setLocalError(
+          isDetailMessage(error.data)
+            ? error.data.detail
+            : `something went wrong while saving configuration for ${currentIntegration.integr_name} integration`,
+        );
+      } else {
+        console.log(`[DEBUG]: all good, save success`);
+        dispatch(
+          setInformation(
+            `Integration ${currentIntegration.integr_name} saved successfully.`,
+          ),
+        );
+      }
+      setIsApplyingIntegrationForm(false);
     },
     [
       currentIntegration,
       saveIntegrationMutationTrigger,
       currentIntegrationSchema,
+      dispatch,
     ],
   );
 
@@ -209,10 +243,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   // };
 
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-  if (error || !integrationsMap) {
+  if (globalError || !integrationsMap) {
     return (
       <ErrorCallout onClick={goBackAndClearError}>
-        {error ?? "fetching integrations."}
+        {globalError ?? "fetching integrations."}
       </ErrorCallout>
     );
   }
@@ -221,12 +255,14 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     <Box
       style={{
         width: "inherit",
+        height: "100%",
       }}
     >
       <Flex
         direction="column"
         style={{
           width: "100%",
+          height: "100%",
         }}
       >
         {currentIntegration ? (
@@ -251,23 +287,37 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
           </Heading>
         )}
         {currentIntegration ? (
-          <Flex direction="column" align="start">
+          <Flex
+            direction="column"
+            align="start"
+            justify="between"
+            height="100%"
+          >
             <IntegrationForm
               handleSubmit={(event) => void handleSubmit(event)}
               integrationPath={currentIntegration.integr_config_path}
+              isApplying={isApplyingIntegrationForm}
               onReturn={handleFormReturn}
               onSchema={handleSetCurrentIntegrationSchema}
             />
-            {/* {currentIntegration.warning && (
-              <WarningHoverCard
-                label={
-                  <Badge className={styles.IntegrationWarning} color="orange">
-                    Has warnings
-                  </Badge>
-                }
-                warning={currentIntegration.warning}
-              />
-            )} */}
+            {information && (
+              <InformationCallout
+                timeout={3000}
+                mx="0"
+                onClick={() => dispatch(clearInformation())}
+              >
+                {information}
+              </InformationCallout>
+            )}
+            {localError && (
+              <ErrorCallout
+                mx="0"
+                timeout={3000}
+                onClick={() => setLocalError("")}
+              >
+                {localError}
+              </ErrorCallout>
+            )}
           </Flex>
         ) : (
           <>

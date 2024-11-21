@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect } from "react";
 import classNames from "classnames";
 import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrationDataByPathQuery";
 
@@ -36,6 +36,7 @@ import { selectChatId } from "../../../features/Chat";
 
 type IntegrationFormProps = {
   integrationPath: string;
+  isApplying: boolean;
   onReturn: () => void;
   handleSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onSchema: (schema: Integration["integr_schema"]) => void;
@@ -43,12 +44,13 @@ type IntegrationFormProps = {
 
 export const IntegrationForm: FC<IntegrationFormProps> = ({
   integrationPath,
+  isApplying,
   onReturn,
   handleSubmit,
   onSchema,
 }) => {
   const { integration } = useGetIntegrationDataByPathQuery(integrationPath);
-  const [isApplying, setIsApplying] = useState<boolean>(false);
+  // const [isApplying, setIsApplying] = useState<boolean>(false);
 
   useEffect(() => {
     console.log(`[DEBUG]: integration.data: `, integration.data);
@@ -61,19 +63,23 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   }, [integration, onSchema]);
 
   const renderField = useCallback(
-    (
-      fieldKey: string,
-      field?: IntegrationField<NonNullable<IntegrationPrimitive>>,
-    ) => {
-      if (!field) return null;
-
+    ({
+      field,
+      values,
+      fieldKey,
+    }: {
+      fieldKey: string;
+      values: Integration["integr_values"];
+      field: IntegrationField<NonNullable<IntegrationPrimitive>>;
+    }) => {
       const commonProps = {
         id: fieldKey,
         name: fieldKey,
-        defaultValue:
-          field.f_type === "int"
+        defaultValue: values[fieldKey]
+          ? values[fieldKey].toString() // Use the value from 'values' if present
+          : field.f_type === "int"
             ? Number(field.f_default)
-            : field.f_default?.toString(),
+            : field.f_default?.toString(), // Otherwise, use the default value from the schema
         placeholder: field.f_placeholder?.toString(),
       };
 
@@ -114,18 +120,20 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   return (
     <div>
       <form onSubmit={handleSubmit}>
-        {Object.keys(integration.data.integr_schema.fields).map((fieldKey) =>
-          renderField(
-            fieldKey,
-            integration.data?.integr_schema.fields[fieldKey],
-          ),
-        )}
+        {Object.keys(integration.data.integr_schema.fields).map((fieldKey) => {
+          if (integration.data) {
+            return renderField({
+              fieldKey: fieldKey,
+              values: integration.data.integr_values,
+              field: integration.data.integr_schema.fields[fieldKey],
+            });
+          }
+        })}
         <Flex gap="3" mt="4">
           <Button
             color="green"
             variant="solid"
             type="submit"
-            onClick={() => setIsApplying(true)}
             className={classNames(
               { [styles.disabledButton]: isApplying },
               styles.button,
