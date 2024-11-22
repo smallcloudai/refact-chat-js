@@ -94,8 +94,15 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     Integration["integr_schema"] | null
   >(null);
 
+  const [currentIntegrationValues, setCurrentIntegrationValues] = useState<
+    Integration["integr_values"] | null
+  >(null);
+
   const [isApplyingIntegrationForm, setIsApplyingIntegrationForm] =
     useState<boolean>(false);
+
+  const [isDisabledIntegrationForm, setIsDisabledIntegrationForm] =
+    useState<boolean>(true);
 
   const [localError, setLocalError] = useState<string>("");
 
@@ -148,6 +155,14 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     if (!currentIntegration) return;
 
     setCurrentIntegrationSchema(schema);
+  };
+
+  const handleSetCurrentIntegrationValues = (
+    values: Integration["integr_values"],
+  ) => {
+    if (!currentIntegration) return;
+
+    setCurrentIntegrationValues(values);
   };
 
   const handleFormReturn = useCallback(() => {
@@ -210,6 +225,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             `Integration ${currentIntegration.integr_name} saved successfully.`,
           ),
         );
+        setIsDisabledIntegrationForm(true);
       }
       setIsApplyingIntegrationForm(false);
     },
@@ -219,6 +235,50 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       currentIntegrationSchema,
       dispatch,
     ],
+  );
+
+  const handleIntegrationFormChange = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      if (!currentIntegration) return;
+      if (!currentIntegrationSchema) return;
+      if (!currentIntegrationValues) return;
+      event.preventDefault();
+
+      const formData = new FormData(event.currentTarget);
+      const rawFormValues = Object.fromEntries(formData.entries());
+
+      // Adjust types of data based on f_type of each field in schema
+      const formValues: Integration["integr_values"] = Object.keys(
+        rawFormValues,
+      ).reduce<Integration["integr_values"]>((acc, key) => {
+        const field = currentIntegrationSchema.fields[key];
+        switch (field.f_type) {
+          case "int":
+            acc[key] = parseInt(rawFormValues[key] as string, 10);
+            break;
+          case "string":
+          default:
+            acc[key] = rawFormValues[key] as string;
+            break;
+        }
+        return acc;
+      }, {});
+
+      console.log(`[DEBUG]: formValues: `, formValues);
+      console.log(`[DEBUG]: formValues: `, currentIntegrationValues);
+
+      const maybeDisabled = Object.entries(formValues).every(
+        ([fieldKey, fieldValue]) => {
+          return (
+            fieldKey in currentIntegrationValues &&
+            fieldValue === currentIntegrationValues[fieldKey]
+          );
+        },
+      );
+
+      setIsDisabledIntegrationForm(maybeDisabled);
+    },
+    [currentIntegration, currentIntegrationValues, currentIntegrationSchema],
   );
 
   if (isLoading) {
@@ -297,8 +357,11 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
               handleSubmit={(event) => void handleSubmit(event)}
               integrationPath={currentIntegration.integr_config_path}
               isApplying={isApplyingIntegrationForm}
+              isDisabled={isDisabledIntegrationForm}
               onReturn={handleFormReturn}
               onSchema={handleSetCurrentIntegrationSchema}
+              onValues={handleSetCurrentIntegrationValues}
+              handleChange={handleIntegrationFormChange}
             />
             {information && (
               <InformationCallout

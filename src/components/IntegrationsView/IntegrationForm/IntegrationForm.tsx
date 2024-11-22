@@ -39,17 +39,23 @@ import { clearInformation } from "../../../features/Errors/informationSlice";
 type IntegrationFormProps = {
   integrationPath: string;
   isApplying: boolean;
+  isDisabled: boolean;
   onReturn: () => void;
   handleSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  handleChange: (event: FormEvent<HTMLFormElement>) => void;
   onSchema: (schema: Integration["integr_schema"]) => void;
+  onValues: (values: Integration["integr_values"]) => void;
 };
 
 export const IntegrationForm: FC<IntegrationFormProps> = ({
   integrationPath,
   isApplying,
+  isDisabled,
   onReturn,
   handleSubmit,
+  handleChange,
   onSchema,
+  onValues,
 }) => {
   const { integration } = useGetIntegrationDataByPathQuery(integrationPath);
   // const [isApplying, setIsApplying] = useState<boolean>(false);
@@ -62,7 +68,11 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
     if (integration.data?.integr_schema) {
       onSchema(integration.data.integr_schema);
     }
-  }, [integration, onSchema]);
+
+    if (integration.data?.integr_values) {
+      onValues(integration.data.integr_values);
+    }
+  }, [integration, onSchema, onValues]);
 
   const renderField = useCallback(
     ({
@@ -134,7 +144,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
 
   return (
     <div>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} onChange={handleChange}>
         {Object.keys(integration.data.integr_schema.fields).map((fieldKey) => {
           if (integration.data) {
             return renderField({
@@ -149,10 +159,12 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
             color="green"
             variant="solid"
             type="submit"
+            title={isDisabled ? "Cannot apply, no changes made" : "Apply"}
             className={classNames(
-              { [styles.disabledButton]: isApplying },
+              { [styles.disabledButton]: isApplying || isDisabled },
               styles.button,
             )}
+            disabled={isDisabled}
           >
             {isApplying ? "Applying..." : "Apply"}
           </Button>
@@ -262,6 +274,7 @@ const SmartLink: FC<{
       title={title ? title.join("\n") : ""}
       color={isSmall ? "gray" : "blue"}
       type="button"
+      variant="outline"
     >
       {smartlink.sl_label}
     </Button>
