@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useRef } from "react";
 import {
   ChatMessages,
   isChatContextFileMessage,
@@ -109,88 +109,81 @@ export type ChatContentProps = {
   onStopStreaming: () => void;
 };
 
-export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
-  (props, ref) => {
-    const dispatch = useAppDispatch();
-    const messages = useAppSelector(selectMessages);
-    const isStreaming = useAppSelector(selectIsStreaming);
-    const thread = useAppSelector(selectThread);
-    const isConfig = (thread.isConfig ?? false) as boolean;
-    const isWaiting = useAppSelector(selectIsWaiting);
+export const ChatContent: React.FC<ChatContentProps> = (props) => {
+  const dispatch = useAppDispatch();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const messages = useAppSelector(selectMessages);
+  const isStreaming = useAppSelector(selectIsStreaming);
+  const thread = useAppSelector(selectThread);
+  const isConfig = (thread.isConfig ?? false) as boolean;
+  const isWaiting = useAppSelector(selectIsWaiting);
 
-    const {
-      innerRef,
-      handleScroll,
-      handleWheel,
-      handleScrollButtonClick,
-      isScrolledTillBottom,
-    } = useAutoScroll({
-      ref,
-      messages,
-      isStreaming,
-    });
+  const {
+    handleScroll,
+    handleWheel,
+    handleScrollButtonClick,
+    showFollowButton,
+  } = useAutoScroll({
+    scrollRef,
+  });
 
-    const onRetryWrapper = (
-      index: number,
-      question: UserMessage["content"],
-    ) => {
-      props.onRetry(index, question);
-      handleScrollButtonClick();
-    };
+  const onRetryWrapper = (index: number, question: UserMessage["content"]) => {
+    props.onRetry(index, question);
+  };
 
-    const handleReturnToConfigurationClick = useCallback(() => {
-      // eslint-disable-next-line no-console
-      console.log(`[DEBUG]: going back to configuration page`);
-      props.onStopStreaming();
-      dispatch(setIsConfigFlag({ id: thread.id, isConfig: false }));
-      dispatch(popBackTo("integrations page"));
-    }, [dispatch, thread.id, props]);
+  const handleReturnToConfigurationClick = useCallback(() => {
+    // eslint-disable-next-line no-console
+    console.log(`[DEBUG]: going back to configuration page`);
+    props.onStopStreaming();
+    dispatch(setIsConfigFlag({ id: thread.id, isConfig: false }));
+    dispatch(popBackTo("integrations page"));
+  }, [dispatch, thread.id, props]);
 
-    return (
-      <ScrollArea
-        style={{ flexGrow: 1, height: "auto", position: "relative" }}
-        scrollbars="vertical"
-        onScroll={handleScroll}
-        onWheel={handleWheel}
-      >
-        <Flex direction="column" className={styles.content} p="2" gap="1">
-          {messages.length === 0 && <PlaceHolderText />}
-          {renderMessages(messages, onRetryWrapper)}
-          <Container py="4">
-            <Spinner spinning={isWaiting} />
-          </Container>
-          <div ref={innerRef} />
-        </Flex>
-        {!isScrolledTillBottom && (
-          <ScrollToBottomButton onClick={handleScrollButtonClick} />
+  return (
+    <ScrollArea
+      ref={scrollRef}
+      style={{ flexGrow: 1, height: "auto", position: "relative" }}
+      scrollbars="vertical"
+      onScroll={handleScroll}
+      onWheel={handleWheel}
+      type={isWaiting || isStreaming ? "auto" : "hover"}
+    >
+      <Flex direction="column" className={styles.content} p="2" gap="1">
+        {messages.length === 0 && <PlaceHolderText />}
+        {renderMessages(messages, onRetryWrapper)}
+        <Container py="4">
+          <Spinner spinning={isWaiting} />
+        </Container>
+      </Flex>
+      {showFollowButton && (
+        <ScrollToBottomButton onClick={handleScrollButtonClick} />
+      )}
+
+      <Flex gap="3" style={{ position: "absolute", bottom: 15 }}>
+        {isStreaming && (
+          <Button
+            ml="auto"
+            color="red"
+            title="stop streaming"
+            onClick={props.onStopStreaming}
+          >
+            Stop
+          </Button>
         )}
-
-        <Flex gap="3" style={{ position: "absolute", bottom: 15 }}>
-          {isStreaming && (
-            <Button
-              ml="auto"
-              color="red"
-              title="stop streaming"
-              onClick={props.onStopStreaming}
-            >
-              Stop
-            </Button>
-          )}
-          {isConfig && (
-            <Button
-              ml="auto"
-              color="gray"
-              title="Return to configuration page"
-              onClick={handleReturnToConfigurationClick}
-            >
-              Return
-            </Button>
-          )}
-        </Flex>
-      </ScrollArea>
-    );
-  },
-);
+        {isConfig && (
+          <Button
+            ml="auto"
+            color="gray"
+            title="Return to configuration page"
+            onClick={handleReturnToConfigurationClick}
+          >
+            Return
+          </Button>
+        )}
+      </Flex>
+    </ScrollArea>
+  );
+};
 
 ChatContent.displayName = "ChatContent";
 
