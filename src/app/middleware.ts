@@ -16,6 +16,7 @@ import { capsApi, isCapsErrorResponse } from "../services/refact/caps";
 import { promptsApi } from "../services/refact/prompts";
 import { toolsApi } from "../services/refact/tools";
 import { commandsApi, isDetailMessage } from "../services/refact/commands";
+import { pathApi } from "../services/refact/path";
 import { diffApi } from "../services/refact/diffs";
 import { pingApi } from "../services/refact/ping";
 import { clearError, setError } from "../features/Errors/errorsSlice";
@@ -104,6 +105,17 @@ startListening({
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : `fetching integrations.`;
+      listenerApi.dispatch(setError(errorMessage));
+    }
+
+    if (
+      pathApi.endpoints.getFullPath.matchRejected(action) &&
+      !action.meta.condition
+    ) {
+      const errorMessage = isDetailMessage(action.payload?.data)
+        ? action.payload.data.detail
+        : "getting fullpath of file";
+
       listenerApi.dispatch(setError(errorMessage));
     }
 

@@ -14,7 +14,7 @@ import type {
 
 import styles from "./IntegrationForm.module.css";
 import { Spinner } from "../../Spinner";
-import { Button, Flex } from "@radix-ui/themes";
+import { Button, Flex, Heading } from "@radix-ui/themes";
 import {
   CustomDescriptionField,
   CustomInputField,
@@ -167,20 +167,38 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         </Flex>
       </form>
       {/** smart links */}
-      <div>
-        <h3>Smart Links</h3>
+      <Flex my="6" direction="column" align="start" gap="3">
+        <Heading as="h3" align="center" className={styles.SectionTitle}>
+          Smart Links
+        </Heading>
         {integration.data.integr_schema.smartlinks.map((smartlink, index) => {
           return <SmartLink key={`smartlink-${index}`} smartlink={smartlink} />;
         })}
-      </div>
+      </Flex>
+      {/* availability */}
+      <Flex mt="4" direction="column" align="start" gap="3">
+        <Heading as="h3" align="center" className={styles.SectionTitle}>
+          Availability
+        </Heading>
+        {integration.data.integr_values.available &&
+          Object.entries(integration.data.integr_values.available).map(
+            ([key, value]: [string, boolean]) => (
+              <IntegrationAvailability
+                key={key}
+                fieldName={key}
+                value={value}
+              />
+            ),
+          )}
+      </Flex>
     </div>
   );
 };
 
-const SmartLink: FC<{ smartlink: SmartLink; isSmall?: boolean }> = ({
-  smartlink,
-  isSmall = false,
-}) => {
+const SmartLink: FC<{
+  smartlink: SmartLink;
+  isSmall?: boolean;
+}> = ({ smartlink, isSmall = false }) => {
   // TODO: send chat on click and navigate away
   const dispatch = useAppDispatch();
   const chatId = useAppSelector(selectChatId);
@@ -204,7 +222,13 @@ const SmartLink: FC<{ smartlink: SmartLink; isSmall?: boolean }> = ({
 
     const messages = sl_chat.reduce<ChatMessages>((acc, message) => {
       if (message.role === "user" && typeof message.content === "string") {
-        return [...acc, { role: message.role, content: message.content }];
+        return [
+          ...acc,
+          {
+            role: message.role,
+            content: message.content,
+          },
+        ];
       }
 
       // TODO: Other types.
@@ -223,7 +247,7 @@ const SmartLink: FC<{ smartlink: SmartLink; isSmall?: boolean }> = ({
       })
       // eslint-disable-next-line no-console, @typescript-eslint/no-unsafe-member-access
       .catch(console.error);
-  }, [chatId, dispatch, sendMessages, sl_chat, sl_goto, queryPathThenOpenFile]);
+  }, [chatId, sl_chat, sl_goto, dispatch, sendMessages, queryPathThenOpenFile]);
 
   const title = sl_chat?.reduce<string[]>((acc, cur) => {
     if (typeof cur.content === "string")
@@ -241,5 +265,25 @@ const SmartLink: FC<{ smartlink: SmartLink; isSmall?: boolean }> = ({
     >
       {smartlink.sl_label}
     </Button>
+  );
+};
+
+type IntegrationAvailabilityProps = {
+  fieldName: string;
+  value: boolean;
+};
+
+const IntegrationAvailability: FC<IntegrationAvailabilityProps> = ({
+  fieldName,
+  value,
+}) => {
+  const availabilityMessage = value
+    ? `Available \`\`\`(${value})\`\`\``
+    : `Not Available \`\`\`(${value})\`\`\``;
+  return (
+    <div>
+      <CustomLabel label={toPascalCase(fieldName)} />
+      <CustomDescriptionField>{availabilityMessage}</CustomDescriptionField>
+    </div>
   );
 };
