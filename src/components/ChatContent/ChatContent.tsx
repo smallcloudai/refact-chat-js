@@ -165,28 +165,28 @@ export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
           <ScrollToBottomButton onClick={handleScrollButtonClick} />
         )}
 
-        {isStreaming && (
-          <Button
-            ml="auto"
-            color="red"
-            title="stop streaming"
-            onClick={props.onStopStreaming}
-            style={{ position: "absolute", bottom: 15 }}
-          >
-            Stop
-          </Button>
-        )}
-        {isConfig && (
-          <Button
-            ml="auto"
-            color="blue"
-            title="Return to configuration page"
-            onClick={handleReturnToConfigurationClick}
-            style={{ position: "absolute", bottom: 15, right: 0 }}
-          >
-            Return
-          </Button>
-        )}
+        <Flex gap="3" style={{ position: "absolute", bottom: 15 }}>
+          {isStreaming && (
+            <Button
+              ml="auto"
+              color="red"
+              title="stop streaming"
+              onClick={props.onStopStreaming}
+            >
+              Stop
+            </Button>
+          )}
+          {isConfig && (
+            <Button
+              ml="auto"
+              color="gray"
+              title="Return to configuration page"
+              onClick={handleReturnToConfigurationClick}
+            >
+              Return
+            </Button>
+          )}
+        </Flex>
       </ScrollArea>
     );
   },
