@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import classNames from "classnames";
 import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrationDataByPathQuery";
 
@@ -40,7 +40,7 @@ type IntegrationFormProps = {
   integrationPath: string;
   isApplying: boolean;
   isDisabled: boolean;
-  onReturn: () => void;
+  onCancel: () => void;
   handleSubmit: (event: FormEvent<HTMLFormElement>) => void;
   handleChange: (event: FormEvent<HTMLFormElement>) => void;
   onSchema: (schema: Integration["integr_schema"]) => void;
@@ -51,7 +51,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   integrationPath,
   isApplying,
   isDisabled,
-  onReturn,
+  onCancel,
   handleSubmit,
   handleChange,
   onSchema,
@@ -98,15 +98,25 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
       const maybeSmartlinks = field.smartlinks;
 
       return (
-        <div key={fieldKey}>
-          <CustomLabel htmlFor={fieldKey} label={toPascalCase(fieldKey)} />
-          <CustomDescriptionField>{field.f_desc}</CustomDescriptionField>
-          <CustomInputField
-            {...commonProps}
-            type={field.f_type === "int" ? "number" : "text"}
-          />
+        <div
+          key={fieldKey}
+          style={{
+            width: "100%",
+          }}
+        >
+          <Flex gap="3" align="baseline" width="100%">
+            <CustomLabel htmlFor={fieldKey} label={toPascalCase(fieldKey)} />
+            <Flex direction="column" gap="1" align="start" width="100%">
+              <CustomInputField
+                {...commonProps}
+                type={field.f_type === "int" ? "number" : "text"}
+              />
+              <CustomDescriptionField>{field.f_desc}</CustomDescriptionField>
+            </Flex>
+          </Flex>
+
           {maybeSmartlinks && (
-            <Flex mb="3">
+            <Flex align="center" justify="end">
               {maybeSmartlinks.map((smartlink, index) => (
                 <SmartLink
                   isSmall
@@ -130,21 +140,18 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
     return (
       <div>
         <p>No integration found</p>
-        <Button
-          color="ruby"
-          onClick={onReturn}
-          type="button"
-          className={styles.button}
-        >
-          Return
-        </Button>
       </div>
     );
   }
 
   return (
-    <div>
-      <form onSubmit={handleSubmit} onChange={handleChange}>
+    <Flex width="100%" direction="column" gap="2">
+      <form
+        onSubmit={handleSubmit}
+        onChange={handleChange}
+        className={styles.IntegrationForm}
+        id={`form-${integration.data.integr_name}`}
+      >
         {Object.keys(integration.data.integr_schema.fields).map((fieldKey) => {
           if (integration.data) {
             return renderField({
@@ -154,11 +161,23 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
             });
           }
         })}
-        <Flex gap="3" mt="4">
+        {/* TODO: think about enabled/disabled value */}
+        {/* {integration.data.integr_values.available &&
+          Object.entries(integration.data.integr_values.available).map(
+            ([key, value]: [string, boolean]) => (
+              <IntegrationAvailability
+                key={key}
+                fieldName={key}
+                value={value}
+              />
+            ),
+          )} */}
+        <Flex gap="4">
           <Button
             color="green"
             variant="solid"
             type="submit"
+            size="3"
             title={isDisabled ? "Cannot apply, no changes made" : "Apply"}
             className={classNames(
               { [styles.disabledButton]: isApplying || isDisabled },
@@ -166,15 +185,21 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
             )}
             disabled={isDisabled}
           >
-            {isApplying ? "Applying..." : "Apply"}
+            {isApplying ? "Applying changes..." : "Apply changes"}
           </Button>
           <Button
-            className={styles.button}
             color="ruby"
-            onClick={onReturn}
+            variant="solid"
             type="button"
+            size="3"
+            onClick={onCancel}
+            className={classNames(
+              { [styles.disabledButton]: isApplying || isDisabled },
+              styles.button,
+            )}
+            disabled={isDisabled}
           >
-            Return
+            Cancel changes
           </Button>
         </Flex>
       </form>
@@ -192,18 +217,21 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         <Heading as="h3" align="center" className={styles.SectionTitle}>
           Availability
         </Heading>
-        {integration.data.integr_values.available &&
-          Object.entries(integration.data.integr_values.available).map(
-            ([key, value]: [string, boolean]) => (
-              <IntegrationAvailability
-                key={key}
-                fieldName={key}
-                value={value}
-              />
-            ),
-          )}
+        {integration.data.integr_values.available && (
+          <Flex mt="4" align="center" justify="between" width="100%">
+            {Object.entries(integration.data.integr_values.available).map(
+              ([key, value]: [string, boolean]) => (
+                <IntegrationAvailability
+                  key={key}
+                  fieldName={key}
+                  value={value}
+                />
+              ),
+            )}
+          </Flex>
+        )}
       </Flex>
-    </div>
+    </Flex>
   );
 };
 
@@ -223,10 +251,20 @@ const SmartLink: FC<{
   const handleClick = React.useCallback(() => {
     if (sl_goto) {
       console.log(`[DEBUG]: sl_goto: `, sl_goto);
-      const [action, fileName] = sl_goto.split(":");
-      if (action.toLowerCase() === "editor") {
-        void queryPathThenOpenFile({ file_name: fileName });
-        console.log(`[DEBUG]: opening path of ${fileName}`);
+      const [action, payload] = sl_goto.split(":");
+      switch (action.toLowerCase()) {
+        case "editor":
+          void queryPathThenOpenFile({ file_name: payload });
+          console.log(`[DEBUG]: opening path of ${payload}`);
+          break;
+        case "setting":
+          console.log(
+            `[DEBUG]: ${action}: opening integration of ${payload} name`,
+          );
+          break;
+        default:
+          console.log(`[DEBUG]: unexpected action, doing nothing`);
+          break;
       }
       return;
     }
@@ -272,7 +310,7 @@ const SmartLink: FC<{
       size={isSmall ? "1" : "2"}
       onClick={handleClick}
       title={title ? title.join("\n") : ""}
-      color={isSmall ? "gray" : "blue"}
+      color={isSmall ? "gray" : "mint"}
       type="button"
       variant="outline"
     >
@@ -290,13 +328,24 @@ const IntegrationAvailability: FC<IntegrationAvailabilityProps> = ({
   fieldName,
   value,
 }) => {
-  const availabilityMessage = value
-    ? `Available \`\`\`(${value})\`\`\``
-    : `Not Available \`\`\`(${value})\`\`\``;
+  const availabilityMessage = useMemo(
+    () =>
+      value
+        ? `Available \`\`\`(${value})\`\`\``
+        : `Not Available \`\`\`(${value})\`\`\``,
+    [value],
+  );
+
   return (
-    <div>
-      <CustomLabel label={toPascalCase(fieldName)} />
+    <Flex width="50%" align="start" direction="column">
+      <CustomLabel label={toPascalCase(fieldName)} width="100%" />
       <CustomDescriptionField>{availabilityMessage}</CustomDescriptionField>
-    </div>
+      {/* <Switch size="1" defaultChecked={value} />
+      <input
+        type="hidden"
+        name={`available[${fieldName}]`}
+        value={JSON.stringify({ available: value })}
+      /> */}
+    </Flex>
   );
 };

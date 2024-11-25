@@ -3,6 +3,7 @@ import type { FormEvent, FC } from "react";
 import {
   // Badge,
   Box,
+  Button,
   Card,
   Flex,
   Heading,
@@ -34,6 +35,7 @@ import {
 } from "../../features/Errors/informationSlice";
 import { InformationCallout } from "../Callout/Callout";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { ArrowLeftIcon } from "@radix-ui/react-icons";
 
 // TODO: do we really need this?
 
@@ -172,6 +174,48 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     localError && setLocalError("");
   }, [dispatch, localError, globalError, information, currentIntegration]);
 
+  const handleFormCancel = useCallback(() => {
+    if (!currentIntegration) return;
+    if (!currentIntegrationSchema) return;
+
+    const form = document.getElementById(
+      `form-${currentIntegration.integr_name}`,
+    ) as HTMLFormElement | undefined;
+    if (!form) return;
+
+    const formElements = form.elements;
+
+    Object.keys(currentIntegrationSchema.fields).forEach((key) => {
+      const field = currentIntegrationSchema.fields[key];
+      const input = formElements.namedItem(key) as HTMLInputElement | null;
+      if (input) {
+        let value = field.f_default;
+
+        if (currentIntegrationValues && key in currentIntegrationValues) {
+          const currentValue = currentIntegrationValues[key];
+          if (
+            typeof currentValue === "object" &&
+            !Array.isArray(currentValue) &&
+            currentValue
+          ) {
+            // Handle Record<string, boolean>
+            value = Object.entries(currentValue)
+              .filter(([, isChecked]) => isChecked)
+              .map(([subKey]) => subKey)
+              .join(", ");
+          } else {
+            // Handle IntegrationPrimitive
+            value = currentValue as string;
+          }
+        }
+
+        input.value = value?.toString() ?? "";
+      }
+    });
+
+    setIsDisabledIntegrationForm(true);
+  }, [currentIntegrationSchema, currentIntegration, currentIntegrationValues]);
+
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       if (!currentIntegration) return;
@@ -264,9 +308,6 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         return acc;
       }, {});
 
-      console.log(`[DEBUG]: formValues: `, formValues);
-      console.log(`[DEBUG]: formValues: `, currentIntegrationValues);
-
       const maybeDisabled = Object.entries(formValues).every(
         ([fieldKey, fieldValue]) => {
           return (
@@ -276,9 +317,20 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         },
       );
 
+      if (isDisabledIntegrationForm !== maybeDisabled) {
+        console.log(`[DEBUG]: values did change, enabling form`);
+      } else {
+        console.log(`[DEBUG]: form didn't change, form stays disabled`);
+      }
+
       setIsDisabledIntegrationForm(maybeDisabled);
     },
-    [currentIntegration, currentIntegrationValues, currentIntegrationSchema],
+    [
+      currentIntegration,
+      currentIntegrationValues,
+      currentIntegrationSchema,
+      isDisabledIntegrationForm,
+    ],
   );
 
   if (isLoading) {
@@ -297,10 +349,6 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     console.log(`[DEBUG]: open form: `, integration);
     setCurrentIntegration(integration);
   };
-
-  // const handleFormChange = () => {
-  //   console.log(`[DEBUG]: form changed`);
-  // };
 
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   if (globalError || !integrationsMap) {
@@ -326,9 +374,15 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         }}
       >
         {currentIntegration ? (
-          <Heading as="h3" className={styles.SetupTitle} mb="4">
-            Setup{" "}
-            {/* <img
+          <>
+            <Flex gap="2" pb="3">
+              <Button variant="surface" onClick={handleFormReturn}>
+                <ArrowLeftIcon width="16" height="16" />
+                Back
+              </Button>
+            </Flex>
+            <Heading as="h3" className={styles.SetupTitle} mb="4">
+              {/* <img
               src={
                 integrationsMap.integrations.find(
                   (integration) =>
@@ -337,10 +391,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
               }
               className={styles.SetupIcon}
               alt={currentIntegration.integr_name}
-            />
-             */}
-            {currentIntegration.integr_name}
-          </Heading>
+            /> */}
+              Setup {currentIntegration.integr_name}
+            </Heading>
+          </>
         ) : (
           <Heading as="h3" align="center" mb="5">
             Integrations Setup
@@ -358,16 +412,17 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
               integrationPath={currentIntegration.integr_config_path}
               isApplying={isApplyingIntegrationForm}
               isDisabled={isDisabledIntegrationForm}
-              onReturn={handleFormReturn}
+              onCancel={handleFormCancel}
               onSchema={handleSetCurrentIntegrationSchema}
               onValues={handleSetCurrentIntegrationValues}
               handleChange={handleIntegrationFormChange}
             />
             {information && (
               <InformationCallout
-                timeout={3000}
+                // timeout={3000}
                 mx="0"
                 onClick={() => dispatch(clearInformation())}
+                className={styles.popup}
               >
                 {information}
               </InformationCallout>

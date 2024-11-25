@@ -22,7 +22,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({
 }) => {
   const LeftRightPadding =
     host === "web"
-      ? { initial: "2", xl: "9" }
+      ? { initial: "5", xl: "9" }
       : {
           initial: "2",
           xs: "2",
@@ -44,7 +44,12 @@ export const Integrations: React.FC<IntegrationsProps> = ({
   }, []);
 
   return (
-    <PageWrapper host={host}>
+    <PageWrapper
+      host={host}
+      style={{
+        padding: 0,
+      }}
+    >
       {isBackButtonVisible && (
         <>
           {host === "vscode" && !tabbed ? (

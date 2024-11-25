@@ -38,7 +38,7 @@ export const CustomInputField = ({
   placeholder?: string;
 }) => {
   return (
-    <Box mb="3">
+    <Box width="100%">
       <TextField.Root
         id={id}
         name={name}
@@ -55,9 +55,11 @@ export const CustomInputField = ({
 export const CustomLabel = ({
   label,
   htmlFor,
+  width,
 }: {
   label: string;
   htmlFor?: string;
+  width?: string;
 }) => {
   return (
     <label
@@ -67,7 +69,7 @@ export const CustomLabel = ({
         fontWeight: 500,
         fontSize: 14,
         lineHeight: 1.15,
-        marginBottom: "0.5rem",
+        width: width ? width : "40%",
       }}
     >
       {label}
@@ -81,7 +83,7 @@ export const CustomDescriptionField = ({
   children?: string;
 }) => {
   return (
-    <Text size="2" mb="2" style={{ display: "block", opacity: 0.85 }}>
+    <Text size="1" mb="2" style={{ display: "block", opacity: 0.85 }}>
       <Markdown>{children}</Markdown>
     </Text>
   );
