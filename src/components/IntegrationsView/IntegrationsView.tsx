@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent, FC } from "react";
 import {
@@ -36,52 +37,21 @@ import {
 import { InformationCallout } from "../Callout/Callout";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
-
-// TODO: do we really need this?
-
-// const WarningHoverCard: React.FC<{
-//   label: React.ReactNode;
-//   warning: string;
-// }> = ({ label, warning }) => {
-//   return (
-//     <HoverCard.Root>
-//       <HoverCard.Trigger>{label}</HoverCard.Trigger>
-//       <HoverCard.Content
-//         maxWidth="340px"
-//         data-accent-color="orange"
-//         className={styles.WarningHoverCardContent}
-//       >
-//         <Box>
-//           <Flex justify="between" wrap="nowrap">
-//             <ExclamationTriangleIcon />
-//             <Text
-//               size="1"
-//               style={{
-//                 maxWidth: "90%",
-//               }}
-//             >
-//               {warning}
-//             </Text>
-//           </Flex>
-//         </Box>
-//       </HoverCard.Content>
-//     </HoverCard.Root>
-//   );
-// };
+import { integrationsApi } from "../../services/refact";
 
 type IntegrationViewProps = {
   integrationsMap?: IntegrationWithIconResponse;
   // integrationsIcons?: IntegrationIcon[];
   isLoading: boolean;
   goBack?: () => void;
-  handleBackButtonVisibility: (state: boolean) => void;
+  handleIfInnerIntegrationWasSet: (state: boolean) => void;
 };
 
 export const IntegrationsView: FC<IntegrationViewProps> = ({
   integrationsMap,
   isLoading,
   goBack,
-  handleBackButtonVisibility,
+  handleIfInnerIntegrationWasSet,
 }) => {
   const dispatch = useAppDispatch();
   const globalError = useAppSelector(getErrorMessage);
@@ -106,6 +76,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   const [isDisabledIntegrationForm, setIsDisabledIntegrationForm] =
     useState<boolean>(true);
 
+  const [availabilityValues, setAvailabilityValues] = useState<
+    Record<string, boolean>
+  >({});
+
   const [localError, setLocalError] = useState<string>("");
 
   useEffect(() => {
@@ -114,11 +88,11 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
 
   useEffect(() => {
     if (currentIntegration) {
-      handleBackButtonVisibility(false);
+      handleIfInnerIntegrationWasSet(true);
     } else {
-      handleBackButtonVisibility(true);
+      handleIfInnerIntegrationWasSet(false);
     }
-  }, [currentIntegration, handleBackButtonVisibility]);
+  }, [currentIntegration, handleIfInnerIntegrationWasSet]);
 
   const globalIntegrations = useMemo(() => {
     if (integrationsMap?.integrations) {
@@ -172,6 +146,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     information && dispatch(clearInformation());
     globalError && dispatch(clearError());
     localError && setLocalError("");
+    dispatch(integrationsApi.util.resetApiState());
   }, [dispatch, localError, globalError, information, currentIntegration]);
 
   const handleFormCancel = useCallback(() => {
@@ -213,6 +188,13 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       }
     });
 
+    if (
+      currentIntegrationValues?.available &&
+      typeof currentIntegrationValues.available === "object"
+    ) {
+      setAvailabilityValues(currentIntegrationValues.available);
+    }
+
     setIsDisabledIntegrationForm(true);
   }, [currentIntegrationSchema, currentIntegration, currentIntegrationValues]);
 
@@ -248,12 +230,13 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
 
       console.log(`[DEBUG]: formValues: `, formValues);
 
+      formValues.available = availabilityValues;
+
       const response = await saveIntegrationMutationTrigger({
         filePath: currentIntegration.integr_config_path,
         values: formValues,
       });
 
-      console.log(`[DEBUG]: response: `, response);
       if (response.error) {
         const error = response.error as FetchBaseQueryError;
         console.log(`[DEBUG]: error is present, error: `, error);
@@ -263,7 +246,6 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             : `something went wrong while saving configuration for ${currentIntegration.integr_name} integration`,
         );
       } else {
-        console.log(`[DEBUG]: all good, save success`);
         dispatch(
           setInformation(
             `Integration ${currentIntegration.integr_name} saved successfully.`,
@@ -278,6 +260,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       saveIntegrationMutationTrigger,
       currentIntegrationSchema,
       dispatch,
+      availabilityValues,
     ],
   );
 
@@ -286,6 +269,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       if (!currentIntegration) return;
       if (!currentIntegrationSchema) return;
       if (!currentIntegrationValues) return;
+      if (!currentIntegrationValues.available) return;
       event.preventDefault();
 
       const formData = new FormData(event.currentTarget);
@@ -308,20 +292,22 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         return acc;
       }, {});
 
-      const maybeDisabled = Object.entries(formValues).every(
-        ([fieldKey, fieldValue]) => {
+      const maybeDisabled =
+        Object.entries(formValues).every(([fieldKey, fieldValue]) => {
           return (
             fieldKey in currentIntegrationValues &&
             fieldValue === currentIntegrationValues[fieldKey]
           );
-        },
-      );
-
-      if (isDisabledIntegrationForm !== maybeDisabled) {
-        console.log(`[DEBUG]: values did change, enabling form`);
-      } else {
-        console.log(`[DEBUG]: form didn't change, form stays disabled`);
-      }
+        }) &&
+        Object.entries(availabilityValues).every(([fieldKey, fieldValue]) => {
+          const availableObj = currentIntegrationValues.available;
+          if (availableObj && typeof availableObj === "object") {
+            return (
+              fieldKey in availableObj && fieldValue === availableObj[fieldKey]
+            );
+          }
+          return false;
+        });
 
       setIsDisabledIntegrationForm(maybeDisabled);
     },
@@ -329,7 +315,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       currentIntegration,
       currentIntegrationValues,
       currentIntegrationSchema,
-      isDisabledIntegrationForm,
+      availabilityValues,
     ],
   );
 
@@ -353,7 +339,11 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   if (globalError || !integrationsMap) {
     return (
-      <ErrorCallout mx="0" onClick={goBackAndClearError}>
+      <ErrorCallout
+        className={styles.popup}
+        mx="0"
+        onClick={goBackAndClearError}
+      >
         {globalError ?? "fetching integrations."}
       </ErrorCallout>
     );
@@ -374,27 +364,11 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         }}
       >
         {currentIntegration ? (
-          <>
-            <Flex gap="2" pb="3">
-              <Button variant="surface" onClick={handleFormReturn}>
-                <ArrowLeftIcon width="16" height="16" />
-                Back
-              </Button>
-            </Flex>
-            <Heading as="h3" className={styles.SetupTitle} mb="4">
-              {/* <img
-              src={
-                integrationsMap.integrations.find(
-                  (integration) =>
-                    integration.integr_name === currentIntegration.integr_name,
-                )?.project_path ?? ""
-              }
-              className={styles.SetupIcon}
-              alt={currentIntegration.integr_name}
-            /> */}
-              Setup {currentIntegration.integr_name}
-            </Heading>
-          </>
+          <IntegrationsHeader
+            handleFormReturn={handleFormReturn}
+            integrationName={currentIntegration.integr_name}
+            icon="https://placehold.jp/150x150.png"
+          />
         ) : (
           <Heading as="h3" align="center" mb="5">
             Integrations Setup
@@ -416,6 +390,8 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
               onSchema={handleSetCurrentIntegrationSchema}
               onValues={handleSetCurrentIntegrationValues}
               handleChange={handleIntegrationFormChange}
+              availabilityValues={availabilityValues}
+              setAvailabilityValues={setAvailabilityValues}
             />
             {information && (
               <InformationCallout
@@ -460,30 +436,28 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                 Global Configurations
               </Heading>
               {!!globalIntegrations &&
-                globalIntegrations.map((integration, index) => {
-                  return (
-                    <Card
-                      key={`${index}-${integration.integr_config_path}`}
-                      className={styles.integrationCard}
-                      onClick={() => handleIntegrationShowUp(integration)}
+                globalIntegrations.map((integration, index) => (
+                  <Card
+                    key={`${index}-${integration.integr_config_path}`}
+                    className={styles.integrationCard}
+                    onClick={() => handleIntegrationShowUp(integration)}
+                  >
+                    <Flex
+                      direction="column"
+                      align="center"
+                      justify="between"
+                      width="100%"
+                      height="100%"
                     >
-                      <Flex
-                        direction="column"
-                        align="center"
-                        justify="between"
-                        width="100%"
-                        height="100%"
-                      >
-                        <img
-                          src={"https://placehold.jp/150x150.png"}
-                          className={styles.SetupIcon}
-                          alt={integration.integr_name}
-                        />
-                        <Text>{toPascalCase(integration.integr_name)}</Text>
-                      </Flex>
-                    </Card>
-                  );
-                })}
+                      <img
+                        src={"https://placehold.jp/150x150.png"}
+                        className={styles.SetupIcon}
+                        alt={integration.integr_name}
+                      />
+                      <Text>{toPascalCase(integration.integr_name)}</Text>
+                    </Flex>
+                  </Card>
+                ))}
             </Flex>
             {groupedProjectIntegrations &&
               Object.entries(groupedProjectIntegrations).map(
@@ -541,5 +515,38 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         )}
       </Flex>
     </Box>
+  );
+};
+
+type IntegrationsHeaderProps = {
+  handleFormReturn: () => void;
+  integrationName: string;
+  icon: string;
+};
+
+const IntegrationsHeader: FC<IntegrationsHeaderProps> = ({
+  handleFormReturn,
+  integrationName,
+  icon,
+}) => {
+  return (
+    <Flex className={styles.IntegrationsHeader}>
+      <Flex align="center" justify="between" width="100%">
+        <Flex gap="6" align="center">
+          <Button size="1" variant="surface" onClick={handleFormReturn}>
+            <ArrowLeftIcon width="16" height="16" />
+            Configurations
+          </Button>
+          <Heading as="h5" size="5">
+            Setup {integrationName}
+          </Heading>
+        </Flex>
+        <img
+          src={icon}
+          className={styles.IntegrationsHeaderIcon}
+          alt={integrationName}
+        />
+      </Flex>
+    </Flex>
   );
 };

@@ -1,27 +1,28 @@
+/* eslint-disable no-console */
 import React, { useCallback, useEffect, useMemo } from "react";
 import classNames from "classnames";
 import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrationDataByPathQuery";
 
-import type { FC, FormEvent } from "react";
+import type { FC, FormEvent, Dispatch } from "react";
 import type {
   // ChatMessage,
   ChatMessages,
   Integration,
   IntegrationField,
   IntegrationPrimitive,
+  SmartLink,
   // UserMessage,
 } from "../../../services/refact";
 
 import styles from "./IntegrationForm.module.css";
 import { Spinner } from "../../Spinner";
-import { Button, Flex, Heading } from "@radix-ui/themes";
+import { Button, Flex, Heading, Switch } from "@radix-ui/themes";
 import {
   CustomDescriptionField,
   CustomInputField,
   CustomLabel,
 } from "../CustomFieldsAndWidgets";
 import { toPascalCase } from "../../../utils/toPascalCase";
-import { type SmartLink } from "../../../services/refact";
 import {
   useAppDispatch,
   useAppSelector,
@@ -40,29 +41,53 @@ type IntegrationFormProps = {
   integrationPath: string;
   isApplying: boolean;
   isDisabled: boolean;
+  availabilityValues: Record<string, boolean>;
   onCancel: () => void;
   handleSubmit: (event: FormEvent<HTMLFormElement>) => void;
   handleChange: (event: FormEvent<HTMLFormElement>) => void;
   onSchema: (schema: Integration["integr_schema"]) => void;
   onValues: (values: Integration["integr_values"]) => void;
+  setAvailabilityValues: Dispatch<
+    React.SetStateAction<Record<string, boolean>>
+  >;
 };
 
 export const IntegrationForm: FC<IntegrationFormProps> = ({
   integrationPath,
   isApplying,
   isDisabled,
+  availabilityValues,
   onCancel,
   handleSubmit,
   handleChange,
   onSchema,
   onValues,
+  setAvailabilityValues,
 }) => {
   const { integration } = useGetIntegrationDataByPathQuery(integrationPath);
-  // const [isApplying, setIsApplying] = useState<boolean>(false);
+  // const [availabilityValues, setAvailabilityValues] = useState<
+  //   Record<string, boolean>
+  // >({});
+
+  const handleAvailabilityChange = useCallback(
+    (fieldName: string, value: boolean) => {
+      setAvailabilityValues((prev) => ({ ...prev, [fieldName]: value }));
+    },
+    [setAvailabilityValues],
+  );
 
   useEffect(() => {
-    console.log(`[DEBUG]: integration.data: `, integration.data);
-  }, [integration]);
+    if (
+      integration.data?.integr_values.available &&
+      typeof integration.data.integr_values.available === "object"
+    ) {
+      Object.entries(integration.data.integr_values.available).forEach(
+        ([key, value]) => {
+          handleAvailabilityChange(key, value);
+        },
+      );
+    }
+  }, [integration, handleAvailabilityChange]);
 
   useEffect(() => {
     if (integration.data?.integr_schema) {
@@ -152,6 +177,17 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         className={styles.IntegrationForm}
         id={`form-${integration.data.integr_name}`}
       >
+        {integration.data.integr_values.available &&
+          Object.entries(integration.data.integr_values.available).map(
+            ([key, _]: [string, boolean]) => (
+              <IntegrationAvailability
+                key={key}
+                fieldName={key}
+                value={availabilityValues[key]}
+                onChange={handleAvailabilityChange}
+              />
+            ),
+          )}
         {Object.keys(integration.data.integr_schema.fields).map((fieldKey) => {
           if (integration.data) {
             return renderField({
@@ -162,16 +198,6 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
           }
         })}
         {/* TODO: think about enabled/disabled value */}
-        {/* {integration.data.integr_values.available &&
-          Object.entries(integration.data.integr_values.available).map(
-            ([key, value]: [string, boolean]) => (
-              <IntegrationAvailability
-                key={key}
-                fieldName={key}
-                value={value}
-              />
-            ),
-          )} */}
         <Flex gap="4">
           <Button
             color="green"
@@ -211,25 +237,6 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         {integration.data.integr_schema.smartlinks.map((smartlink, index) => {
           return <SmartLink key={`smartlink-${index}`} smartlink={smartlink} />;
         })}
-      </Flex>
-      {/* availability */}
-      <Flex mt="4" direction="column" align="start" gap="3">
-        <Heading as="h3" align="center" className={styles.SectionTitle}>
-          Availability
-        </Heading>
-        {integration.data.integr_values.available && (
-          <Flex mt="4" align="center" justify="between" width="100%">
-            {Object.entries(integration.data.integr_values.available).map(
-              ([key, value]: [string, boolean]) => (
-                <IntegrationAvailability
-                  key={key}
-                  fieldName={key}
-                  value={value}
-                />
-              ),
-            )}
-          </Flex>
-        )}
       </Flex>
     </Flex>
   );
@@ -289,13 +296,10 @@ const SmartLink: FC<{
     dispatch(setIsConfigFlag({ id: chatId, isConfig: true }));
     dispatch(clearInformation());
     // TODO: make another version of send messages so there's no need to converting the messages
-    // eslint-disable-next-line no-console, @typescript-eslint/no-unsafe-call
     sendMessages(messages)
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       .then(() => {
         dispatch(push({ name: "chat" }));
       })
-      // eslint-disable-next-line no-console, @typescript-eslint/no-unsafe-member-access
       .catch(console.error);
   }, [chatId, sl_chat, sl_goto, dispatch, sendMessages, queryPathThenOpenFile]);
 
@@ -322,11 +326,13 @@ const SmartLink: FC<{
 type IntegrationAvailabilityProps = {
   fieldName: string;
   value: boolean;
+  onChange: (fieldName: string, value: boolean) => void;
 };
 
 const IntegrationAvailability: FC<IntegrationAvailabilityProps> = ({
   fieldName,
   value,
+  onChange,
 }) => {
   const availabilityMessage = useMemo(
     () =>
@@ -336,16 +342,35 @@ const IntegrationAvailability: FC<IntegrationAvailabilityProps> = ({
     [value],
   );
 
+  const handleSwitchChange = (checked: boolean) => {
+    onChange(fieldName, checked);
+  };
+
   return (
-    <Flex width="50%" align="start" direction="column">
-      <CustomLabel label={toPascalCase(fieldName)} width="100%" />
-      <CustomDescriptionField>{availabilityMessage}</CustomDescriptionField>
-      {/* <Switch size="1" defaultChecked={value} />
-      <input
-        type="hidden"
-        name={`available[${fieldName}]`}
-        value={JSON.stringify({ available: value })}
-      /> */}
-    </Flex>
+    <div
+      style={{
+        width: "100%",
+      }}
+    >
+      <Flex width="100%" gap="3">
+        <CustomLabel label={toPascalCase(fieldName)} />
+        <Flex width="100%" align="start" direction="column" gap="3">
+          <Switch
+            size="2"
+            checked={value}
+            onCheckedChange={handleSwitchChange}
+          />
+          <CustomDescriptionField>{availabilityMessage}</CustomDescriptionField>
+        </Flex>
+      </Flex>
+    </div>
   );
 };
+
+{
+  /* <input
+  type="hidden"
+  name={`available[${fieldName}]`}
+  value={JSON.stringify({ available: value })}
+/> */
+}

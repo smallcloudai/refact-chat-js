@@ -110,8 +110,6 @@ export const CustomCheckboxWidget = () => {
     </Box>
   );
 };
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function AddButton() {
   return (
     <Button size="1" color="green">
@@ -120,7 +118,6 @@ export function AddButton() {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function RemoveButton() {
   return (
     <Button size="1" color="ruby" type="button">
@@ -128,8 +125,6 @@ export function RemoveButton() {
     </Button>
   );
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function MoveUpButton() {
   return (
     <Button size="1" color="gray" highContrast type="button">
@@ -137,8 +132,6 @@ export function MoveUpButton() {
     </Button>
   );
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function MoveDownButton() {
   return (
     <Button size="1" color="gray" highContrast type="button">
