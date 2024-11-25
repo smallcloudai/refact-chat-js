@@ -27,7 +27,6 @@ import { takeWhile } from "../../utils";
 import { GroupedDiffs } from "./DiffContent";
 import { ScrollToBottomButton } from "./ScrollToBottomButton";
 import { currentTipOfTheDay } from "../../features/TipOfTheDay";
-import { setIsConfigFlag } from "../../features/Chat";
 import { popBackTo } from "../../features/Pages/pagesSlice";
 
 const TipOfTheDay: React.FC = () => {
@@ -115,7 +114,7 @@ export const ChatContent: React.FC<ChatContentProps> = (props) => {
   const messages = useAppSelector(selectMessages);
   const isStreaming = useAppSelector(selectIsStreaming);
   const thread = useAppSelector(selectThread);
-  const isConfig = (thread.isConfig ?? false) as boolean;
+  const isConfig = !!thread.integration;
   const isWaiting = useAppSelector(selectIsWaiting);
 
   const {
@@ -134,10 +133,10 @@ export const ChatContent: React.FC<ChatContentProps> = (props) => {
   const handleReturnToConfigurationClick = useCallback(() => {
     // eslint-disable-next-line no-console
     console.log(`[DEBUG]: going back to configuration page`);
+    // TBD: should it be allowed to run in the background?
     props.onStopStreaming();
-    dispatch(setIsConfigFlag({ id: thread.id, isConfig: false }));
     dispatch(popBackTo("integrations page"));
-  }, [dispatch, thread.id, props]);
+  }, [dispatch, props]);
 
   return (
     <ScrollArea

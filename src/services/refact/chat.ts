@@ -7,7 +7,9 @@ export type LspChatMessage =
       role: ChatRole;
       // TODO make this a union type for user message
       content: string | null;
-      tool_calls?: Omit<ToolCall, "index">[];
+      // TBD: why was index omitted ?
+      // tool_calls?: Omit<ToolCall, "index">[];
+      tool_calls?: ToolCall[];
       tool_call_id?: string;
     }
   | UserMessage
@@ -142,8 +144,6 @@ export async function sendChat({
   const url = `http://127.0.0.1:${port}${
     isConfig ? "/v1/chat-configuration" : CHAT_URL
   }`;
-
-  console.log({ isConfig });
 
   return fetch(url, {
     method: "POST",

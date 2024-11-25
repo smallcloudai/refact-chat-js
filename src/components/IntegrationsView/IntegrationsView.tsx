@@ -11,6 +11,7 @@ import {
 } from "@radix-ui/themes";
 import {
   Integration,
+  IntegrationWithIconRecord,
   IntegrationWithIconResponse,
   isDetailMessage,
   // isDetailMessage,
@@ -34,6 +35,7 @@ import {
 } from "../../features/Errors/informationSlice";
 import { InformationCallout } from "../Callout/Callout";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { selectIntegration } from "../../features/Chat";
 
 // TODO: do we really need this?
 
@@ -85,10 +87,23 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   const globalError = useAppSelector(getErrorMessage);
   const information = useAppSelector(getInformationMessage);
   const { saveIntegrationMutationTrigger } = useSaveIntegrationData();
+  const currentThreadIntegration = useAppSelector(selectIntegration);
 
-  const [currentIntegration, setCurrentIntegration] = useState<
-    IntegrationWithIconResponse["integrations"][number] | null
-  >(null);
+  const maybeIntegration =
+    (currentThreadIntegration &&
+      integrationsMap?.integrations.find((integration) => {
+        // TODO: select inegreation form thread.
+        return (
+          integration.project_path === currentThreadIntegration.path &&
+          integration.integr_name === currentThreadIntegration.name
+        );
+      })) ??
+    null;
+
+  // TBD: what if they went home then came back to integrations?
+
+  const [currentIntegration, setCurrentIntegration] =
+    useState<IntegrationWithIconRecord | null>(maybeIntegration);
 
   const [currentIntegrationSchema, setCurrentIntegrationSchema] = useState<
     Integration["integr_schema"] | null
@@ -354,6 +369,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             height="100%"
           >
             <IntegrationForm
+              // TODO: on smart link click or pass the name down
               handleSubmit={(event) => void handleSubmit(event)}
               integrationPath={currentIntegration.integr_config_path}
               isApplying={isApplyingIntegrationForm}

@@ -278,7 +278,7 @@ function isDockerSetting(json: unknown): json is DockerSetting {
   return true;
 }
 
-type IntegrationWithIconRecord = {
+export type IntegrationWithIconRecord = {
   project_path: string;
   integr_name: string;
   integr_config_path: string;

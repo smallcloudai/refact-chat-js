@@ -25,6 +25,11 @@ import { scanFoDuplicatesWith, takeFromEndWhile } from "../../../utils";
 
 export const newChatAction = createAction("chatThread/new");
 
+export const newIntegrationChat = createAction<{
+  integration: { name: string; path: string };
+  messages: ChatMessages;
+}>("chatThread/newIntegrationChat");
+
 export const chatResponse = createAction<PayloadWithId & ChatResponse>(
   "chatThread/response",
 );
@@ -78,9 +83,6 @@ export const saveTitle = createAction<PayloadWithIdAndTitle>(
   "chatThread/saveTitle",
 );
 
-export const setIsConfigFlag = createAction<
-  PayloadWithId & { isConfig: boolean }
->("chatThread/setConfig");
 // TODO: This is the circular dep when imported from hooks :/
 const createAppAsyncThunk = createAsyncThunk.withTypes<{
   state: RootState;
@@ -210,7 +212,8 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
       : state.chat.thread.id === chatId
         ? state.chat.thread
         : null;
-  const isConfig = (thread?.isConfig ?? false) as boolean;
+
+  const isConfig = !!thread?.integration;
 
   const onlyDeterministicMessages = checkForToolLoop(messages);
 
@@ -252,8 +255,3 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
       thunkAPI.dispatch(doneStreaming({ id: chatId }));
     });
 });
-
-// export const sendConfigurationThunk = createAppAsyncThunk(
-//   "chatThread/checkConfiguration",
-
-// );
