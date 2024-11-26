@@ -1,5 +1,6 @@
 .button {
   cursor: pointer;
+  padding: 0 1.1rem;
   transition: all 0.3s ease-in-out;
 }
 
@@ -10,4 +11,12 @@
 
 .SectionTitle {
   width: 100%;
+}
+
+.IntegrationForm {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: flex-start;
+  margin-top: 0.5rem;
 }

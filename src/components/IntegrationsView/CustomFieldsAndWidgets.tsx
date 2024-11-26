@@ -38,7 +38,7 @@ export const CustomInputField = ({
   placeholder?: string;
 }) => {
   return (
-    <Box mb="3">
+    <Box width="100%">
       <TextField.Root
         id={id}
         name={name}
@@ -55,9 +55,11 @@ export const CustomInputField = ({
 export const CustomLabel = ({
   label,
   htmlFor,
+  width,
 }: {
   label: string;
   htmlFor?: string;
+  width?: string;
 }) => {
   return (
     <label
@@ -67,7 +69,7 @@ export const CustomLabel = ({
         fontWeight: 500,
         fontSize: 14,
         lineHeight: 1.15,
-        marginBottom: "0.5rem",
+        width: width ? width : "40%",
       }}
     >
       {label}
@@ -81,7 +83,7 @@ export const CustomDescriptionField = ({
   children?: string;
 }) => {
   return (
-    <Text size="2" mb="2" style={{ display: "block", opacity: 0.85 }}>
+    <Text size="1" mb="2" style={{ display: "block", opacity: 0.85 }}>
       <Markdown>{children}</Markdown>
     </Text>
   );
@@ -108,8 +110,6 @@ export const CustomCheckboxWidget = () => {
     </Box>
   );
 };
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function AddButton() {
   return (
     <Button size="1" color="green">
@@ -118,7 +118,6 @@ export function AddButton() {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function RemoveButton() {
   return (
     <Button size="1" color="ruby" type="button">
@@ -126,8 +125,6 @@ export function RemoveButton() {
     </Button>
   );
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function MoveUpButton() {
   return (
     <Button size="1" color="gray" highContrast type="button">
@@ -135,8 +132,6 @@ export function MoveUpButton() {
     </Button>
   );
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function MoveDownButton() {
   return (
     <Button size="1" color="gray" highContrast type="button">

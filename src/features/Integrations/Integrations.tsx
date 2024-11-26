@@ -22,7 +22,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({
 }) => {
   const LeftRightPadding =
     host === "web"
-      ? { initial: "2", xl: "9" }
+      ? { initial: "5", xl: "9" }
       : {
           initial: "2",
           xs: "2",
@@ -33,19 +33,26 @@ export const Integrations: React.FC<IntegrationsProps> = ({
         };
 
   const { integrations } = useGetIntegrationsQuery();
-  const [isBackButtonVisible, setIsBackButtonVisible] = useState<boolean>(true);
+  const [isInnerIntegrationSelected, setIsInnerIntegrationSelected] =
+    useState<boolean>(false);
 
   // useEffect(() => {
   //   console.log(`[DEBUG]: icons: `, icons);
   // }, [icons]);
 
-  const handleChangeBackButtonVisibility = useCallback((state: boolean) => {
-    setIsBackButtonVisible(state);
+  const handleIfInnerIntegrationWasSet = useCallback((state: boolean) => {
+    setIsInnerIntegrationSelected(state);
   }, []);
 
   return (
-    <PageWrapper host={host}>
-      {isBackButtonVisible && (
+    <PageWrapper
+      host={host}
+      style={{
+        padding: 0,
+        marginTop: isInnerIntegrationSelected ? 80 : 0,
+      }}
+    >
+      {!isInnerIntegrationSelected && (
         <>
           {host === "vscode" && !tabbed ? (
             <Flex gap="2" pb="3">
@@ -72,13 +79,14 @@ export const Integrations: React.FC<IntegrationsProps> = ({
           justify="between"
           flexGrow="1"
           mr={LeftRightPadding}
+          pr={LeftRightPadding}
           style={{
             width: "inherit",
             height: "100%",
           }}
         >
           <IntegrationsView
-            handleBackButtonVisibility={handleChangeBackButtonVisibility}
+            handleIfInnerIntegrationWasSet={handleIfInnerIntegrationWasSet}
             integrationsMap={integrations.data}
             // integrationsIcons={icons.data}
             isLoading={integrations.isLoading}

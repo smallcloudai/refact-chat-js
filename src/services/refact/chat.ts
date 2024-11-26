@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { CHAT_URL } from "./consts";
 import { ToolCommand } from "./tools";
 import { ChatRole, ToolCall, ToolResult, UserMessage } from "./types";

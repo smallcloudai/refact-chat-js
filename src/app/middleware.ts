@@ -101,7 +101,6 @@ startListening({
       !action.meta.condition
     ) {
       // getting first 2 lines of error message to show to user
-      console.log(`[DEBUG]: maybeData: `, action.payload?.data);
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : `fetching integrations.`;
