@@ -247,10 +247,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
 
       formValues.available = availabilityValues;
 
-      const response = await saveIntegrationMutationTrigger({
-        filePath: currentIntegration.integr_config_path,
-        values: formValues,
-      });
+      const response = await saveIntegrationMutationTrigger(
+        currentIntegration.integr_config_path,
+        formValues,
+      );
 
       if (response.error) {
         const error = response.error as FetchBaseQueryError;

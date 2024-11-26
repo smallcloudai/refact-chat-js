@@ -23,14 +23,13 @@ export const integrationsSlice = createSlice({
       state.cachedForms[key] = action.payload.integr_values;
     },
     //TODO: could just be the path
-    removeFromCache: (state, action: PayloadAction<Integration>) => {
-      const key = action.payload.integr_config_path;
-      if (!(key in state.cachedForms)) return state;
+    removeFromCache: (state, action: PayloadAction<string>) => {
+      if (!(action.payload in state.cachedForms)) return state;
 
       const nextCache = Object.entries(
         state.cachedForms,
       ).reduce<IntegrationCachedFormData>((acc, [curKey, curValues]) => {
-        if (curKey === key) return acc;
+        if (curKey === action.payload) return acc;
         return { ...acc, [curKey]: curValues };
       }, {});
 
