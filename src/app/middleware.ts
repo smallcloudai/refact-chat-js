@@ -12,6 +12,7 @@ import {
 } from "../features/Chat/Thread";
 import { statisticsApi } from "../services/refact/statistics";
 import { integrationsApi } from "../services/refact/integrations";
+import { dockerApi } from "../services/refact/docker";
 import { capsApi, isCapsErrorResponse } from "../services/refact/caps";
 import { promptsApi } from "../services/refact/prompts";
 import { toolsApi } from "../services/refact/tools";
@@ -104,6 +105,17 @@ startListening({
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : `fetching integrations.`;
+      listenerApi.dispatch(setError(errorMessage));
+    }
+
+    if (
+      dockerApi.endpoints.getAllDockerContainers.matchRejected(action) &&
+      !action.meta.condition
+    ) {
+      // getting first 2 lines of error message to show to user
+      const errorMessage = isDetailMessage(action.payload?.data)
+        ? action.payload.data.detail
+        : `fetching docker containers.`;
       listenerApi.dispatch(setError(errorMessage));
     }
 

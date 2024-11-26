@@ -36,6 +36,7 @@ import {
 import { push } from "../../../features/Pages/pagesSlice";
 import { selectChatId } from "../../../features/Chat";
 import { clearInformation } from "../../../features/Errors/informationSlice";
+import { IntegrationDocker } from "../IntegrationDocker";
 
 type IntegrationFormProps = {
   integrationPath: string;
@@ -239,6 +240,8 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
           return <SmartLink key={`smartlink-${index}`} smartlink={smartlink} />;
         })}
       </Flex>
+      {/* docker */}
+      <IntegrationDocker />
     </Flex>
   );
 };
