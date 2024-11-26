@@ -89,6 +89,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
     }
   }, [integration, onSchema, onValues]);
 
+  // TODO: could be hoisted to a top level function
   const renderField = useCallback(
     ({
       field,
@@ -146,7 +147,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         </div>
       );
     },
-    [],
+    [integration.data?.integr_name, integration.data?.project_path],
   );
 
   if (integration.isLoading) {
