@@ -193,7 +193,7 @@ export const chatReducer = createReducer(initialState, (builder) => {
 
   builder.addCase(newIntegrationChat, (state, action) => {
     // TODO: find out about tool use
-    const next = createInitialState("agent", action.payload.integration);
+    const next = createInitialState("explore", action.payload.integration);
     next.thread.integration = action.payload.integration;
     next.thread.messages = action.payload.messages;
     next.send_immediately = true;
