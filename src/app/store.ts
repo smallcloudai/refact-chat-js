@@ -42,6 +42,7 @@ import { informationSlice } from "../features/Errors/informationSlice";
 import { confirmationSlice } from "../features/ToolConfirmation/confirmationSlice";
 import { attachedImagesSlice } from "../features/AttachedImages";
 import { userSurveySlice } from "../features/UserSurvey/userSurveySlice";
+import { integrationsSlice } from "../features/Integrations";
 
 const tipOfTheDayPersistConfig = {
   key: "totd",
@@ -84,6 +85,7 @@ const rootReducer = combineSlices(
   confirmationSlice,
   attachedImagesSlice,
   userSurveySlice,
+  integrationsSlice,
 );
 
 const rootPersistConfig = {

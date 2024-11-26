@@ -115,7 +115,9 @@ export const integrationsApi = createApi({
 });
 
 export type IntegrationPrimitive = string | number | boolean | null;
-function isPrimitive(json: unknown): json is IntegrationPrimitive {
+export function isIntegrationPrimitive(
+  json: unknown,
+): json is IntegrationPrimitive {
   return (
     typeof json === "string" ||
     typeof json === "number" ||
@@ -158,10 +160,10 @@ function isIntegration(json: unknown): json is Integration {
     // where all nested values are primitives.
     !Object.values(integrValues).every(
       (value) =>
-        isPrimitive(value) ||
+        isIntegrationPrimitive(value) ||
         (typeof value === "object" &&
           value !== null &&
-          Object.values(value).every(isPrimitive)),
+          Object.values(value).every(isIntegrationPrimitive)),
     )
   ) {
     return false;
@@ -236,10 +238,12 @@ function isIntegrationField<T extends IntegrationPrimitive>(
   if (!json) return false;
   if (typeof json !== "object") return false;
   if (!("f_type" in json)) return false;
-  if (!isPrimitive(json.f_type)) return false;
+  if (!isIntegrationPrimitive(json.f_type)) return false;
   if ("f_desc" in json && typeof json.f_desc !== "string") return false;
-  if ("f_placeholder" in json && !isPrimitive(json.f_placeholder)) return false;
-  if ("f_default" in json && !isPrimitive(json.f_default)) return false;
+  if ("f_placeholder" in json && !isIntegrationPrimitive(json.f_placeholder))
+    return false;
+  if ("f_default" in json && !isIntegrationPrimitive(json.f_default))
+    return false;
   if ("smartlinks" in json && !Array.isArray(json.smartlinks)) return false;
   return true;
 }
@@ -274,7 +278,8 @@ function isDockerSetting(json: unknown): json is DockerSetting {
   if (!("environment" in json)) return false;
   if (!json.environment) return false;
   if (!(typeof json.environment === "object")) return false;
-  if (!Object.values(json.environment).every(isPrimitive)) return false;
+  if (!Object.values(json.environment).every(isIntegrationPrimitive))
+    return false;
   return true;
 }
 
