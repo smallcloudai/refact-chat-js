@@ -216,11 +216,14 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         rawFormValues,
       ).reduce<Integration["integr_values"]>((acc, key) => {
         const field = currentIntegrationSchema.fields[key];
-        switch (field.f_type) {
+        const [f_type, _f_size] = (field.f_type as string).split("_");
+        switch (f_type) {
           case "int":
             acc[key] = parseInt(rawFormValues[key] as string, 10);
             break;
           case "string":
+            acc[key] = rawFormValues[key] as string;
+            break;
           default:
             acc[key] = rawFormValues[key] as string;
             break;
@@ -280,11 +283,18 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         rawFormValues,
       ).reduce<Integration["integr_values"]>((acc, key) => {
         const field = currentIntegrationSchema.fields[key];
-        switch (field.f_type) {
+        const [f_type, _f_size] = (field.f_type as string).split("_");
+        switch (f_type) {
           case "int":
             acc[key] = parseInt(rawFormValues[key] as string, 10);
             break;
           case "string":
+            acc[key] = rawFormValues[key] as string;
+            // TODO: port should be a string on the LSP's side
+            if (key === "port") {
+              acc[key] = parseInt(rawFormValues[key] as string, 10);
+            }
+            break;
           default:
             acc[key] = rawFormValues[key] as string;
             break;
@@ -292,22 +302,29 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         return acc;
       }, {});
 
-      const maybeDisabled =
-        Object.entries(formValues).every(([fieldKey, fieldValue]) => {
+      const eachFormValueIsNotChanged = Object.entries(formValues).every(
+        ([fieldKey, fieldValue]) => {
           return (
             fieldKey in currentIntegrationValues &&
             fieldValue === currentIntegrationValues[fieldKey]
           );
-        }) &&
-        Object.entries(availabilityValues).every(([fieldKey, fieldValue]) => {
-          const availableObj = currentIntegrationValues.available;
-          if (availableObj && typeof availableObj === "object") {
-            return (
-              fieldKey in availableObj && fieldValue === availableObj[fieldKey]
-            );
-          }
-          return false;
-        });
+        },
+      );
+
+      const eachAvailabilityOptionIsNotChanged = Object.entries(
+        availabilityValues,
+      ).every(([fieldKey, fieldValue]) => {
+        const availableObj = currentIntegrationValues.available;
+        if (availableObj && typeof availableObj === "object") {
+          return (
+            fieldKey in availableObj && fieldValue === availableObj[fieldKey]
+          );
+        }
+        return false;
+      });
+
+      const maybeDisabled =
+        eachFormValueIsNotChanged && eachAvailabilityOptionIsNotChanged;
 
       setIsDisabledIntegrationForm(maybeDisabled);
     },
@@ -395,7 +412,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             />
             {information && (
               <InformationCallout
-                // timeout={3000}
+                timeout={3000}
                 mx="0"
                 onClick={() => dispatch(clearInformation())}
                 className={styles.popup}
@@ -408,6 +425,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                 mx="0"
                 timeout={3000}
                 onClick={() => setLocalError("")}
+                className={styles.popup}
               >
                 {localError}
               </ErrorCallout>

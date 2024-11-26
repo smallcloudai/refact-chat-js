@@ -97,6 +97,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
     if (integration.data?.integr_values) {
       onValues(integration.data.integr_values);
     }
+    console.log(`[DEBUG]: integration.data: `, integration.data);
   }, [integration, onSchema, onValues]);
 
   const renderField = useCallback(
@@ -114,7 +115,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         name: fieldKey,
         defaultValue: values[fieldKey]
           ? values[fieldKey]?.toString() // Use the value from 'values' if present
-          : field.f_type === "int"
+          : field.f_type === "string_short"
             ? Number(field.f_default)
             : field.f_default?.toString(), // Otherwise, use the default value from the schema
         placeholder: field.f_placeholder?.toString(),
