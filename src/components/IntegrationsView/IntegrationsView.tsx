@@ -61,21 +61,28 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   const { saveIntegrationMutationTrigger } = useSaveIntegrationData();
   const currentThreadIntegration = useAppSelector(selectIntegration);
 
-  const maybeIntegration =
-    (currentThreadIntegration &&
-      integrationsMap?.integrations.find((integration) => {
-        // TODO: select inegreation form thread.
-        return (
+  const maybeIntegration = useMemo(() => {
+    if (!currentThreadIntegration) return null;
+    if (!integrationsMap) return null;
+    return (
+      integrationsMap.integrations.find(
+        (integration) =>
           integration.project_path === currentThreadIntegration.path &&
-          integration.integr_name === currentThreadIntegration.name
-        );
-      })) ??
-    null;
+          integration.integr_name === currentThreadIntegration.name,
+      ) ?? null
+    );
+  }, [currentThreadIntegration, integrationsMap]);
 
   // TBD: what if they went home then came back to integrations?
 
   const [currentIntegration, setCurrentIntegration] =
     useState<IntegrationWithIconRecord | null>(maybeIntegration);
+
+  // useEffect(() => {
+  //   if (maybeIntegration) {
+  //     setCurrentIntegration(maybeIntegration);
+  //   }
+  // }, [maybeIntegration]);
 
   const [currentIntegrationSchema, setCurrentIntegrationSchema] = useState<
     Integration["integr_schema"] | null

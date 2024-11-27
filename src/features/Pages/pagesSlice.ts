@@ -50,6 +50,7 @@ export interface DocumentationSettingsPage {
 
 export interface ChatThreadHistoryPage {
   name: "thread history page";
+  // causes a bug with other pages
   chatId: string;
 }
 
@@ -88,10 +89,13 @@ export const pagesSlice = createSlice({
       state.push(action.payload);
     },
     popBackTo: (state, action: PayloadAction<Page["name"]>) => {
-      return state.slice(
-        0,
-        state.findIndex((page) => page.name === action.payload) + 1,
-      );
+      const pageIndex = state.findIndex((page) => page.name === action.payload);
+      // TODO: chat id causes the thread page history check
+      if (pageIndex === -1 && action.payload !== "thread history page") {
+        state.push({ name: action.payload });
+      } else {
+        return state.slice(0, pageIndex + 1);
+      }
     },
 
     change: (state, action: PayloadAction<Page>) => {
