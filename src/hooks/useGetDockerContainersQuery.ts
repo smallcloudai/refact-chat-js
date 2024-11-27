@@ -9,6 +9,18 @@ export const useGetDockerContainersQuery = () => {
   });
 
   return {
-    containers,
+    dockerContainers: containers,
+  };
+};
+
+export const useGetDockerContainersByImageQuery = (image: string) => {
+  const ping = useGetPing();
+  const skip = !ping.data;
+  const containers = dockerApi.useGetDockerContainersByImageQuery(image, {
+    skip,
+  });
+
+  return {
+    dockerContainers: containers,
   };
 };

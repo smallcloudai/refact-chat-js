@@ -98,7 +98,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
     if (integration.data?.integr_values) {
       onValues(integration.data.integr_values);
     }
-    console.log(`[DEBUG]: integration.data: `, integration.data);
+    console.log(`[DEBUG]: integration.data: `, integration);
   }, [integration, onSchema, onValues]);
 
   const renderField = useCallback(
@@ -241,7 +241,14 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         })}
       </Flex>
       {/* docker */}
-      <IntegrationDocker />
+      <Flex mt="6" direction="column" align="start" gap="3">
+        <Heading as="h3" align="center" className={styles.SectionTitle}>
+          Docker
+        </Heading>
+        <IntegrationDocker
+          dockerImage={integration.data.integr_schema.docker.filter_image}
+        />
+      </Flex>
     </Flex>
   );
 };

@@ -2,6 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { RootState } from "../../app/store";
 
 const DOCKER_CONTAINER_LIST = "/v1/docker-container-list";
+const DOCKER_CONTAINER_ACTION = "/v1/docker-container-action";
 
 export const dockerApi = createApi({
   reducerPath: "dockerApi",
@@ -19,7 +20,7 @@ export const dockerApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    getAllDockerContainers: builder.query<DockerContainer[], undefined>({
+    getAllDockerContainers: builder.query<DockerContainersResponse, undefined>({
       providesTags: ["DOCKER"],
       async queryFn(_arg, api, extraOptions, baseQuery) {
         const state = api.getState() as RootState;
@@ -49,70 +50,74 @@ export const dockerApi = createApi({
         return { data: response.data };
       },
     }),
-    getDockerContainersByLabel: builder.query<DockerContainer[], string>({
-      providesTags: ["DOCKER"],
-      async queryFn(label, api, extraOptions, baseQuery) {
-        const state = api.getState() as RootState;
-        const port = state.config.lspPort as unknown as number;
-        const url = `http://127.0.0.1:${port}${DOCKER_CONTAINER_LIST}`;
-        const response = await baseQuery({
-          url,
-          method: "POST",
-          body: {
-            label,
-          },
-          ...extraOptions,
-        });
-
-        if (response.error) {
-          return { error: response.error };
-        }
-
-        if (!isDockerContainersResponse(response.data)) {
-          return {
-            error: {
-              status: "CUSTOM_ERROR",
-              error: "Failed to parse docker containers by labels response",
-              data: response.data,
+    getDockerContainersByLabel: builder.query<DockerContainersResponse, string>(
+      {
+        providesTags: ["DOCKER"],
+        async queryFn(label, api, extraOptions, baseQuery) {
+          const state = api.getState() as RootState;
+          const port = state.config.lspPort as unknown as number;
+          const url = `http://127.0.0.1:${port}${DOCKER_CONTAINER_LIST}`;
+          const response = await baseQuery({
+            url,
+            method: "POST",
+            body: {
+              label,
             },
-          };
-        }
-        return { data: response.data };
+            ...extraOptions,
+          });
+
+          if (response.error) {
+            return { error: response.error };
+          }
+
+          if (!isDockerContainersResponse(response.data)) {
+            return {
+              error: {
+                status: "CUSTOM_ERROR",
+                error: "Failed to parse docker containers by labels response",
+                data: response.data,
+              },
+            };
+          }
+          return { data: response.data };
+        },
       },
-    }),
-    getDockerContainersByImage: builder.query<DockerContainer[], string>({
-      providesTags: ["DOCKER"],
-      async queryFn(image, api, extraOptions, baseQuery) {
-        const state = api.getState() as RootState;
-        const port = state.config.lspPort as unknown as number;
-        const url = `http://127.0.0.1:${port}${DOCKER_CONTAINER_LIST}`;
-        const response = await baseQuery({
-          url,
-          method: "POST",
-          body: {
-            image,
-          },
-          ...extraOptions,
-        });
-
-        if (response.error) {
-          return { error: response.error };
-        }
-
-        if (!isDockerContainersResponse(response.data)) {
-          return {
-            error: {
-              status: "CUSTOM_ERROR",
-              error: "Failed to parse docker containers by images response",
-              data: response.data,
+    ),
+    getDockerContainersByImage: builder.query<DockerContainersResponse, string>(
+      {
+        providesTags: ["DOCKER"],
+        async queryFn(image, api, extraOptions, baseQuery) {
+          const state = api.getState() as RootState;
+          const port = state.config.lspPort as unknown as number;
+          const url = `http://127.0.0.1:${port}${DOCKER_CONTAINER_LIST}`;
+          const response = await baseQuery({
+            url,
+            method: "POST",
+            body: {
+              image,
             },
-          };
-        }
-        return { data: response.data };
+            ...extraOptions,
+          });
+
+          if (response.error) {
+            return { error: response.error };
+          }
+
+          if (!isDockerContainersResponse(response.data)) {
+            return {
+              error: {
+                status: "CUSTOM_ERROR",
+                error: "Failed to parse docker containers by images response",
+                data: response.data,
+              },
+            };
+          }
+          return { data: response.data };
+        },
       },
-    }),
+    ),
     getDockerContainersByImageAndLabel: builder.query<
-      DockerContainer[],
+      DockerContainersResponse,
       DockerRequestBody
     >({
       providesTags: ["DOCKER"],
@@ -146,8 +151,67 @@ export const dockerApi = createApi({
         return { data: response.data };
       },
     }),
+    executeActionForDockerContainer: builder.mutation<
+      DockerActionResponse,
+      DockerActionPayload
+    >({
+      async queryFn(args, api, extraOptions, baseQuery) {
+        const state = api.getState() as RootState;
+        const port = state.config.lspPort as unknown as number;
+        const url = `http://127.0.0.1:${port}${DOCKER_CONTAINER_ACTION}`;
+        const response = await baseQuery({
+          url,
+          method: "POST",
+          body: {
+            action: args.action,
+            container: args.container,
+          },
+          ...extraOptions,
+        });
+
+        if (response.error) {
+          return { error: response.error };
+        }
+
+        if (!isDockerActionResponse(response.data)) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: `Failed to execute ${args.action} for docker container with ${args.container} name/id!`,
+              data: response.data,
+            },
+          };
+        }
+        return { data: response.data };
+      },
+    }),
   }),
 });
+
+type DockerActionResponse = {
+  success: boolean;
+  output: string;
+};
+
+/**
+ * Represents the payload for a Docker action endpoints.
+ * @param action Docker action for a specific operation (start, stop, kill, remove)
+ * @param container This can be either the container name or the container ID.
+ */
+export type DockerActionPayload = {
+  action: "start" | "stop" | "kill" | "remove";
+  container: string;
+};
+
+function isDockerActionResponse(json: unknown): json is DockerActionResponse {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  if (!("success" in json)) return false;
+  if (typeof json.success !== "boolean") return false;
+  if (!("output" in json)) return false;
+  if (typeof json.output !== "string") return false;
+  return true;
+}
 
 type DockerRequestBody = {
   label?: string;
@@ -194,9 +258,22 @@ type DockerLabels = {
 type DockerPorts = NonNullable<unknown>;
 
 // TODO: make type guards better
-function isDockerContainersResponse(json: unknown): json is DockerContainer[] {
-  if (!Array.isArray(json)) return false;
-  return json.every(isDockerContainer);
+type DockerContainersResponse = {
+  containers: DockerContainer[];
+};
+
+function isDockerContainersResponse(
+  json: unknown,
+): json is DockerContainersResponse {
+  if (
+    !json ||
+    typeof json !== "object" ||
+    !Array.isArray((json as DockerContainersResponse).containers)
+  ) {
+    return false;
+  }
+  const containers = (json as DockerContainersResponse).containers;
+  return containers.every(isDockerContainer);
 }
 
 function isDockerContainer(json: unknown): json is DockerContainer {
@@ -213,16 +290,17 @@ function isDockerContainer(json: unknown): json is DockerContainer {
     !container.env.every((e) => typeof e === "string")
   )
     return false;
+
   if (
     !Array.isArray(container.command) ||
     !container.command.every((c) => typeof c === "string")
   )
     return false;
+
   if (typeof container.image !== "string") return false;
   if (typeof container.working_dir !== "string") return false;
   if (!isDockerLabels(container.labels)) return false;
   if (!isDockerPorts(container.ports)) return false;
-
   return true;
 }
 

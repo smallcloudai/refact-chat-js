@@ -12,6 +12,7 @@ import {
   Text,
 } from "@radix-ui/themes";
 import {
+  dockerApi,
   Integration,
   IntegrationWithIconResponse,
   isDetailMessage,
@@ -20,7 +21,11 @@ import {
 import { Spinner } from "../Spinner";
 import { ErrorCallout } from "../Callout";
 import { useAppDispatch, useAppSelector } from "../../hooks";
-import { clearError, getErrorMessage } from "../../features/Errors/errorsSlice";
+import {
+  clearError,
+  getErrorMessage,
+  setError,
+} from "../../features/Errors/errorsSlice";
 import styles from "./IntegrationsView.module.css";
 // import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 
@@ -79,8 +84,6 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   const [availabilityValues, setAvailabilityValues] = useState<
     Record<string, boolean>
   >({});
-
-  const [localError, setLocalError] = useState<string>("");
 
   useEffect(() => {
     console.log(`[DEBUG]: integrationsData: `, integrationsMap);
@@ -145,9 +148,9 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     currentIntegration && setCurrentIntegration(null);
     information && dispatch(clearInformation());
     globalError && dispatch(clearError());
-    localError && setLocalError("");
     dispatch(integrationsApi.util.resetApiState());
-  }, [dispatch, localError, globalError, information, currentIntegration]);
+    dispatch(dockerApi.util.resetApiState());
+  }, [dispatch, globalError, information, currentIntegration]);
 
   const handleFormCancel = useCallback(() => {
     if (!currentIntegration) return;
@@ -243,10 +246,12 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       if (response.error) {
         const error = response.error as FetchBaseQueryError;
         console.log(`[DEBUG]: error is present, error: `, error);
-        setLocalError(
-          isDetailMessage(error.data)
-            ? error.data.detail
-            : `something went wrong while saving configuration for ${currentIntegration.integr_name} integration`,
+        dispatch(
+          setError(
+            isDetailMessage(error.data)
+              ? error.data.detail
+              : `something went wrong while saving configuration for ${currentIntegration.integr_name} integration`,
+          ),
         );
       } else {
         dispatch(
@@ -354,14 +359,14 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   };
 
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-  if (globalError || !integrationsMap) {
+  if (!integrationsMap) {
     return (
       <ErrorCallout
         className={styles.popup}
         mx="0"
         onClick={goBackAndClearError}
       >
-        {globalError ?? "fetching integrations."}
+        fetching integrations.
       </ErrorCallout>
     );
   }
@@ -420,14 +425,14 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                 {information}
               </InformationCallout>
             )}
-            {localError && (
+            {globalError && (
               <ErrorCallout
                 mx="0"
                 timeout={3000}
-                onClick={() => setLocalError("")}
+                onClick={() => dispatch(clearError())}
                 className={styles.popup}
               >
-                {localError}
+                {globalError}
               </ErrorCallout>
             )}
           </Flex>
@@ -453,29 +458,37 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
               >
                 Global Configurations
               </Heading>
-              {!!globalIntegrations &&
-                globalIntegrations.map((integration, index) => (
-                  <Card
-                    key={`${index}-${integration.integr_config_path}`}
-                    className={styles.integrationCard}
-                    onClick={() => handleIntegrationShowUp(integration)}
-                  >
-                    <Flex
-                      direction="column"
-                      align="center"
-                      justify="between"
-                      width="100%"
-                      height="100%"
+              <Flex
+                align="start"
+                justify="between"
+                wrap="wrap"
+                gap="4"
+                width="100%"
+              >
+                {!!globalIntegrations &&
+                  globalIntegrations.map((integration, index) => (
+                    <Card
+                      key={`${index}-${integration.integr_config_path}`}
+                      className={styles.integrationCard}
+                      onClick={() => handleIntegrationShowUp(integration)}
                     >
-                      <img
-                        src={"https://placehold.jp/150x150.png"}
-                        className={styles.SetupIcon}
-                        alt={integration.integr_name}
-                      />
-                      <Text>{toPascalCase(integration.integr_name)}</Text>
-                    </Flex>
-                  </Card>
-                ))}
+                      <Flex
+                        direction="column"
+                        align="center"
+                        justify="between"
+                        width="100%"
+                        height="100%"
+                      >
+                        <img
+                          src={"https://placehold.jp/150x150.png"}
+                          className={styles.SetupIcon}
+                          alt={integration.integr_name}
+                        />
+                        <Text>{toPascalCase(integration.integr_name)}</Text>
+                      </Flex>
+                    </Card>
+                  ))}
+              </Flex>
             </Flex>
             {groupedProjectIntegrations &&
               Object.entries(groupedProjectIntegrations).map(
