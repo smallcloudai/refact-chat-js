@@ -9,6 +9,7 @@ import {
   newChatAction,
   chatAskQuestionThunk,
   restoreChat,
+  newIntegrationChat,
 } from "../features/Chat/Thread";
 import { statisticsApi } from "../services/refact/statistics";
 import { integrationsApi } from "../services/refact/integrations";
@@ -169,6 +170,31 @@ startListening({
       nextTip({
         host,
         completeManual,
+      }),
+    );
+  },
+});
+
+startListening({
+  actionCreator: newIntegrationChat,
+  effect: async (_action, listenerApi) => {
+    const state = listenerApi.getState();
+
+    // TBD: should the endpoint need tools?
+    const toolsRequest = listenerApi.dispatch(
+      toolsApi.endpoints.getTools.initiate(undefined),
+    );
+    toolsRequest.unsubscribe();
+    const toolResult = await toolsRequest.unwrap();
+
+    const tools = toolResult.filter((tool) => !tool.function.agentic);
+
+    // TODO: create a dedicated thunk for this.
+    await listenerApi.dispatch(
+      chatAskQuestionThunk({
+        messages: state.chat.thread.messages,
+        chatId: state.chat.thread.id,
+        tools,
       }),
     );
   },

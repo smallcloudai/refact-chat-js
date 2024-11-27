@@ -83,6 +83,10 @@ export const saveTitle = createAction<PayloadWithIdAndTitle>(
   "chatThread/saveTitle",
 );
 
+export const setSendImmediately = createAction<boolean>(
+  "chatThread/setSendImmediately",
+);
+
 // TODO: This is the circular dep when imported from hooks :/
 const createAppAsyncThunk = createAsyncThunk.withTypes<{
   state: RootState;

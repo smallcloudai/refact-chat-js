@@ -17,6 +17,7 @@ import {
   setPreventSend,
   saveTitle,
   newIntegrationChat,
+  setSendImmediately,
 } from "./actions";
 import { formatChatResponse } from "./utils";
 
@@ -196,7 +197,6 @@ export const chatReducer = createReducer(initialState, (builder) => {
     const next = createInitialState("explore", action.payload.integration);
     next.thread.integration = action.payload.integration;
     next.thread.messages = action.payload.messages;
-    next.send_immediately = true;
 
     next.cache = { ...state.cache };
     if (state.streaming) {
@@ -206,5 +206,9 @@ export const chatReducer = createReducer(initialState, (builder) => {
     // next.thread.model = state.thread.model;
     // next.system_prompt = state.system_prompt;
     return next;
+  });
+
+  builder.addCase(setSendImmediately, (state, action) => {
+    state.send_immediately = action.payload;
   });
 });
