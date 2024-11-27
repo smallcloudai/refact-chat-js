@@ -169,8 +169,17 @@ export const dockerApi = createApi({
           ...extraOptions,
         });
 
+        console.log(`[DEBUG MUTATION]: response: `, response);
+
         if (response.error) {
-          return { error: response.error };
+          console.log(`returning error object to client`);
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: `Failed to execute ${args.action} for docker container with ${args.container} name/id!`,
+              data: response.error.data,
+            },
+          };
         }
 
         if (!isDockerActionResponse(response.data)) {
@@ -188,7 +197,7 @@ export const dockerApi = createApi({
   }),
 });
 
-type DockerActionResponse = {
+export type DockerActionResponse = {
   success: boolean;
   output: string;
 };
@@ -220,6 +229,7 @@ type DockerRequestBody = {
 
 export type DockerContainer = {
   id: string;
+  name: string;
   status: string;
   created: string;
   user: string;
@@ -231,28 +241,7 @@ export type DockerContainer = {
   ports: DockerPorts;
 };
 
-type DockerLabels = {
-  "com.docker.compose.config-hash": string;
-  "com.docker.compose.container-number": string;
-  "com.docker.compose.depends_on": string;
-  "com.docker.compose.image": string;
-  "com.docker.compose.oneoff": string;
-  "com.docker.compose.project": string;
-  "com.docker.compose.project.config_files": string;
-  "com.docker.compose.project.working_dir": string;
-  "com.docker.compose.replace"?: string;
-  "com.docker.compose.service": string;
-  "com.docker.compose.version": string;
-  "org.opencontainers.image.authors"?: string;
-  "org.opencontainers.image.description"?: string;
-  "org.opencontainers.image.documentation"?: string;
-  "org.opencontainers.image.licenses"?: string;
-  "org.opencontainers.image.source"?: string;
-  "org.opencontainers.image.title"?: string;
-  "org.opencontainers.image.url"?: string;
-  "org.opencontainers.image.vendor"?: string;
-  "org.opencontainers.image.version"?: string;
-};
+type DockerLabels = NonNullable<unknown>;
 
 // TODO: make types for ports
 type DockerPorts = NonNullable<unknown>;
@@ -282,6 +271,7 @@ function isDockerContainer(json: unknown): json is DockerContainer {
   const container = json as DockerContainer;
 
   if (typeof container.id !== "string") return false;
+  if (typeof container.name !== "string") return false;
   if (typeof container.status !== "string") return false;
   if (typeof container.created !== "string") return false;
   if (typeof container.user !== "string") return false;
@@ -305,76 +295,8 @@ function isDockerContainer(json: unknown): json is DockerContainer {
 }
 
 function isDockerLabels(json: unknown): json is DockerLabels {
-  if (!json || typeof json !== "object") return false;
-
-  const labels = json as DockerLabels;
-
-  if (typeof labels["com.docker.compose.config-hash"] !== "string")
-    return false;
-  if (typeof labels["com.docker.compose.container-number"] !== "string")
-    return false;
-  if (typeof labels["com.docker.compose.depends_on"] !== "string") return false;
-  if (typeof labels["com.docker.compose.image"] !== "string") return false;
-  if (typeof labels["com.docker.compose.oneoff"] !== "string") return false;
-  if (typeof labels["com.docker.compose.project"] !== "string") return false;
-  if (typeof labels["com.docker.compose.project.config_files"] !== "string")
-    return false;
-  if (typeof labels["com.docker.compose.project.working_dir"] !== "string")
-    return false;
-  if (
-    labels["com.docker.compose.replace"] &&
-    typeof labels["com.docker.compose.replace"] !== "string"
-  )
-    return false;
-  if (typeof labels["com.docker.compose.service"] !== "string") return false;
-  if (typeof labels["com.docker.compose.version"] !== "string") return false;
-  if (
-    labels["org.opencontainers.image.authors"] &&
-    typeof labels["org.opencontainers.image.authors"] !== "string"
-  )
-    return false;
-  if (
-    labels["org.opencontainers.image.description"] &&
-    typeof labels["org.opencontainers.image.description"] !== "string"
-  )
-    return false;
-  if (
-    labels["org.opencontainers.image.documentation"] &&
-    typeof labels["org.opencontainers.image.documentation"] !== "string"
-  )
-    return false;
-  if (
-    labels["org.opencontainers.image.licenses"] &&
-    typeof labels["org.opencontainers.image.licenses"] !== "string"
-  )
-    return false;
-  if (
-    labels["org.opencontainers.image.source"] &&
-    typeof labels["org.opencontainers.image.source"] !== "string"
-  )
-    return false;
-  if (
-    labels["org.opencontainers.image.title"] &&
-    typeof labels["org.opencontainers.image.title"] !== "string"
-  )
-    return false;
-  if (
-    labels["org.opencontainers.image.url"] &&
-    typeof labels["org.opencontainers.image.url"] !== "string"
-  )
-    return false;
-  if (
-    labels["org.opencontainers.image.vendor"] &&
-    typeof labels["org.opencontainers.image.vendor"] !== "string"
-  )
-    return false;
-  if (
-    labels["org.opencontainers.image.version"] &&
-    typeof labels["org.opencontainers.image.version"] !== "string"
-  )
-    return false;
-
-  return true;
+  // Since DockerPorts is defined as NonNullable<unknown>, we don't have specific structure to validate. Just checking, that it's not null | undefined
+  return json !== null && json !== undefined;
 }
 
 function isDockerPorts(json: unknown): json is DockerPorts {

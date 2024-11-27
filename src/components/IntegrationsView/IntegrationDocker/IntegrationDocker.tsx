@@ -2,19 +2,25 @@
 import type { FC } from "react";
 import { useEffect, useState } from "react";
 import {
-  // useGetDockerContainersByImageQuery,
-  useGetDockerContainersQuery,
+  useGetDockerContainersByImageQuery,
+  // useGetDockerContainersQuery,
 } from "../../../hooks/useGetDockerContainersQuery";
-import { DockerActionPayload, DockerContainer } from "../../../services/refact";
+import { dockerApi } from "../../../services/refact";
+import type {
+  DockerActionResponse,
+  DockerActionPayload,
+  DockerContainer,
+  SchemaDocker,
+} from "../../../services/refact";
 import { Spinner } from "../../Spinner";
 import { useExecuteActionForDockerContainerMutation } from "../../../hooks/useExecuteActionForDockerContainer";
 import { useAppDispatch } from "../../../hooks";
 import { setInformation } from "../../../features/Errors/informationSlice";
 import { setError } from "../../../features/Errors/errorsSlice";
-import { Button } from "@radix-ui/themes";
+import { Button, Card, Flex, Heading } from "@radix-ui/themes";
 
 type IntegrationDockerProps = {
-  dockerImage: string;
+  dockerData: SchemaDocker;
 };
 
 const DOCKER_ACTIONS: (Omit<DockerActionPayload, "container"> & {
@@ -44,24 +50,25 @@ const DOCKER_ACTIONS: (Omit<DockerActionPayload, "container"> & {
 ];
 
 export const IntegrationDocker: FC<IntegrationDockerProps> = ({
-  dockerImage,
+  dockerData,
 }) => {
   const dispatch = useAppDispatch();
-  // const { dockerContainers } = useGetDockerContainersByImageQuery(dockerImage);
-  const { dockerContainers } = useGetDockerContainersQuery();
+  const { dockerContainers } = useGetDockerContainersByImageQuery(
+    dockerData.filter_image,
+  );
+  // const { dockerContainers } = useGetDockerContainersQuery();
   const [dockerContainerActionTrigger] =
     useExecuteActionForDockerContainerMutation();
   const [isActionInProgress, setIsActionInProgress] = useState(false);
-  const [currentAction, setCurrentAction] = useState<
-    DockerActionPayload["action"] | null
-  >(null);
+  const [currentContainerAction, setCurrentContainerAction] =
+    useState<DockerActionPayload | null>(null);
 
   const [dockerContainersList, setDockerContainersList] = useState<
     DockerContainer[] | null
   >(null);
 
   useEffect(() => {
-    console.log(dockerContainers);
+    console.log(`[DEBUG]: dockerContainers: `, dockerContainers);
 
     if (dockerContainers.data) {
       console.log(`[DEBUG]: loaded containers: `, dockerContainers.data);
@@ -77,29 +84,55 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
     return (
       <div>
         Unexpected error on fetching list of docker containers with &quot;
-        {dockerImage}&quot; image
+        {dockerData.filter_image}&quot; image
       </div>
     );
   }
 
   if (!dockerContainersList || dockerContainersList.length === 0) {
-    return <div>No docker containers found for &quot;{dockerImage}&quot;</div>;
+    return (
+      <div>
+        No docker containers found for &quot;{dockerData.filter_image}&quot;
+      </div>
+    );
   }
 
-  const handleActionClick = async (payload: DockerActionPayload) => {
+  const handleDockerContainerActionClick = async (
+    payload: DockerActionPayload,
+  ) => {
     setIsActionInProgress(true);
-    setCurrentAction(payload.action);
+    setCurrentContainerAction(payload);
+
     const response = await dockerContainerActionTrigger({
       container: payload.container,
       action: payload.action,
-    }).unwrap();
+    });
 
-    if (response.success) {
+    if (response.error) {
+      resetActionState();
+      return;
+    }
+
+    handleResponse(response.data, payload);
+    resetActionState();
+  };
+
+  const resetActionState = () => {
+    setIsActionInProgress(false);
+    setCurrentContainerAction(null);
+  };
+
+  const handleResponse = (
+    data: DockerActionResponse,
+    payload: DockerActionPayload,
+  ) => {
+    if (data.success) {
       dispatch(
         setInformation(
           `Action ${payload.action} was successfully executed on ${payload.container} container`,
         ),
       );
+      dispatch(dockerApi.util.resetApiState());
     } else {
       dispatch(
         setError(
@@ -107,32 +140,59 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
         ),
       );
     }
-    setIsActionInProgress(false);
-    setCurrentAction(null);
+  };
+
+  // needed to handle disabled state of buttons accordingly to the status of docker container
+  const isDockerActionButtonDisabled = (
+    el: DockerContainer,
+    action: string,
+  ) => {
+    return (
+      (isActionInProgress && currentContainerAction?.container === el.name) ||
+      (el.status === "running" && action === "start") ||
+      (el.status === "exited" && (action === "stop" || action === "kill"))
+    );
   };
 
   return (
-    <div>
-      {DOCKER_ACTIONS.map((dockerActionButton) => (
-        <Button
-          key={dockerActionButton.label}
-          type="button"
-          variant="outline"
-          color="green"
-          disabled={isActionInProgress}
-          onClick={() =>
-            void handleActionClick({
-              container:
-                "900872e6244a74afcecc41a2a168cb9b54c3268ffafd3df221240c8b47c6c4cc",
-              action: dockerActionButton.action,
-            })
-          }
-        >
-          {currentAction === dockerActionButton.action
-            ? dockerActionButton.loadingLabel
-            : dockerActionButton.label}
-        </Button>
+    <Flex direction="column" gap="4" width="100%">
+      {dockerContainersList.map((el) => (
+        <Card key={el.id}>
+          <Flex direction="column" gap="4">
+            <Heading as="h5">Container {el.name}</Heading>
+            {/* actions for containers */}
+            <Flex gap="1">
+              {DOCKER_ACTIONS.map((dockerActionButton) => {
+                const action = dockerActionButton.action;
+                const label =
+                  currentContainerAction &&
+                  currentContainerAction.action === dockerActionButton.action &&
+                  currentContainerAction.container === el.name
+                    ? dockerActionButton.loadingLabel
+                    : dockerActionButton.label;
+
+                return (
+                  <Button
+                    key={dockerActionButton.label}
+                    type="button"
+                    variant="outline"
+                    color="green"
+                    disabled={isDockerActionButtonDisabled(el, action)}
+                    onClick={() =>
+                      void handleDockerContainerActionClick({
+                        container: el.name,
+                        action: dockerActionButton.action,
+                      })
+                    }
+                  >
+                    {label}
+                  </Button>
+                );
+              })}
+            </Flex>
+          </Flex>
+        </Card>
       ))}
-    </div>
+    </Flex>
   );
 };

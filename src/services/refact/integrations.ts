@@ -215,9 +215,14 @@ type DockerFilter = {
   filter_image: string;
 };
 
-type DockerContainer = {
+type SchemaDockerContainer = {
   image: string;
   environment: DockerEnvironment;
+};
+
+export type SchemaDocker = DockerFilter & {
+  new_container_default: SchemaDockerContainer;
+  smartlinks: SmartLink[];
 };
 
 type DockerEnvironment = Record<string, IntegrationPrimitive>;
@@ -226,10 +231,7 @@ type IntegrationSchema = {
   fields: Record<string, IntegrationField<NonNullable<IntegrationPrimitive>>>;
   available: Record<string, boolean>;
   smartlinks: SmartLink[];
-  docker: DockerFilter & {
-    new_container_default: DockerContainer;
-    smartlinks: SmartLink[];
-  };
+  docker: SchemaDocker;
 };
 
 function isDockerFilter(json: unknown): json is DockerFilter {
@@ -254,7 +256,7 @@ function isDockerFilter(json: unknown): json is DockerFilter {
   return true;
 }
 
-function isDockerContainer(json: unknown): json is DockerContainer {
+function isSchemaDockerContainer(json: unknown): json is SchemaDockerContainer {
   if (!json) {
     return false;
   }
@@ -340,7 +342,7 @@ function isIntegrationSchema(json: unknown): json is IntegrationSchema {
   if (!("new_container_default" in json.docker)) {
     return false;
   }
-  if (!isDockerContainer(json.docker.new_container_default)) {
+  if (!isSchemaDockerContainer(json.docker.new_container_default)) {
     return false;
   }
   if (!("smartlinks" in json.docker)) {

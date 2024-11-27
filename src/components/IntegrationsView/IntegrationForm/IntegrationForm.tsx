@@ -245,9 +245,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         <Heading as="h3" align="center" className={styles.SectionTitle}>
           Docker
         </Heading>
-        <IntegrationDocker
-          dockerImage={integration.data.integr_schema.docker.filter_image}
-        />
+        <IntegrationDocker dockerData={integration.data.integr_schema.docker} />
       </Flex>
     </Flex>
   );
