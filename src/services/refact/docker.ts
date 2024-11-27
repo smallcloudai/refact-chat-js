@@ -169,10 +169,7 @@ export const dockerApi = createApi({
           ...extraOptions,
         });
 
-        console.log(`[DEBUG MUTATION]: response: `, response);
-
         if (response.error) {
-          console.log(`returning error object to client`);
           return {
             error: {
               status: "CUSTOM_ERROR",

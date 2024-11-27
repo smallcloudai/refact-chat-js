@@ -53,6 +53,8 @@ export const INTEGRATIONS_RESPONSE: Integration = {
       },
     ],
     docker: {
+      filter_image: "postgres",
+      filter_label: "",
       new_container_default: {
         image: "postgres:13",
         environment: {
