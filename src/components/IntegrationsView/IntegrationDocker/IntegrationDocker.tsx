@@ -1,7 +1,10 @@
 /* eslint-disable no-console */ // TODO: remove in the future
 import type { FC } from "react";
 import { useEffect, useState } from "react";
-import { useGetDockerContainersByImageQuery } from "../../../hooks/useGetDockerContainersQuery";
+import {
+  // useGetDockerContainersByImageQuery,
+  useGetDockerContainersQuery,
+} from "../../../hooks/useGetDockerContainersQuery";
 import { DockerActionPayload, DockerContainer } from "../../../services/refact";
 import { Spinner } from "../../Spinner";
 import { useExecuteActionForDockerContainerMutation } from "../../../hooks/useExecuteActionForDockerContainer";
@@ -16,21 +19,26 @@ type IntegrationDockerProps = {
 
 const DOCKER_ACTIONS: (Omit<DockerActionPayload, "container"> & {
   label: string;
+  loadingLabel: string;
 })[] = [
   {
     label: "Start",
+    loadingLabel: "Starting...",
     action: "start",
   },
   {
     label: "Stop",
+    loadingLabel: "Stopping...",
     action: "stop",
   },
   {
     label: "Kill",
+    loadingLabel: "Killing...",
     action: "kill",
   },
   {
     label: "Remove",
+    loadingLabel: "Removing...",
     action: "remove",
   },
 ];
@@ -39,9 +47,14 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
   dockerImage,
 }) => {
   const dispatch = useAppDispatch();
-  const { dockerContainers } = useGetDockerContainersByImageQuery(dockerImage);
+  // const { dockerContainers } = useGetDockerContainersByImageQuery(dockerImage);
+  const { dockerContainers } = useGetDockerContainersQuery();
   const [dockerContainerActionTrigger] =
     useExecuteActionForDockerContainerMutation();
+  const [isActionInProgress, setIsActionInProgress] = useState(false);
+  const [currentAction, setCurrentAction] = useState<
+    DockerActionPayload["action"] | null
+  >(null);
 
   const [dockerContainersList, setDockerContainersList] = useState<
     DockerContainer[] | null
@@ -74,6 +87,8 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
   }
 
   const handleActionClick = async (payload: DockerActionPayload) => {
+    setIsActionInProgress(true);
+    setCurrentAction(payload.action);
     const response = await dockerContainerActionTrigger({
       container: payload.container,
       action: payload.action,
@@ -92,6 +107,8 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
         ),
       );
     }
+    setIsActionInProgress(false);
+    setCurrentAction(null);
   };
 
   return (
@@ -102,14 +119,18 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
           type="button"
           variant="outline"
           color="green"
+          disabled={isActionInProgress}
           onClick={() =>
             void handleActionClick({
-              container: "laravel",
+              container:
+                "900872e6244a74afcecc41a2a168cb9b54c3268ffafd3df221240c8b47c6c4cc",
               action: dockerActionButton.action,
             })
           }
         >
-          {dockerActionButton.label}
+          {currentAction === dockerActionButton.action
+            ? dockerActionButton.loadingLabel
+            : dockerActionButton.label}
         </Button>
       ))}
     </div>

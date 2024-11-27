@@ -120,6 +120,19 @@ startListening({
     }
 
     if (
+      dockerApi.endpoints.executeActionForDockerContainer.matchRejected(
+        action,
+      ) &&
+      !action.meta.condition
+    ) {
+      // getting first 2 lines of error message to show to user
+      const errorMessage = isDetailMessage(action.payload?.data)
+        ? action.payload.data.detail
+        : `fetching docker containers.`;
+      listenerApi.dispatch(setError(errorMessage));
+    }
+
+    if (
       pathApi.endpoints.getFullPath.matchRejected(action) &&
       !action.meta.condition
     ) {
