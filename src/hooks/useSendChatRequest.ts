@@ -10,6 +10,7 @@ import {
   selectMessages,
   selectPreventSend,
   selectSendImmediately,
+  selectThread,
   selectThreadToolUse,
 } from "../features/Chat/Thread/selectors";
 import {
@@ -219,6 +220,9 @@ export function useAutoSend() {
   const isWaiting = useAppSelector(selectIsWaiting);
   const areToolsConfirmed = useAppSelector(getToolsConfirmationStatus);
   const { sendMessages, abort } = useSendChatRequest();
+  // TODO: make a selector for this, or show tool formation
+  const thread = useAppSelector(selectThread);
+  const isIntegration = thread.integration ?? false;
 
   useEffect(() => {
     if (
@@ -234,7 +238,7 @@ export function useAutoSend() {
         lastMessage.tool_calls &&
         lastMessage.tool_calls.length > 0
       ) {
-        if (!areToolsConfirmed) {
+        if (!isIntegration && !areToolsConfirmed) {
           abort();
           if (recallCounter < 1) {
             recallCounter++;
@@ -254,5 +258,6 @@ export function useAutoSend() {
     streaming,
     areToolsConfirmed,
     isWaiting,
+    isIntegration,
   ]);
 }
