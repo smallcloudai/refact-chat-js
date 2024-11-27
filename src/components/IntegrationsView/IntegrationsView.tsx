@@ -358,7 +358,6 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     setCurrentIntegration(integration);
   };
 
-  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   if (!integrationsMap) {
     return (
       <ErrorCallout
