@@ -16,6 +16,8 @@ export const CustomInputField = ({
   type,
   id,
   name,
+  width = "100%",
+  size = "long",
 }: {
   id?: string;
   type?:
@@ -36,18 +38,32 @@ export const CustomInputField = ({
   name?: string;
   defaultValue?: string | number;
   placeholder?: string;
+  width?: string;
+  size?: string;
 }) => {
   return (
-    <Box width="100%">
-      <TextField.Root
-        id={id}
-        name={name}
-        type={type}
-        size="2"
-        value={value}
-        defaultValue={defaultValue}
-        placeholder={placeholder}
-      />
+    <Box minWidth={width}>
+      {size !== "multiline" ? (
+        <TextField.Root
+          id={id}
+          name={name}
+          type={type}
+          size="2"
+          value={value}
+          defaultValue={defaultValue}
+          placeholder={placeholder}
+        />
+      ) : (
+        <TextArea
+          id={id}
+          name={name}
+          size="2"
+          rows={3}
+          value={value}
+          defaultValue={defaultValue?.toString()}
+          placeholder={placeholder}
+        />
+      )}
     </Box>
   );
 };
@@ -55,11 +71,11 @@ export const CustomInputField = ({
 export const CustomLabel = ({
   label,
   htmlFor,
-  width,
+  marginTop,
 }: {
   label: string;
   htmlFor?: string;
-  width?: string;
+  marginTop?: string;
 }) => {
   return (
     <label
@@ -69,7 +85,7 @@ export const CustomLabel = ({
         fontWeight: 500,
         fontSize: 14,
         lineHeight: 1.15,
-        width: width ? width : "40%",
+        marginTop,
       }}
     >
       {label}
@@ -79,11 +95,13 @@ export const CustomLabel = ({
 
 export const CustomDescriptionField = ({
   children = "",
+  mb = "2",
 }: {
   children?: string;
+  mb?: string;
 }) => {
   return (
-    <Text size="1" mb="2" style={{ display: "block", opacity: 0.85 }}>
+    <Text size="1" mb={mb} style={{ display: "block", opacity: 0.85 }}>
       <Markdown>{children}</Markdown>
     </Text>
   );

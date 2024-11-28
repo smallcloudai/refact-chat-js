@@ -13,7 +13,7 @@ import type {
 
 import styles from "./IntegrationForm.module.css";
 import { Spinner } from "../../Spinner";
-import { Button, Flex, Heading, Switch } from "@radix-ui/themes";
+import { Button, DataList, Flex, Heading, Switch } from "@radix-ui/themes";
 import {
   CustomDescriptionField,
   CustomInputField,
@@ -100,12 +100,14 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
       values: Integration["integr_values"];
       field: IntegrationField<NonNullable<IntegrationPrimitive>>;
     }) => {
+      const [f_type, f_size] = field.f_type.toString().split("_");
+
       const commonProps = {
         id: fieldKey,
         name: fieldKey,
         defaultValue: values[fieldKey]
           ? values[fieldKey]?.toString() // Use the value from 'values' if present
-          : field.f_type === "string_short"
+          : f_type === "string"
             ? Number(field.f_default)
             : field.f_default?.toString(), // Otherwise, use the default value from the schema
         placeholder: field.f_placeholder?.toString(),
@@ -114,37 +116,50 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
       const maybeSmartlinks = field.smartlinks;
 
       return (
-        <div
+        <DataList.Item
           key={fieldKey}
           style={{
             width: "100%",
+            marginBottom: "1rem",
           }}
         >
-          <Flex gap="3" align="baseline" width="100%">
-            <CustomLabel htmlFor={fieldKey} label={toPascalCase(fieldKey)} />
-            <Flex direction="column" gap="1" align="start" width="100%">
+          <DataList.Label>
+            <CustomLabel
+              htmlFor={fieldKey}
+              label={toPascalCase(fieldKey)}
+              marginTop="7px"
+            />
+          </DataList.Label>
+          <DataList.Value
+            style={{
+              width: f_size === "short" ? "50%" : "100%",
+            }}
+          >
+            <Flex direction="column" gap="2" align="start" width="100%">
               <CustomInputField
                 {...commonProps}
-                type={field.f_type === "int" ? "number" : "text"}
+                type={f_type === "int" ? "number" : "text"}
+                size={f_size}
               />
-              <CustomDescriptionField>{field.f_desc}</CustomDescriptionField>
+              {field.f_desc && (
+                <CustomDescriptionField>{field.f_desc}</CustomDescriptionField>
+              )}
+              {maybeSmartlinks && (
+                <Flex align="center">
+                  {maybeSmartlinks.map((smartlink, index) => (
+                    <SmartLink
+                      isSmall
+                      key={`smartlink-${fieldKey}-${index}`}
+                      smartlink={smartlink}
+                      integrationName={integration.data?.integr_name ?? ""}
+                      integrationPath={integration.data?.project_path ?? ""}
+                    />
+                  ))}
+                </Flex>
+              )}
             </Flex>
-          </Flex>
-
-          {maybeSmartlinks && (
-            <Flex align="center" justify="end">
-              {maybeSmartlinks.map((smartlink, index) => (
-                <SmartLink
-                  isSmall
-                  key={`smartlink-${fieldKey}-${index}`}
-                  smartlink={smartlink}
-                  integrationName={integration.data?.integr_name ?? ""}
-                  integrationPath={integration.data?.project_path ?? ""}
-                />
-              ))}
-            </Flex>
-          )}
-        </div>
+          </DataList.Value>
+        </DataList.Item>
       );
     },
     [integration.data?.integr_name, integration.data?.project_path],
@@ -167,59 +182,66 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
       <form
         onSubmit={handleSubmit}
         onChange={handleChange}
-        className={styles.IntegrationForm}
         id={`form-${integration.data.integr_name}`}
       >
-        {integration.data.integr_values.available &&
-          Object.entries(integration.data.integr_values.available).map(
-            ([key, _]: [string, boolean]) => (
-              <IntegrationAvailability
-                key={key}
-                fieldName={key}
-                value={availabilityValues[key]}
-                onChange={handleAvailabilityChange}
-              />
-            ),
-          )}
-        {Object.keys(integration.data.integr_schema.fields).map((fieldKey) => {
-          if (integration.data) {
-            return renderField({
-              fieldKey: fieldKey,
-              values: integration.data.integr_values,
-              field: integration.data.integr_schema.fields[fieldKey],
-            });
-          }
-        })}
-        <Flex justify="between" width="100%">
-          <Flex gap="4">
-            <Button
-              color="green"
-              variant="solid"
-              type="submit"
-              size="2"
-              title={isDisabled ? "Cannot apply, no changes made" : "Apply"}
-              className={classNames(
-                { [styles.disabledButton]: isApplying || isDisabled },
-                styles.button,
-              )}
-              disabled={isDisabled}
-            >
-              {isApplying ? "Applying..." : "Apply"}
-            </Button>
-          </Flex>
-          <Flex align="center" gap="4">
-            {integration.data.integr_schema.smartlinks.map(
-              (smartlink, index) => {
-                return (
-                  <SmartLink
-                    key={`smartlink-${index}`}
-                    smartlink={smartlink}
-                    integrationName={integration.data?.integr_name ?? ""}
-                    integrationPath={integration.data?.project_path ?? ""}
+        <Flex direction="column" gap="2">
+          <DataList.Root mb="5" size="1">
+            {integration.data.integr_values.available &&
+              Object.entries(integration.data.integr_values.available).map(
+                ([key, _]: [string, boolean]) => (
+                  <IntegrationAvailability
+                    key={key}
+                    fieldName={key}
+                    value={availabilityValues[key]}
+                    onChange={handleAvailabilityChange}
                   />
-                );
+                ),
+              )}
+          </DataList.Root>
+          <DataList.Root size="1">
+            {Object.keys(integration.data.integr_schema.fields).map(
+              (fieldKey) => {
+                if (integration.data) {
+                  return renderField({
+                    fieldKey: fieldKey,
+                    values: integration.data.integr_values,
+                    field: integration.data.integr_schema.fields[fieldKey],
+                  });
+                }
               },
             )}
+          </DataList.Root>
+          <Flex justify="between" width="100%">
+            <Flex gap="4">
+              <Button
+                color="green"
+                variant="solid"
+                type="submit"
+                size="2"
+                title={isDisabled ? "Cannot apply, no changes made" : "Apply"}
+                className={classNames(
+                  { [styles.disabledButton]: isApplying || isDisabled },
+                  styles.button,
+                )}
+                disabled={isDisabled}
+              >
+                {isApplying ? "Applying..." : "Apply"}
+              </Button>
+            </Flex>
+            <Flex align="center" gap="4">
+              {integration.data.integr_schema.smartlinks.map(
+                (smartlink, index) => {
+                  return (
+                    <SmartLink
+                      key={`smartlink-${index}`}
+                      smartlink={smartlink}
+                      integrationName={integration.data?.integr_name ?? ""}
+                      integrationPath={integration.data?.project_path ?? ""}
+                    />
+                  );
+                },
+              )}
+            </Flex>
           </Flex>
         </Flex>
       </form>
@@ -332,22 +354,28 @@ const IntegrationAvailability: FC<IntegrationAvailabilityProps> = ({
   };
 
   return (
-    <div
+    <DataList.Item
       style={{
-        width: "100%",
+        marginBottom: "0.75rem",
       }}
     >
       <Flex width="100%" gap="3">
-        <CustomLabel label={toPascalCase(fieldName)} />
-        <Flex width="100%" align="start" direction="column" gap="3">
-          <Switch
-            size="2"
-            checked={value}
-            onCheckedChange={handleSwitchChange}
-          />
-          <CustomDescriptionField>{availabilityMessage}</CustomDescriptionField>
-        </Flex>
+        <DataList.Label>
+          <CustomLabel label={toPascalCase(fieldName)} />
+        </DataList.Label>
+        <DataList.Value>
+          <Flex width="100%" align="center" gap="3">
+            <Switch
+              size="2"
+              checked={value}
+              onCheckedChange={handleSwitchChange}
+            />
+            <CustomDescriptionField mb="0">
+              {availabilityMessage}
+            </CustomDescriptionField>
+          </Flex>
+        </DataList.Value>
       </Flex>
-    </div>
+    </DataList.Item>
   );
 };
