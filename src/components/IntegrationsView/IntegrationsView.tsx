@@ -145,61 +145,64 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   };
 
   const handleFormReturn = useCallback(() => {
-    currentIntegration && setCurrentIntegration(null);
+    if (currentIntegration) {
+      setCurrentIntegration(null);
+      setIsDisabledIntegrationForm(true);
+    }
     information && dispatch(clearInformation());
     globalError && dispatch(clearError());
     dispatch(integrationsApi.util.resetApiState());
     dispatch(dockerApi.util.resetApiState());
   }, [dispatch, globalError, information, currentIntegration]);
 
-  const handleFormCancel = useCallback(() => {
-    if (!currentIntegration) return;
-    if (!currentIntegrationSchema) return;
+  // const handleFormCancel = useCallback(() => {
+  //   if (!currentIntegration) return;
+  //   if (!currentIntegrationSchema) return;
 
-    const form = document.getElementById(
-      `form-${currentIntegration.integr_name}`,
-    ) as HTMLFormElement | undefined;
-    if (!form) return;
+  //   const form = document.getElementById(
+  //     `form-${currentIntegration.integr_name}`,
+  //   ) as HTMLFormElement | undefined;
+  //   if (!form) return;
 
-    const formElements = form.elements;
+  //   const formElements = form.elements;
 
-    Object.keys(currentIntegrationSchema.fields).forEach((key) => {
-      const field = currentIntegrationSchema.fields[key];
-      const input = formElements.namedItem(key) as HTMLInputElement | null;
-      if (input) {
-        let value = field.f_default;
+  //   Object.keys(currentIntegrationSchema.fields).forEach((key) => {
+  //     const field = currentIntegrationSchema.fields[key];
+  //     const input = formElements.namedItem(key) as HTMLInputElement | null;
+  //     if (input) {
+  //       let value = field.f_default;
 
-        if (currentIntegrationValues && key in currentIntegrationValues) {
-          const currentValue = currentIntegrationValues[key];
-          if (
-            typeof currentValue === "object" &&
-            !Array.isArray(currentValue) &&
-            currentValue
-          ) {
-            // Handle Record<string, boolean>
-            value = Object.entries(currentValue)
-              .filter(([, isChecked]) => isChecked)
-              .map(([subKey]) => subKey)
-              .join(", ");
-          } else {
-            // Handle IntegrationPrimitive
-            value = currentValue as string;
-          }
-        }
+  //       if (currentIntegrationValues && key in currentIntegrationValues) {
+  //         const currentValue = currentIntegrationValues[key];
+  //         if (
+  //           typeof currentValue === "object" &&
+  //           !Array.isArray(currentValue) &&
+  //           currentValue
+  //         ) {
+  //           // Handle Record<string, boolean>
+  //           value = Object.entries(currentValue)
+  //             .filter(([, isChecked]) => isChecked)
+  //             .map(([subKey]) => subKey)
+  //             .join(", ");
+  //         } else {
+  //           // Handle IntegrationPrimitive
+  //           value = currentValue as string;
+  //         }
+  //       }
 
-        input.value = value?.toString() ?? "";
-      }
-    });
+  //       input.value = value?.toString() ?? "";
+  //     }
+  //   });
 
-    if (
-      currentIntegrationValues?.available &&
-      typeof currentIntegrationValues.available === "object"
-    ) {
-      setAvailabilityValues(currentIntegrationValues.available);
-    }
+  //   if (
+  //     currentIntegrationValues?.available &&
+  //     typeof currentIntegrationValues.available === "object"
+  //   ) {
+  //     setAvailabilityValues(currentIntegrationValues.available);
+  //   }
 
-    setIsDisabledIntegrationForm(true);
-  }, [currentIntegrationSchema, currentIntegration, currentIntegrationValues]);
+  //   setIsDisabledIntegrationForm(true);
+  // }, [currentIntegrationSchema, currentIntegration, currentIntegrationValues]);
 
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -295,10 +298,6 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             break;
           case "string":
             acc[key] = rawFormValues[key] as string;
-            // TODO: port should be a string on the LSP's side
-            if (key === "port") {
-              acc[key] = parseInt(rawFormValues[key] as string, 10);
-            }
             break;
           default:
             acc[key] = rawFormValues[key] as string;
@@ -327,9 +326,9 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         }
         return false;
       });
-
       const maybeDisabled =
         eachFormValueIsNotChanged && eachAvailabilityOptionIsNotChanged;
+      console.log(`[DEBUG]: maybeDisabled: `, maybeDisabled);
 
       setIsDisabledIntegrationForm(maybeDisabled);
     },
@@ -407,7 +406,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
               integrationPath={currentIntegration.integr_config_path}
               isApplying={isApplyingIntegrationForm}
               isDisabled={isDisabledIntegrationForm}
-              onCancel={handleFormCancel}
+              // onCancel={handleFormCancel}
               onSchema={handleSetCurrentIntegrationSchema}
               onValues={handleSetCurrentIntegrationValues}
               handleChange={handleIntegrationFormChange}

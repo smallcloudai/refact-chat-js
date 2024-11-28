@@ -1,6 +1,6 @@
 .button {
   cursor: pointer;
-  padding: 0 1.1rem;
+  padding: 0 0.75rem;
   transition: all 0.3s ease-in-out;
 }
 

@@ -43,7 +43,6 @@ type IntegrationFormProps = {
   isApplying: boolean;
   isDisabled: boolean;
   availabilityValues: Record<string, boolean>;
-  onCancel: () => void;
   handleSubmit: (event: FormEvent<HTMLFormElement>) => void;
   handleChange: (event: FormEvent<HTMLFormElement>) => void;
   onSchema: (schema: Integration["integr_schema"]) => void;
@@ -58,7 +57,6 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   isApplying,
   isDisabled,
   availabilityValues,
-  onCancel,
   handleSubmit,
   handleChange,
   onSchema,
@@ -205,7 +203,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
             color="green"
             variant="solid"
             type="submit"
-            size="3"
+            size="2"
             title={isDisabled ? "Cannot apply, no changes made" : "Apply"}
             className={classNames(
               { [styles.disabledButton]: isApplying || isDisabled },
@@ -213,21 +211,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
             )}
             disabled={isDisabled}
           >
-            {isApplying ? "Applying changes..." : "Apply changes"}
-          </Button>
-          <Button
-            color="ruby"
-            variant="solid"
-            type="button"
-            size="3"
-            onClick={onCancel}
-            className={classNames(
-              { [styles.disabledButton]: isApplying || isDisabled },
-              styles.button,
-            )}
-            disabled={isDisabled}
-          >
-            Cancel changes
+            {isApplying ? "Applying..." : "Apply"}
           </Button>
         </Flex>
       </form>

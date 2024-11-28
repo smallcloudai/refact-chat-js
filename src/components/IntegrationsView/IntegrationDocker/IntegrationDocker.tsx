@@ -2,8 +2,8 @@
 import type { FC } from "react";
 import { useEffect, useState } from "react";
 import {
-  useGetDockerContainersByImageQuery,
-  // useGetDockerContainersQuery,
+  // useGetDockerContainersByImageQuery,
+  useGetDockerContainersQuery,
 } from "../../../hooks/useGetDockerContainersQuery";
 import { dockerApi } from "../../../services/refact";
 import type {
@@ -17,46 +17,21 @@ import { useExecuteActionForDockerContainerMutation } from "../../../hooks/useEx
 import { useAppDispatch } from "../../../hooks";
 import { setInformation } from "../../../features/Errors/informationSlice";
 import { setError } from "../../../features/Errors/errorsSlice";
-import { Button, Card, Flex, Heading } from "@radix-ui/themes";
+import { Flex } from "@radix-ui/themes";
+import { DockerContainerCard } from "./DockerContainerCard";
 
 type IntegrationDockerProps = {
   dockerData: SchemaDocker;
 };
 
-const DOCKER_ACTIONS: (Omit<DockerActionPayload, "container"> & {
-  label: string;
-  loadingLabel: string;
-})[] = [
-  {
-    label: "Start",
-    loadingLabel: "Starting...",
-    action: "start",
-  },
-  {
-    label: "Stop",
-    loadingLabel: "Stopping...",
-    action: "stop",
-  },
-  {
-    label: "Kill",
-    loadingLabel: "Killing...",
-    action: "kill",
-  },
-  {
-    label: "Remove",
-    loadingLabel: "Removing...",
-    action: "remove",
-  },
-];
-
 export const IntegrationDocker: FC<IntegrationDockerProps> = ({
   dockerData,
 }) => {
   const dispatch = useAppDispatch();
-  const { dockerContainers } = useGetDockerContainersByImageQuery(
-    dockerData.filter_image,
-  );
-  // const { dockerContainers } = useGetDockerContainersQuery();
+  // const { dockerContainers } = useGetDockerContainersByImageQuery(
+  //   dockerData.filter_image,
+  // );
+  const { dockerContainers } = useGetDockerContainersQuery();
   const [dockerContainerActionTrigger] =
     useExecuteActionForDockerContainerMutation();
   const [isActionInProgress, setIsActionInProgress] = useState(false);
@@ -142,56 +117,16 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
     }
   };
 
-  // needed to handle disabled state of buttons accordingly to the status of docker container
-  const isDockerActionButtonDisabled = (
-    el: DockerContainer,
-    action: string,
-  ) => {
-    return (
-      (isActionInProgress && currentContainerAction?.container === el.name) ||
-      (el.status === "running" && action === "start") ||
-      (el.status === "exited" && (action === "stop" || action === "kill"))
-    );
-  };
-
   return (
     <Flex direction="column" gap="4" width="100%">
       {dockerContainersList.map((el) => (
-        <Card key={el.id}>
-          <Flex direction="column" gap="4">
-            <Heading as="h5">Container {el.name}</Heading>
-            {/* actions for containers */}
-            <Flex gap="1">
-              {DOCKER_ACTIONS.map((dockerActionButton) => {
-                const action = dockerActionButton.action;
-                const label =
-                  currentContainerAction &&
-                  currentContainerAction.action === dockerActionButton.action &&
-                  currentContainerAction.container === el.name
-                    ? dockerActionButton.loadingLabel
-                    : dockerActionButton.label;
-
-                return (
-                  <Button
-                    key={dockerActionButton.label}
-                    type="button"
-                    variant="outline"
-                    color="green"
-                    disabled={isDockerActionButtonDisabled(el, action)}
-                    onClick={() =>
-                      void handleDockerContainerActionClick({
-                        container: el.name,
-                        action: dockerActionButton.action,
-                      })
-                    }
-                  >
-                    {label}
-                  </Button>
-                );
-              })}
-            </Flex>
-          </Flex>
-        </Card>
+        <DockerContainerCard
+          key={el.id}
+          container={el}
+          currentContainerAction={currentContainerAction}
+          isActionInProgress={isActionInProgress}
+          handleDockerContainerActionClick={handleDockerContainerActionClick}
+        />
       ))}
     </Flex>
   );
