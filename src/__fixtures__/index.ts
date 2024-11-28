@@ -5,3 +5,4 @@ export * from "./context_files";
 export * from "./prompts";
 export * from "./integrations";
 export * from "./survey_questions";
+export * from "./integration";

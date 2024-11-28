@@ -27,7 +27,7 @@ import { push } from "../../../features/Pages/pagesSlice";
 import { clearInformation } from "../../../features/Errors/informationSlice";
 import { formatMessagesForChat } from "../../../features/Chat/Thread/utils";
 
-type IntegrationFormProps = {
+export type IntegrationFormProps = {
   integrationPath: string;
   isApplying: boolean;
   isDisabled: boolean;
@@ -55,6 +55,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   setAvailabilityValues,
 }) => {
   const { integration } = useGetIntegrationDataByPathQuery(integrationPath);
+
   // const [availabilityValues, setAvailabilityValues] = useState<
   //   Record<string, boolean>
   // >({});

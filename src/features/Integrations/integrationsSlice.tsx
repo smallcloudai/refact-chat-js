@@ -41,7 +41,8 @@ export const integrationsSlice = createSlice({
     },
   },
   selectors: {
-    maybeSelectIntegrationFromCache: (state, integration: Integration) => {
+    maybeSelectIntegrationFromCache: (state, integration?: Integration) => {
+      if (!integration) return null;
       if (!(integration.integr_config_path in state.cachedForms)) return null;
       return state.cachedForms[integration.integr_config_path];
     },
