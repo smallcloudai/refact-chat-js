@@ -10,13 +10,13 @@ import type {
   Integration,
   IntegrationField,
   IntegrationPrimitive,
-  SmartLink,
+  SmartLink as SmartLinkType,
   // UserMessage,
 } from "../../../services/refact";
 
 import styles from "./IntegrationForm.module.css";
 import { Spinner } from "../../Spinner";
-import { Button, Flex, Heading, Switch } from "@radix-ui/themes";
+import { Button, Flex, Switch } from "@radix-ui/themes";
 import {
   CustomDescriptionField,
   CustomInputField,
@@ -42,7 +42,7 @@ type IntegrationFormProps = {
   isApplying: boolean;
   isDisabled: boolean;
   availabilityValues: Record<string, boolean>;
-  onCancel: () => void;
+  // onCancel: () => void;
   handleSubmit: (event: FormEvent<HTMLFormElement>) => void;
   handleChange: (event: FormEvent<HTMLFormElement>) => void;
   onSchema: (schema: Integration["integr_schema"]) => void;
@@ -57,7 +57,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   isApplying,
   isDisabled,
   availabilityValues,
-  onCancel,
+  // onCancel,
   handleSubmit,
   handleChange,
   onSchema,
@@ -198,53 +198,41 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
             });
           }
         })}
-        {/* TODO: think about enabled/disabled value */}
-        <Flex gap="4">
-          <Button
-            color="green"
-            variant="solid"
-            type="submit"
-            size="3"
-            title={isDisabled ? "Cannot apply, no changes made" : "Apply"}
-            className={classNames(
-              { [styles.disabledButton]: isApplying || isDisabled },
-              styles.button,
+        <Flex justify="between" width="100%">
+          <Flex gap="4">
+            <Button
+              color="green"
+              variant="solid"
+              type="submit"
+              size="2"
+              title={isDisabled ? "Cannot apply, no changes made" : "Apply"}
+              className={classNames(
+                { [styles.disabledButton]: isApplying || isDisabled },
+                styles.button,
+              )}
+              disabled={isDisabled}
+            >
+              {isApplying ? "Applying..." : "Apply"}
+            </Button>
+          </Flex>
+          <Flex align="center" gap="4">
+            {integration.data.integr_schema.smartlinks.map(
+              (smartlink, index) => {
+                return (
+                  <SmartLink key={`smartlink-${index}`} smartlink={smartlink} />
+                );
+              },
             )}
-            disabled={isDisabled}
-          >
-            {isApplying ? "Applying changes..." : "Apply changes"}
-          </Button>
-          <Button
-            color="ruby"
-            variant="solid"
-            type="button"
-            size="3"
-            onClick={onCancel}
-            className={classNames(
-              { [styles.disabledButton]: isApplying || isDisabled },
-              styles.button,
-            )}
-            disabled={isDisabled}
-          >
-            Cancel changes
-          </Button>
+          </Flex>
         </Flex>
       </form>
       {/** smart links */}
-      <Flex my="6" direction="column" align="start" gap="3">
-        <Heading as="h3" align="center" className={styles.SectionTitle}>
-          Smart Links
-        </Heading>
-        {integration.data.integr_schema.smartlinks.map((smartlink, index) => {
-          return <SmartLink key={`smartlink-${index}`} smartlink={smartlink} />;
-        })}
-      </Flex>
     </Flex>
   );
 };
 
 const SmartLink: FC<{
-  smartlink: SmartLink;
+  smartlink: SmartLinkType;
   isSmall?: boolean;
 }> = ({ smartlink, isSmall = false }) => {
   // TODO: send chat on click and navigate away
@@ -315,7 +303,7 @@ const SmartLink: FC<{
       size={isSmall ? "1" : "2"}
       onClick={handleClick}
       title={title ? title.join("\n") : ""}
-      color={isSmall ? "gray" : "mint"}
+      color="gray"
       type="button"
       variant="outline"
     >
