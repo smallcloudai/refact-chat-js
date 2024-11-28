@@ -7,7 +7,8 @@ import {
   Text,
 } from "@radix-ui/themes";
 import { Markdown } from "../Markdown";
-
+import classNames from "classnames";
+import styles from "./IntegrationsView.module.css";
 // Custom Input Field
 export const CustomInputField = ({
   value,
@@ -16,6 +17,7 @@ export const CustomInputField = ({
   type,
   id,
   name,
+  changed,
 }: {
   id?: string;
   type?:
@@ -36,6 +38,7 @@ export const CustomInputField = ({
   name?: string;
   defaultValue?: string | number;
   placeholder?: string;
+  changed?: boolean;
 }) => {
   return (
     <Box width="100%">
@@ -47,6 +50,7 @@ export const CustomInputField = ({
         value={value}
         defaultValue={defaultValue}
         placeholder={placeholder}
+        className={classNames(changed && styles.input_updated)}
       />
     </Box>
   );

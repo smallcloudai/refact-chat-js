@@ -26,7 +26,7 @@ const Template: React.FC<IntegrationFormProps> = (props) => {
     <Provider store={store}>
       <Theme>
         <AbortControllerProvider>
-          <Container>
+          <Container p="8">
             <IntegrationForm {...props} />
           </Container>
         </AbortControllerProvider>

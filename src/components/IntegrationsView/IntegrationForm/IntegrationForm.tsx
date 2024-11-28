@@ -54,7 +54,8 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   onValues,
   setAvailabilityValues,
 }) => {
-  const { integration } = useGetIntegrationDataByPathQuery(integrationPath);
+  const { integration, cachedValues } =
+    useGetIntegrationDataByPathQuery(integrationPath);
 
   // const [availabilityValues, setAvailabilityValues] = useState<
   //   Record<string, boolean>
@@ -96,10 +97,12 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
       field,
       values,
       fieldKey,
+      changed,
     }: {
       fieldKey: string;
       values: Integration["integr_values"];
       field: IntegrationField<NonNullable<IntegrationPrimitive>>;
+      changed: boolean;
     }) => {
       const commonProps = {
         id: fieldKey,
@@ -110,6 +113,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
             ? Number(field.f_default)
             : field.f_default?.toString(), // Otherwise, use the default value from the schema
         placeholder: field.f_placeholder?.toString(),
+        changed,
       };
 
       const maybeSmartlinks = field.smartlinks;
@@ -184,10 +188,14 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
           )}
         {Object.keys(integration.data.integr_schema.fields).map((fieldKey) => {
           if (integration.data) {
+            const cachedValue = cachedValues && cachedValues[fieldKey];
+            const currentValue = integration.data.integr_values[fieldKey];
+            // TBD: does this need all the fields ?
             return renderField({
               fieldKey: fieldKey,
               values: integration.data.integr_values,
               field: integration.data.integr_schema.fields[fieldKey],
+              changed: cachedValue !== currentValue,
             });
           }
         })}

@@ -27,7 +27,7 @@ export const useGetIntegrationDataByPathQuery = (integrationPath: string) => {
     }
   }, [dispatch, integration.data]);
 
-  const cacheValues = useAppSelector((state) =>
+  const cachedValues = useAppSelector((state) =>
     maybeSelectIntegrationFromCache(state, integration.data),
   );
 
@@ -35,6 +35,6 @@ export const useGetIntegrationDataByPathQuery = (integrationPath: string) => {
 
   return {
     integration,
-    cacheValues,
+    cachedValues,
   };
 };
