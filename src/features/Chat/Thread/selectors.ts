@@ -44,3 +44,8 @@ export const selectManyToolResultsByIds = (ids: string[]) =>
 
 export const getSelectedToolUse = (state: RootState) =>
   state.chat.thread.tool_use;
+
+export const selectIntegration = createSelector(
+  selectThread,
+  (thread) => thread.integration,
+);

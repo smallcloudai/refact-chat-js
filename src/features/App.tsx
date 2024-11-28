@@ -80,7 +80,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
       }
     }
     if (!config.apiKey && !config.addressURL && isLoggedIn) {
-      dispatch(popBackTo("initial setup"));
+      dispatch(popBackTo({ name: "initial setup" }));
     }
   }, [
     config.apiKey,

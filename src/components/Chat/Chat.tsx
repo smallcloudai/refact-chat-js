@@ -57,8 +57,6 @@ export const Chat: React.FC<ChatProps> = ({
   const dispatch = useAppDispatch();
   const messages = useAppSelector(selectMessages);
 
-  useAutoSend();
-
   const promptsRequest = useGetPromptsQuery();
   const selectedSystemPrompt = useAppSelector(getSelectedSystemPrompt);
   const onSetSelectedSystemPrompt = (prompt: SystemPrompts) =>
@@ -104,6 +102,8 @@ export const Chat: React.FC<ChatProps> = ({
       focusTextarea();
     }
   }, [isWaiting, isStreaming, focusTextarea]);
+
+  useAutoSend();
 
   return (
     <DropzoneProvider asChild>

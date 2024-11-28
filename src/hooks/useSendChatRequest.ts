@@ -10,6 +10,7 @@ import {
   selectMessages,
   selectPreventSend,
   selectSendImmediately,
+  selectThread,
   selectThreadToolUse,
 } from "../features/Chat/Thread/selectors";
 import {
@@ -27,6 +28,7 @@ import {
   backUpMessages,
   chatAskQuestionThunk,
   chatAskedQuestion,
+  setSendImmediately,
 } from "../features/Chat/Thread/actions";
 
 import { selectAllImages } from "../features/AttachedImages";
@@ -41,18 +43,13 @@ let recallCounter = 0;
 
 export const useSendChatRequest = () => {
   const dispatch = useAppDispatch();
-  // const hasError = useAppSelector(selectChatError);
   const abortControllers = useAbortControllers();
 
   const [triggerGetTools] = useGetToolsLazyQuery();
   const [triggerCheckForConfirmation] = useCheckForConfirmationMutation();
 
   const chatId = useAppSelector(selectChatId);
-  // const streaming = useAppSelector(selectIsStreaming);
-  // const chatError = useAppSelector(selectChatError);
 
-  // const errored: boolean = !!hasError || !!chatError;
-  // const preventSend = useAppSelector(selectPreventSend);
   const isWaiting = useAppSelector(selectIsWaiting);
 
   const currentMessages = useAppSelector(selectMessages);
@@ -174,40 +171,10 @@ export const useSendChatRequest = () => {
 
   useEffect(() => {
     if (sendImmediately) {
+      dispatch(setSendImmediately(false));
       void sendMessages(messagesWithSystemPrompt);
     }
-  }, [sendImmediately, sendMessages, messagesWithSystemPrompt]);
-
-  // TODO: Automatically calls tool calls. This means that this hook can only be used once :/
-  // TODO: Think of better way to manage useEffect calls, not with outer counter
-  // useEffect(() => {
-  //   if (!streaming && currentMessages.length > 0 && !errored && !preventSend) {
-  //     const lastMessage = currentMessages.slice(-1)[0];
-  //     if (
-  //       isAssistantMessage(lastMessage) &&
-  //       lastMessage.tool_calls &&
-  //       lastMessage.tool_calls.length > 0
-  //     ) {
-  //       if (!areToolsConfirmed) {
-  //         abort();
-  //         if (recallCounter < 1) {
-  //           recallCounter++;
-  //           return;
-  //         }
-  //       }
-  //       void sendMessages(currentMessages);
-  //       recallCounter = 0;
-  //     }
-  //   }
-  // }, [
-  //   errored,
-  //   currentMessages,
-  //   preventSend,
-  //   sendMessages,
-  //   abort,
-  //   streaming,
-  //   areToolsConfirmed,
-  // ]);
+  }, [dispatch, messagesWithSystemPrompt, sendImmediately, sendMessages]);
 
   const retry = useCallback(
     (messages: ChatMessages) => {
@@ -250,18 +217,28 @@ export function useAutoSend() {
   const currentMessages = useAppSelector(selectMessages);
   const errored = useAppSelector(selectChatError);
   const preventSend = useAppSelector(selectPreventSend);
+  const isWaiting = useAppSelector(selectIsWaiting);
   const areToolsConfirmed = useAppSelector(getToolsConfirmationStatus);
   const { sendMessages, abort } = useSendChatRequest();
+  // TODO: make a selector for this, or show tool formation
+  const thread = useAppSelector(selectThread);
+  const isIntegration = thread.integration ?? false;
 
   useEffect(() => {
-    if (!streaming && currentMessages.length > 0 && !errored && !preventSend) {
+    if (
+      !isWaiting &&
+      !streaming &&
+      currentMessages.length > 0 &&
+      !errored &&
+      !preventSend
+    ) {
       const lastMessage = currentMessages.slice(-1)[0];
       if (
         isAssistantMessage(lastMessage) &&
         lastMessage.tool_calls &&
         lastMessage.tool_calls.length > 0
       ) {
-        if (!areToolsConfirmed) {
+        if (!isIntegration && !areToolsConfirmed) {
           abort();
           if (recallCounter < 1) {
             recallCounter++;
@@ -280,5 +257,7 @@ export function useAutoSend() {
     abort,
     streaming,
     areToolsConfirmed,
+    isWaiting,
+    isIntegration,
   ]);
 }
