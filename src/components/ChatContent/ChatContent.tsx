@@ -169,9 +169,10 @@ export const ChatContent: React.FC<ChatContentProps> = ({
   ]);
 
   const handleSaveAndReturn = useCallback(async () => {
-    await applyAll(messages);
-    // TODO: handle errors.
-    handleReturnToConfigurationClick();
+    const result = await applyAll(messages);
+    if (!result.error) {
+      handleReturnToConfigurationClick();
+    }
   }, [applyAll, handleReturnToConfigurationClick, messages]);
 
   return (

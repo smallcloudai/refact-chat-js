@@ -126,6 +126,13 @@ startListening({
     ) {
       listenerApi.dispatch(setError(action.payload));
     }
+
+    if (diffApi.endpoints.applyAllPatchesInMessages.matchRejected(action)) {
+      const errorMessage = isDetailMessage(action.payload?.data)
+        ? action.payload.data.detail
+        : `Failed to apply diffs: ${action.payload?.status}`;
+      listenerApi.dispatch(setError(errorMessage));
+    }
   },
 });
 
