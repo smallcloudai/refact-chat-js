@@ -115,7 +115,7 @@ export const integrationsApi = createApi({
 });
 
 export type IntegrationPrimitive = string | number | boolean | null;
-function isPrimitive(json: unknown): json is IntegrationPrimitive {
+export function isPrimitive(json: unknown): json is IntegrationPrimitive {
   return (
     typeof json === "string" ||
     typeof json === "number" ||
@@ -413,7 +413,7 @@ function isSmartLink(json: unknown): json is SmartLink {
   return true;
 }
 
-type IntegrationWithIconRecord = {
+export type IntegrationWithIconRecord = {
   project_path: string;
   integr_name: string;
   integr_config_path: string;

@@ -9,6 +9,7 @@ import {
   newChatAction,
   chatAskQuestionThunk,
   restoreChat,
+  newIntegrationChat,
 } from "../features/Chat/Thread";
 import { statisticsApi } from "../services/refact/statistics";
 import { integrationsApi } from "../services/refact/integrations";
@@ -150,6 +151,13 @@ startListening({
     ) {
       listenerApi.dispatch(setError(action.payload));
     }
+
+    if (diffApi.endpoints.applyAllPatchesInMessages.matchRejected(action)) {
+      const errorMessage = isDetailMessage(action.payload?.data)
+        ? action.payload.data.detail
+        : `Failed to apply diffs: ${action.payload?.status}`;
+      listenerApi.dispatch(setError(errorMessage));
+    }
   },
 });
 
@@ -194,6 +202,29 @@ startListening({
       nextTip({
         host,
         completeManual,
+      }),
+    );
+  },
+});
+
+startListening({
+  actionCreator: newIntegrationChat,
+  effect: async (_action, listenerApi) => {
+    const state = listenerApi.getState();
+
+    // TBD: should the endpoint need tools?
+    const toolsRequest = listenerApi.dispatch(
+      toolsApi.endpoints.getTools.initiate(undefined),
+    );
+    toolsRequest.unsubscribe();
+    const toolResult = await toolsRequest.unwrap();
+
+    // TODO: create a dedicated thunk for this.
+    await listenerApi.dispatch(
+      chatAskQuestionThunk({
+        messages: state.chat.thread.messages,
+        chatId: state.chat.thread.id,
+        tools: toolResult,
       }),
     );
   },

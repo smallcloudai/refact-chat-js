@@ -5,13 +5,10 @@ import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrati
 
 import type { FC, FormEvent, Dispatch } from "react";
 import type {
-  // ChatMessage,
-  ChatMessages,
   Integration,
   IntegrationField,
   IntegrationPrimitive,
-  SmartLink,
-  // UserMessage,
+  SmartLink as SmartLinkType,
 } from "../../../services/refact";
 
 import styles from "./IntegrationForm.module.css";
@@ -23,20 +20,13 @@ import {
   CustomLabel,
 } from "../CustomFieldsAndWidgets";
 import { toPascalCase } from "../../../utils/toPascalCase";
-import {
-  useAppDispatch,
-  useAppSelector,
-  useEventsBusForIDE,
-  useSendChatRequest,
-} from "../../../hooks";
-import {
-  setIsConfigFlag,
-  setToolUse,
-} from "../../../features/Chat/Thread/actions";
+import { newIntegrationChat } from "../../../features/Chat/Thread/actions";
+import { useAppDispatch, useEventsBusForIDE } from "../../../hooks";
+
 import { push } from "../../../features/Pages/pagesSlice";
-import { selectChatId } from "../../../features/Chat";
 import { clearInformation } from "../../../features/Errors/informationSlice";
 import { IntegrationDocker } from "../IntegrationDocker";
+import { formatMessagesForChat } from "../../../features/Chat/Thread/utils";
 
 type IntegrationFormProps = {
   integrationPath: string;
@@ -99,6 +89,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
     console.log(`[DEBUG]: integration.data: `, integration);
   }, [integration, onSchema, onValues]);
 
+  // TODO: could be hoisted to a top level function
   const renderField = useCallback(
     ({
       field,
@@ -147,6 +138,8 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
                   isSmall
                   key={`smartlink-${fieldKey}-${index}`}
                   smartlink={smartlink}
+                  integrationName={integration.data?.integr_name ?? ""}
+                  integrationPath={integration.data?.project_path ?? ""}
                 />
               ))}
             </Flex>
@@ -154,7 +147,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         </div>
       );
     },
-    [],
+    [integration.data?.integr_name, integration.data?.project_path],
   );
 
   if (integration.isLoading) {
@@ -197,33 +190,39 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
             });
           }
         })}
-        {/* TODO: think about enabled/disabled value */}
-        <Flex gap="4">
-          <Button
-            color="green"
-            variant="solid"
-            type="submit"
-            size="2"
-            title={isDisabled ? "Cannot apply, no changes made" : "Apply"}
-            className={classNames(
-              { [styles.disabledButton]: isApplying || isDisabled },
-              styles.button,
+        <Flex justify="between" width="100%">
+          <Flex gap="4">
+            <Button
+              color="green"
+              variant="solid"
+              type="submit"
+              size="2"
+              title={isDisabled ? "Cannot apply, no changes made" : "Apply"}
+              className={classNames(
+                { [styles.disabledButton]: isApplying || isDisabled },
+                styles.button,
+              )}
+              disabled={isDisabled}
+            >
+              {isApplying ? "Applying..." : "Apply"}
+            </Button>
+          </Flex>
+          <Flex align="center" gap="4">
+            {integration.data.integr_schema.smartlinks.map(
+              (smartlink, index) => {
+                return (
+                  <SmartLink
+                    key={`smartlink-${index}`}
+                    smartlink={smartlink}
+                    integrationName={integration.data?.integr_name ?? ""}
+                    integrationPath={integration.data?.project_path ?? ""}
+                  />
+                );
+              },
             )}
-            disabled={isDisabled}
-          >
-            {isApplying ? "Applying..." : "Apply"}
-          </Button>
+          </Flex>
         </Flex>
       </form>
-      {/** smart links */}
-      <Flex my="6" direction="column" align="start" gap="3">
-        <Heading as="h3" align="center" className={styles.SectionTitle}>
-          Smart Links
-        </Heading>
-        {integration.data.integr_schema.smartlinks.map((smartlink, index) => {
-          return <SmartLink key={`smartlink-${index}`} smartlink={smartlink} />;
-        })}
-      </Flex>
       {/* docker */}
       <Flex mt="6" direction="column" align="start" gap="3">
         <Heading as="h3" align="center" className={styles.SectionTitle}>
@@ -236,18 +235,18 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
 };
 
 const SmartLink: FC<{
-  smartlink: SmartLink;
+  smartlink: SmartLinkType;
+  integrationName: string;
+  integrationPath: string;
   isSmall?: boolean;
-}> = ({ smartlink, isSmall = false }) => {
-  // TODO: send chat on click and navigate away
+}> = ({ smartlink, integrationName, integrationPath, isSmall = false }) => {
   const dispatch = useAppDispatch();
-  const chatId = useAppSelector(selectChatId);
 
   const { queryPathThenOpenFile } = useEventsBusForIDE();
 
   const { sl_goto, sl_chat } = smartlink;
 
-  const { sendMessages } = useSendChatRequest();
+  // TODO: tidy this up, maybe hoist it up ?
   const handleClick = React.useCallback(() => {
     if (sl_goto) {
       console.log(`[DEBUG]: sl_goto: `, sl_goto);
@@ -270,31 +269,24 @@ const SmartLink: FC<{
     }
     if (!sl_chat) return;
 
-    const messages = sl_chat.reduce<ChatMessages>((acc, message) => {
-      if (message.role === "user" && typeof message.content === "string") {
-        return [
-          ...acc,
-          {
-            role: message.role,
-            content: message.content,
-          },
-        ];
-      }
+    const messages = formatMessagesForChat(sl_chat);
 
-      // TODO: Other types.
-      return acc;
-    }, []);
-    // dispatch(newChatAction()); id is out of date
-    dispatch(setToolUse("agent"));
-    dispatch(setIsConfigFlag({ id: chatId, isConfig: true }));
     dispatch(clearInformation());
-    // TODO: make another version of send messages so there's no need to converting the messages
-    sendMessages(messages)
-      .then(() => {
-        dispatch(push({ name: "chat" }));
-      })
-      .catch(console.error);
-  }, [chatId, sl_chat, sl_goto, dispatch, sendMessages, queryPathThenOpenFile]);
+    dispatch(
+      newIntegrationChat({
+        integration: { name: integrationName, path: integrationPath },
+        messages,
+      }),
+    );
+    dispatch(push({ name: "chat" }));
+  }, [
+    sl_goto,
+    sl_chat,
+    dispatch,
+    integrationName,
+    integrationPath,
+    queryPathThenOpenFile,
+  ]);
 
   const title = sl_chat?.reduce<string[]>((acc, cur) => {
     if (typeof cur.content === "string")
@@ -307,7 +299,7 @@ const SmartLink: FC<{
       size={isSmall ? "1" : "2"}
       onClick={handleClick}
       title={title ? title.join("\n") : ""}
-      color={isSmall ? "gray" : "mint"}
+      color="gray"
       type="button"
       variant="outline"
     >
@@ -359,11 +351,3 @@ const IntegrationAvailability: FC<IntegrationAvailabilityProps> = ({
     </div>
   );
 };
-
-{
-  /* <input
-  type="hidden"
-  name={`available[${fieldName}]`}
-  value={JSON.stringify({ available: value })}
-/> */
-}

@@ -1,6 +1,8 @@
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useRef, useMemo } from "react";
 import {
   ChatMessages,
+  diffApi,
+  isAssistantMessage,
   isChatContextFileMessage,
   isDiffMessage,
   isToolMessage,
@@ -27,7 +29,6 @@ import { takeWhile } from "../../utils";
 import { GroupedDiffs } from "./DiffContent";
 import { ScrollToBottomButton } from "./ScrollToBottomButton";
 import { currentTipOfTheDay } from "../../features/TipOfTheDay";
-import { setIsConfigFlag } from "../../features/Chat";
 import { popBackTo } from "../../features/Pages/pagesSlice";
 
 const TipOfTheDay: React.FC = () => {
@@ -109,14 +110,31 @@ export type ChatContentProps = {
   onStopStreaming: () => void;
 };
 
-export const ChatContent: React.FC<ChatContentProps> = (props) => {
+export const ChatContent: React.FC<ChatContentProps> = ({
+  onStopStreaming,
+  onRetry,
+}) => {
   const dispatch = useAppDispatch();
   const scrollRef = useRef<HTMLDivElement>(null);
   const messages = useAppSelector(selectMessages);
   const isStreaming = useAppSelector(selectIsStreaming);
   const thread = useAppSelector(selectThread);
-  const isConfig = (thread.isConfig ?? false) as boolean;
+  const isConfig = !!thread.integration;
   const isWaiting = useAppSelector(selectIsWaiting);
+  const [applyAll, applyAllResult] =
+    diffApi.useApplyAllPatchesInMessagesMutation();
+
+  const hasPins = useMemo(
+    () =>
+      messages.some((message) => {
+        if (!isAssistantMessage(message)) return false;
+        if (!message.content) return false;
+        return message.content
+          .split("\n")
+          .some((line) => line.startsWith("📍"));
+      }),
+    [messages],
+  );
 
   const {
     handleScroll,
@@ -128,16 +146,34 @@ export const ChatContent: React.FC<ChatContentProps> = (props) => {
   });
 
   const onRetryWrapper = (index: number, question: UserMessage["content"]) => {
-    props.onRetry(index, question);
+    onRetry(index, question);
   };
 
   const handleReturnToConfigurationClick = useCallback(() => {
     // eslint-disable-next-line no-console
     console.log(`[DEBUG]: going back to configuration page`);
-    props.onStopStreaming();
-    dispatch(setIsConfigFlag({ id: thread.id, isConfig: false }));
-    dispatch(popBackTo("integrations page"));
-  }, [dispatch, thread.id, props]);
+    // TBD: should it be allowed to run in the background?
+    onStopStreaming();
+    dispatch(
+      popBackTo({
+        name: "integrations page",
+        projectPath: thread.integration?.path,
+        integrationName: thread.integration?.name,
+      }),
+    );
+  }, [
+    dispatch,
+    thread.integration?.name,
+    thread.integration?.path,
+    onStopStreaming,
+  ]);
+
+  const handleSaveAndReturn = useCallback(async () => {
+    const result = await applyAll(messages);
+    if (!result.error) {
+      handleReturnToConfigurationClick();
+    }
+  }, [applyAll, handleReturnToConfigurationClick, messages]);
 
   return (
     <ScrollArea
@@ -165,7 +201,7 @@ export const ChatContent: React.FC<ChatContentProps> = (props) => {
             ml="auto"
             color="red"
             title="stop streaming"
-            onClick={props.onStopStreaming}
+            onClick={onStopStreaming}
           >
             Stop
           </Button>
@@ -178,6 +214,20 @@ export const ChatContent: React.FC<ChatContentProps> = (props) => {
             onClick={handleReturnToConfigurationClick}
           >
             Return
+          </Button>
+        )}
+
+        {isConfig && hasPins && (
+          <Button
+            ml="auto"
+            color="green"
+            title="Save and return"
+            disabled={isStreaming || applyAllResult.isLoading}
+            onClick={() => {
+              void handleSaveAndReturn();
+            }}
+          >
+            Save
           </Button>
         )}
       </Flex>

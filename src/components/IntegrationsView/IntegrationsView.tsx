@@ -14,6 +14,7 @@ import {
 import {
   dockerApi,
   Integration,
+  IntegrationWithIconRecord,
   IntegrationWithIconResponse,
   isDetailMessage,
   // isDetailMessage,
@@ -41,8 +42,15 @@ import {
 } from "../../features/Errors/informationSlice";
 import { InformationCallout } from "../Callout/Callout";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { integrationsApi } from "../../services/refact";
+import {
+  isIntegrationSetupPage,
+  pop,
+  popBackTo,
+  selectCurrentPage,
+} from "../../features/Pages/pagesSlice";
 
 type IntegrationViewProps = {
   integrationsMap?: IntegrationWithIconResponse;
@@ -62,10 +70,36 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   const globalError = useAppSelector(getErrorMessage);
   const information = useAppSelector(getInformationMessage);
   const { saveIntegrationMutationTrigger } = useSaveIntegrationData();
+  // const currentThreadIntegration = useAppSelector(selectIntegration);
+  const currentPage = useAppSelector(selectCurrentPage);
+  const currentThreadIntegration = useMemo(() => {
+    if (!currentPage) return null;
+    if (!isIntegrationSetupPage(currentPage)) return null;
+    return currentPage;
+  }, [currentPage]);
 
-  const [currentIntegration, setCurrentIntegration] = useState<
-    IntegrationWithIconResponse["integrations"][number] | null
-  >(null);
+  const maybeIntegration = useMemo(() => {
+    if (!currentThreadIntegration) return null;
+    if (!integrationsMap) return null;
+    return (
+      integrationsMap.integrations.find(
+        (integration) =>
+          integration.project_path === currentThreadIntegration.projectPath &&
+          integration.integr_name === currentThreadIntegration.integrationName,
+      ) ?? null
+    );
+  }, [currentThreadIntegration, integrationsMap]);
+
+  // TBD: what if they went home then came back to integrations?
+
+  const [currentIntegration, setCurrentIntegration] =
+    useState<IntegrationWithIconRecord | null>(maybeIntegration);
+
+  useEffect(() => {
+    if (maybeIntegration) {
+      setCurrentIntegration(maybeIntegration);
+    }
+  }, [maybeIntegration]);
 
   const [currentIntegrationSchema, setCurrentIntegrationSchema] = useState<
     Integration["integr_schema"] | null
@@ -153,6 +187,9 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     globalError && dispatch(clearError());
     dispatch(integrationsApi.util.resetApiState());
     dispatch(dockerApi.util.resetApiState());
+    // TODO: can cause a loop where integration pages goes back to form
+    dispatch(pop());
+    dispatch(popBackTo({ name: "integrations page" }));
   }, [dispatch, globalError, information, currentIntegration]);
 
   // const handleFormCancel = useCallback(() => {
@@ -241,10 +278,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
 
       formValues.available = availabilityValues;
 
-      const response = await saveIntegrationMutationTrigger({
-        filePath: currentIntegration.integr_config_path,
-        values: formValues,
-      });
+      const response = await saveIntegrationMutationTrigger(
+        currentIntegration.integr_config_path,
+        formValues,
+      );
 
       if (response.error) {
         const error = response.error as FetchBaseQueryError;
@@ -402,11 +439,11 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             height="100%"
           >
             <IntegrationForm
+              // TODO: on smart link click or pass the name down
               handleSubmit={(event) => void handleSubmit(event)}
               integrationPath={currentIntegration.integr_config_path}
               isApplying={isApplyingIntegrationForm}
               isDisabled={isDisabledIntegrationForm}
-              // onCancel={handleFormCancel}
               onSchema={handleSetCurrentIntegrationSchema}
               onValues={handleSetCurrentIntegrationValues}
               handleChange={handleIntegrationFormChange}
