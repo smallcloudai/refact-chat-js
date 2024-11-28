@@ -56,6 +56,8 @@ export interface ChatThreadHistoryPage {
 
 export interface IntegrationsSetupPage {
   name: "integrations page";
+  projectPath?: string;
+  integrationName?: string;
 }
 
 export type Page =
@@ -74,6 +76,12 @@ export type Page =
   | ChatThreadHistoryPage
   | IntegrationsSetupPage;
 
+export function isIntegrationSetupPage(
+  page: Page,
+): page is IntegrationsSetupPage {
+  return page.name === "integrations page";
+}
+
 export type PageSliceState = Page[];
 
 const initialState: PageSliceState = [{ name: "initial setup" }];
@@ -88,14 +96,25 @@ export const pagesSlice = createSlice({
     push: (state, action: PayloadAction<Page>) => {
       state.push(action.payload);
     },
-    popBackTo: (state, action: PayloadAction<Page["name"]>) => {
-      const pageIndex = state.findIndex((page) => page.name === action.payload);
-      // TODO: chat id causes the thread page history check
-      if (pageIndex === -1 && action.payload !== "thread history page") {
-        state.push({ name: action.payload });
-      } else {
-        return state.slice(0, pageIndex + 1);
+    popBackTo: (state, action: PayloadAction<Page>) => {
+      const pageIndex = state.findIndex((page) => {
+        if (
+          isIntegrationSetupPage(action.payload) &&
+          isIntegrationSetupPage(page) &&
+          action.payload.projectPath === page.projectPath &&
+          action.payload.integrationName === page.integrationName
+        ) {
+          return true;
+        } else if (isIntegrationSetupPage(action.payload)) {
+          return false;
+        }
+        return page.name === action.payload.name;
+      });
+      if (pageIndex === -1) {
+        state.push(action.payload);
+        return state;
       }
+      return state.slice(0, pageIndex + 1);
     },
 
     change: (state, action: PayloadAction<Page>) => {
@@ -108,8 +127,14 @@ export const pagesSlice = createSlice({
       return state.some((page) => page.name === name);
     },
     selectPages: (state) => state,
+
+    selectCurrentPage: (state) => {
+      if (state.length === 0) return undefined;
+      return state[state.length - 1];
+    },
   },
 });
 
 export const { pop, push, popBackTo, change } = pagesSlice.actions;
-export const { selectPages, isPageInHistory } = pagesSlice.selectors;
+export const { selectPages, isPageInHistory, selectCurrentPage } =
+  pagesSlice.selectors;

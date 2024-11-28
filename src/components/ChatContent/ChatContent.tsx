@@ -110,7 +110,10 @@ export type ChatContentProps = {
   onStopStreaming: () => void;
 };
 
-export const ChatContent: React.FC<ChatContentProps> = (props) => {
+export const ChatContent: React.FC<ChatContentProps> = ({
+  onStopStreaming,
+  onRetry,
+}) => {
   const dispatch = useAppDispatch();
   const scrollRef = useRef<HTMLDivElement>(null);
   const messages = useAppSelector(selectMessages);
@@ -143,23 +146,31 @@ export const ChatContent: React.FC<ChatContentProps> = (props) => {
   });
 
   const onRetryWrapper = (index: number, question: UserMessage["content"]) => {
-    props.onRetry(index, question);
+    onRetry(index, question);
   };
 
   const handleReturnToConfigurationClick = useCallback(() => {
     // eslint-disable-next-line no-console
     console.log(`[DEBUG]: going back to configuration page`);
     // TBD: should it be allowed to run in the background?
-    // props.onStopStreaming();
-    dispatch(popBackTo("integrations page"));
+    onStopStreaming();
+    dispatch(
+      popBackTo({
+        name: "integrations page",
+        projectPath: thread.integration?.path,
+        integrationName: thread.integration?.name,
+      }),
+    );
   }, [
     dispatch,
-    // props
+    thread.integration?.name,
+    thread.integration?.path,
+    onStopStreaming,
   ]);
 
   const handleSaveAndReturn = useCallback(async () => {
     await applyAll(messages);
-    // TODO: handle error.
+    // TODO: handle errors.
     handleReturnToConfigurationClick();
   }, [applyAll, handleReturnToConfigurationClick, messages]);
 
@@ -189,7 +200,7 @@ export const ChatContent: React.FC<ChatContentProps> = (props) => {
             ml="auto"
             color="red"
             title="stop streaming"
-            onClick={props.onStopStreaming}
+            onClick={onStopStreaming}
           >
             Stop
           </Button>
