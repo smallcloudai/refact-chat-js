@@ -267,7 +267,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
       {/* docker */}
       <Flex mt="6" direction="column" align="start" gap="3">
         <Heading as="h3" align="center" className={styles.SectionTitle}>
-          Docker
+          Docker Containers
         </Heading>
         <IntegrationDocker dockerData={integration.data.integr_schema.docker} />
       </Flex>

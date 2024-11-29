@@ -91,12 +91,9 @@ export const DockerContainerCard: FC<DockerContainerCardProps> = ({
     <Card key={container.id}>
       <Flex direction="column" gap="3">
         <Flex direction="column" gap="4">
-          <Flex justify="between">
-            <Heading as="h6" size="4">
-              <Flex align="center" gap="3">
-                Container{" "}
-                <Markdown>{formattedMarkdown(container.name)}</Markdown>
-              </Flex>
+          <Flex justify="between" gap="3">
+            <Heading as="h6" size="4" title={container.name}>
+              <Markdown>{formattedMarkdown(container.name)}</Markdown>
             </Heading>
             {/* actions for containers */}
             <DropdownMenu.Root>

@@ -8,6 +8,7 @@ import {
   Card,
   Flex,
   Heading,
+  IconButton,
   // HoverCard,
   Text,
 } from "@radix-ui/themes";
@@ -51,6 +52,7 @@ import {
   popBackTo,
   selectCurrentPage,
 } from "../../features/Pages/pagesSlice";
+import { useWindowDimensions } from "../../hooks/useWindowDimensions";
 
 type IntegrationViewProps = {
   integrationsMap?: IntegrationWithIconResponse;
@@ -191,55 +193,6 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     dispatch(pop());
     dispatch(popBackTo({ name: "integrations page" }));
   }, [dispatch, globalError, information, currentIntegration]);
-
-  // const handleFormCancel = useCallback(() => {
-  //   if (!currentIntegration) return;
-  //   if (!currentIntegrationSchema) return;
-
-  //   const form = document.getElementById(
-  //     `form-${currentIntegration.integr_name}`,
-  //   ) as HTMLFormElement | undefined;
-  //   if (!form) return;
-
-  //   const formElements = form.elements;
-
-  //   Object.keys(currentIntegrationSchema.fields).forEach((key) => {
-  //     const field = currentIntegrationSchema.fields[key];
-  //     const input = formElements.namedItem(key) as HTMLInputElement | null;
-  //     if (input) {
-  //       let value = field.f_default;
-
-  //       if (currentIntegrationValues && key in currentIntegrationValues) {
-  //         const currentValue = currentIntegrationValues[key];
-  //         if (
-  //           typeof currentValue === "object" &&
-  //           !Array.isArray(currentValue) &&
-  //           currentValue
-  //         ) {
-  //           // Handle Record<string, boolean>
-  //           value = Object.entries(currentValue)
-  //             .filter(([, isChecked]) => isChecked)
-  //             .map(([subKey]) => subKey)
-  //             .join(", ");
-  //         } else {
-  //           // Handle IntegrationPrimitive
-  //           value = currentValue as string;
-  //         }
-  //       }
-
-  //       input.value = value?.toString() ?? "";
-  //     }
-  //   });
-
-  //   if (
-  //     currentIntegrationValues?.available &&
-  //     typeof currentIntegrationValues.available === "object"
-  //   ) {
-  //     setAvailabilityValues(currentIntegrationValues.available);
-  //   }
-
-  //   setIsDisabledIntegrationForm(true);
-  // }, [currentIntegrationSchema, currentIntegration, currentIntegrationValues]);
 
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -595,14 +548,28 @@ const IntegrationsHeader: FC<IntegrationsHeaderProps> = ({
   integrationName,
   icon,
 }) => {
+  const { width } = useWindowDimensions();
+
   return (
     <Flex className={styles.IntegrationsHeader}>
       <Flex align="center" justify="between" width="100%">
-        <Flex gap="6" align="center">
-          <Button size="1" variant="surface" onClick={handleFormReturn}>
-            <ArrowLeftIcon width="16" height="16" />
-            Configurations
-          </Button>
+        <Flex
+          gap={{
+            initial: "4",
+            xs: "6",
+          }}
+          align="center"
+        >
+          {width > 500 ? (
+            <Button size="1" variant="surface" onClick={handleFormReturn}>
+              <ArrowLeftIcon width="16" height="16" />
+              Configurations
+            </Button>
+          ) : (
+            <IconButton size="2" variant="surface" onClick={handleFormReturn}>
+              <ArrowLeftIcon width="16" height="16" />
+            </IconButton>
+          )}
           <Heading as="h5" size="5">
             Setup {integrationName}
           </Heading>
