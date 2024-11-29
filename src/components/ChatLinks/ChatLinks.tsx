@@ -3,7 +3,9 @@ import { Flex, Button } from "@radix-ui/themes";
 import { linksApi } from "../../services/refact/links";
 
 export const ChatLinks: React.FC = () => {
+  // TODO:, add messages, chat id, ...ect to query, also skip if streaming or waiting
   const linksRequest = linksApi.useGetLinksForChatQuery(null);
+  // TODO: more conditions for rendering
   if (!linksRequest.data) return null;
 
   return (
