@@ -231,7 +231,7 @@ type IntegrationSchema = {
   fields: Record<string, IntegrationField<NonNullable<IntegrationPrimitive>>>;
   available: Record<string, boolean>;
   smartlinks: SmartLink[];
-  docker: SchemaDocker;
+  docker?: SchemaDocker;
 };
 
 function isDockerFilter(json: unknown): json is DockerFilter {
@@ -327,32 +327,31 @@ function isIntegrationSchema(json: unknown): json is IntegrationSchema {
   if (!json.smartlinks.every(isSmartLink)) {
     return false;
   }
-  if (!("docker" in json)) {
-    return false;
-  }
-  if (!json.docker) {
-    return false;
-  }
-  if (!(typeof json.docker === "object")) {
-    return false;
-  }
-  if (!isDockerFilter(json.docker)) {
-    return false;
-  }
-  if (!("new_container_default" in json.docker)) {
-    return false;
-  }
-  if (!isSchemaDockerContainer(json.docker.new_container_default)) {
-    return false;
-  }
-  if (!("smartlinks" in json.docker)) {
-    return false;
-  }
-  if (!Array.isArray(json.docker.smartlinks)) {
-    return false;
-  }
-  if (!json.docker.smartlinks.every(isSmartLink)) {
-    return false;
+  if ("docker" in json) {
+    if (!json.docker) {
+      return false;
+    }
+    if (!(typeof json.docker === "object")) {
+      return false;
+    }
+    if (!isDockerFilter(json.docker)) {
+      return false;
+    }
+    if (!("new_container_default" in json.docker)) {
+      return false;
+    }
+    if (!isSchemaDockerContainer(json.docker.new_container_default)) {
+      return false;
+    }
+    if (!("smartlinks" in json.docker)) {
+      return false;
+    }
+    if (!Array.isArray(json.docker.smartlinks)) {
+      return false;
+    }
+    if (!json.docker.smartlinks.every(isSmartLink)) {
+      return false;
+    }
   }
   return true;
 }
@@ -362,6 +361,7 @@ export type IntegrationField<T extends IntegrationPrimitive> = {
   f_desc?: string;
   f_placeholder?: T; // should match f_type
   f_default?: T;
+  f_label?: string;
   smartlinks?: SmartLink[];
 };
 
@@ -382,6 +382,9 @@ function isIntegrationField<T extends IntegrationPrimitive>(
     return false;
   }
   if ("f_desc" in json && typeof json.f_desc !== "string") {
+    return false;
+  }
+  if ("f_label" in json && typeof json.f_label !== "string") {
     return false;
   }
   if ("f_placeholder" in json && !isPrimitive(json.f_placeholder)) {

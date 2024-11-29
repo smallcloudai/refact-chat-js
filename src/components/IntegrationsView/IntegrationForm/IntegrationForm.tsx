@@ -160,12 +160,16 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
           </Flex>
         </Flex>
       </form>
-      <Flex mt="6" direction="column" align="start" gap="3">
-        <Heading as="h3" align="center" className={styles.SectionTitle}>
-          Docker Containers
-        </Heading>
-        <IntegrationDocker dockerData={integration.data.integr_schema.docker} />
-      </Flex>
+      {integration.data.integr_schema.docker && (
+        <Flex mt="6" direction="column" align="start" gap="3">
+          <Heading as="h3" align="center" className={styles.SectionTitle}>
+            Docker Containers
+          </Heading>
+          <IntegrationDocker
+            dockerData={integration.data.integr_schema.docker}
+          />
+        </Flex>
+      )}
     </Flex>
   );
 };

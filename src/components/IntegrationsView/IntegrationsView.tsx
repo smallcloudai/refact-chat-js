@@ -220,6 +220,9 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
           case "string":
             acc[key] = rawFormValues[key] as string;
             break;
+          case "bool":
+            acc[key] = rawFormValues[key] === "on" ? true : false;
+            break;
           default:
             acc[key] = rawFormValues[key] as string;
             break;
@@ -288,6 +291,9 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             break;
           case "string":
             acc[key] = rawFormValues[key] as string;
+            break;
+          case "bool":
+            acc[key] = rawFormValues[key] === "on" ? true : false;
             break;
           default:
             acc[key] = rawFormValues[key] as string;
