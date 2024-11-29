@@ -121,6 +121,28 @@ startListening({
     }
 
     if (
+      dockerApi.endpoints.getDockerContainersByImage.matchRejected(action) &&
+      !action.meta.condition
+    ) {
+      // getting first 2 lines of error message to show to user
+      const errorMessage = isDetailMessage(action.payload?.data)
+        ? action.payload.data.detail
+        : `fetching docker containers.`;
+      listenerApi.dispatch(setError(errorMessage));
+    }
+
+    if (
+      dockerApi.endpoints.getDockerContainersByLabel.matchRejected(action) &&
+      !action.meta.condition
+    ) {
+      // getting first 2 lines of error message to show to user
+      const errorMessage = isDetailMessage(action.payload?.data)
+        ? action.payload.data.detail
+        : `fetching docker containers.`;
+      listenerApi.dispatch(setError(errorMessage));
+    }
+
+    if (
       dockerApi.endpoints.executeActionForDockerContainer.matchRejected(
         action,
       ) &&
