@@ -1,0 +1,18 @@
+.fade_in {
+  opacity: 0;
+  animation: 3s ease-in 1 normal none running fade-opacity;
+}
+
+.fade_out {
+  opacity: 1;
+  animation: 3s ease-in 1 reverse none running fade-opacity;
+}
+
+@keyframes fade-opacity {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
