@@ -4,7 +4,7 @@ import classNames from "classnames";
 import styles from "./AnimatedInputs.module.css";
 
 export type AnimatedTextFieldProps = TextField.RootProps & {
-  fadeValue: TextField.RootProps["value"];
+  fadeValue?: TextField.RootProps["value"];
 };
 
 function getFadeProps(
@@ -50,7 +50,6 @@ export const AnimatedTextField: React.FC<AnimatedTextFieldProps> = (props) => {
         )}
         hidden={true}
       />
-
       <TextField.Root
         {...inputProps}
         className={classNames(

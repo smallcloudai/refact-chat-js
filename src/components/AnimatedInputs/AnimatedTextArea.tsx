@@ -4,7 +4,7 @@ import classNames from "classnames";
 import styles from "./AnimatedInputs.module.css";
 
 export type AnimatedTextAreaProps = TextAreaProps & {
-  fadeValue: TextAreaProps["value"];
+  fadeValue?: TextAreaProps["value"];
 };
 
 function getFadeProps(
