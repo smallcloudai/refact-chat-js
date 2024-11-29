@@ -1,0 +1,25 @@
+.fade_input {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.fade_input_in {
+  opacity: 1;
+  animation: 2s linear 1 normal none running fade-opacity;
+}
+
+.fade_input_out {
+  opacity: 0;
+  animation: 2s linear 1 reverse none running fade-opacity;
+  box-shadow: inset 0 0 0 var(--text-field-border-width) var(--green-a7);
+}
+
+@keyframes fade-opacity {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
