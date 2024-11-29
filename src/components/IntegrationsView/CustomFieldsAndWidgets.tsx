@@ -5,6 +5,7 @@ import {
   TextArea,
   Button,
   Text,
+  Switch,
 } from "@radix-ui/themes";
 import { Markdown } from "../Markdown";
 
@@ -126,6 +127,22 @@ export const CustomDescriptionField = ({
     >
       <Markdown>{children}</Markdown>
     </Text>
+  );
+};
+
+export const CustomBoolField = ({
+  id,
+  name,
+  defaultValue,
+}: {
+  id: string;
+  name: string;
+  defaultValue: boolean;
+}) => {
+  return (
+    <Box>
+      <Switch name={name} id={id} size="2" defaultChecked={defaultValue} />
+    </Box>
   );
 };
 
