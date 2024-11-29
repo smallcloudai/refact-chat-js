@@ -3,8 +3,8 @@ import { RootState } from "../../app/store";
 import { STUB_LINKS_FOR_CHAT_RESPONSE } from "../../__fixtures__";
 type ChatLink =
   | { text: string; goto: string; action: string }
-  | { text: string; goto: string }
-  | { text: string; action: string };
+  | { text: string; goto: string; action: undefined }
+  | { text: string; goto: undefined; action: string };
 
 function isChatLink(json: unknown): json is ChatLink {
   if (!json || typeof json !== "object") return false;
@@ -42,7 +42,7 @@ export const linksApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    getLinksForChat: builder.mutation<LinksForChatResponse, null>({
+    getLinksForChat: builder.query<LinksForChatResponse, null>({
       async queryFn(_arg, _api, _extraOptions, _baseQuery) {
         if (!isLinksForChatResponse(STUB_LINKS_FOR_CHAT_RESPONSE)) {
           return {

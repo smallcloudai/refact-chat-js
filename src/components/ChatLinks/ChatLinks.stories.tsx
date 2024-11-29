@@ -4,13 +4,16 @@ import { ChatLinks } from "./ChatLinks";
 import { setUpStore } from "../../app/store";
 import { Provider } from "react-redux";
 import { Theme } from "../Theme";
+import { Container } from "@radix-ui/themes";
 
 const Template = () => {
   const store = setUpStore();
   return (
     <Provider store={store}>
       <Theme>
-        <ChatLinks />
+        <Container p="4">
+          <ChatLinks />
+        </Container>
       </Theme>
     </Provider>
   );

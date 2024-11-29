@@ -41,7 +41,7 @@ import { informationSlice } from "../features/Errors/informationSlice";
 import { confirmationSlice } from "../features/ToolConfirmation/confirmationSlice";
 import { attachedImagesSlice } from "../features/AttachedImages";
 import { userSurveySlice } from "../features/UserSurvey/userSurveySlice";
-
+import { linksApi } from "../services/refact/links";
 const tipOfTheDayPersistConfig = {
   key: "totd",
   storage: storage(),
@@ -74,6 +74,7 @@ const rootReducer = combineSlices(
     [smallCloudApi.reducerPath]: smallCloudApi.reducer,
     [pathApi.reducerPath]: pathApi.reducer,
     [pingApi.reducerPath]: pingApi.reducer,
+    [linksApi.reducerPath]: linksApi.reducer,
   },
   historySlice,
   errorSlice,
@@ -143,6 +144,7 @@ export function setUpStore(preloadedState?: Partial<RootState>) {
             diffApi.middleware,
             smallCloudApi.middleware,
             pathApi.middleware,
+            linksApi.middleware,
           )
           .prepend(historyMiddleware.middleware)
           // .prepend(errorMiddleware.middleware)
