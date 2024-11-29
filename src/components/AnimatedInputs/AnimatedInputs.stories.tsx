@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { AnimatedTextField } from "./AnimatedTextField";
-import { Theme } from "@radix-ui/themes";
+import { Theme, Container } from "@radix-ui/themes";
 
 const meta = {
   title: "Components/AnimatedTextField",
@@ -8,7 +8,9 @@ const meta = {
   decorators: [
     (Story) => (
       <Theme>
-        <Story />
+        <Container p="8">
+          <Story />
+        </Container>
       </Theme>
     ),
   ],

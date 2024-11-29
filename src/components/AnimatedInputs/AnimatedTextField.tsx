@@ -32,6 +32,13 @@ function getInputProps(
 export const AnimatedTextField: React.FC<AnimatedTextFieldProps> = (props) => {
   const fadeProps = getFadeProps(props);
   const inputProps = getInputProps(props);
+
+  const shouldFade = props.fadeValue ?? false;
+
+  if (!shouldFade) {
+    return <TextField.Root {...inputProps} className={props.className} />;
+  }
+
   return (
     <Box position="relative">
       <TextField.Root
