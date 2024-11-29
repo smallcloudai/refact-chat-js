@@ -43,7 +43,7 @@ const meta: Meta<typeof IntegrationForm> = {
     isApplying: false,
     isDisabled: false,
     availabilityValues: {},
-    onCancel: fn(),
+    // onCancel: fn(),
     handleSubmit: fn(),
     handleChange: fn(),
     onSchema: fn(),
