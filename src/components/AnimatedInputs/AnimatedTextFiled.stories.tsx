@@ -3,7 +3,7 @@ import { AnimatedTextField } from "./AnimatedTextField";
 import { Theme, Container } from "@radix-ui/themes";
 
 const meta = {
-  title: "Components/AnimatedTextField",
+  title: "Components/AnimatedInputs/AnimatedTextField",
   component: AnimatedTextField,
   decorators: [
     (Story) => (
