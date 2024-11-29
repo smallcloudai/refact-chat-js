@@ -194,19 +194,19 @@ export const chatReducer = createReducer(initialState, (builder) => {
 
   builder.addCase(newIntegrationChat, (state, action) => {
     // TODO: find out about tool use
-    const next = createInitialState("explore", action.payload.integration);
+    const next = createInitialState("agent", action.payload.integration);
     next.thread.integration = action.payload.integration;
     next.thread.messages = action.payload.messages;
-    // TODO: not this
-    next.thread.model = "gpt-4o";
 
+    // TODO: not this
+    // next.thread.model = "gpt-4o";
+    next.thread.model = state.thread.model;
+    next.system_prompt = state.system_prompt;
     next.cache = { ...state.cache };
     if (state.streaming) {
       next.cache[state.thread.id] = { ...state.thread, read: false };
     }
-    // TBD: this might not be needed.
-    // next.thread.model = state.thread.model;
-    // next.system_prompt = state.system_prompt;
+
     return next;
   });
 

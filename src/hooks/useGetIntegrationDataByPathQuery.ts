@@ -20,7 +20,6 @@ export const useGetIntegrationDataByPathQuery = (integrationPath: string) => {
     },
   );
 
-  // cached values
   useEffect(() => {
     if (integration.data) {
       dispatch(addToCacheOnMiss(integration.data));

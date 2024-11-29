@@ -176,7 +176,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   };
 
   const handleFormReturn = useCallback(() => {
-    currentIntegration && setCurrentIntegration(null);
+    if (currentIntegration) {
+      setCurrentIntegration(null);
+      setIsDisabledIntegrationForm(true);
+    }
     information && dispatch(clearInformation());
     globalError && dispatch(clearError());
     localError && setLocalError("");
@@ -186,54 +189,54 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     dispatch(popBackTo({ name: "integrations page" }));
   }, [dispatch, localError, globalError, information, currentIntegration]);
 
-  const handleFormCancel = useCallback(() => {
-    if (!currentIntegration) return;
-    if (!currentIntegrationSchema) return;
+  // const handleFormCancel = useCallback(() => {
+  //   if (!currentIntegration) return;
+  //   if (!currentIntegrationSchema) return;
 
-    const form = document.getElementById(
-      `form-${currentIntegration.integr_name}`,
-    ) as HTMLFormElement | undefined;
-    if (!form) return;
+  //   const form = document.getElementById(
+  //     `form-${currentIntegration.integr_name}`,
+  //   ) as HTMLFormElement | undefined;
+  //   if (!form) return;
 
-    const formElements = form.elements;
+  //   const formElements = form.elements;
 
-    Object.keys(currentIntegrationSchema.fields).forEach((key) => {
-      const field = currentIntegrationSchema.fields[key];
-      const input = formElements.namedItem(key) as HTMLInputElement | null;
-      if (input) {
-        let value = field.f_default;
+  //   Object.keys(currentIntegrationSchema.fields).forEach((key) => {
+  //     const field = currentIntegrationSchema.fields[key];
+  //     const input = formElements.namedItem(key) as HTMLInputElement | null;
+  //     if (input) {
+  //       let value = field.f_default;
 
-        if (currentIntegrationValues && key in currentIntegrationValues) {
-          const currentValue = currentIntegrationValues[key];
-          if (
-            typeof currentValue === "object" &&
-            !Array.isArray(currentValue) &&
-            currentValue
-          ) {
-            // Handle Record<string, boolean>
-            value = Object.entries(currentValue)
-              .filter(([, isChecked]) => isChecked)
-              .map(([subKey]) => subKey)
-              .join(", ");
-          } else {
-            // Handle IntegrationPrimitive
-            value = currentValue as string;
-          }
-        }
+  //       if (currentIntegrationValues && key in currentIntegrationValues) {
+  //         const currentValue = currentIntegrationValues[key];
+  //         if (
+  //           typeof currentValue === "object" &&
+  //           !Array.isArray(currentValue) &&
+  //           currentValue
+  //         ) {
+  //           // Handle Record<string, boolean>
+  //           value = Object.entries(currentValue)
+  //             .filter(([, isChecked]) => isChecked)
+  //             .map(([subKey]) => subKey)
+  //             .join(", ");
+  //         } else {
+  //           // Handle IntegrationPrimitive
+  //           value = currentValue as string;
+  //         }
+  //       }
 
-        input.value = value?.toString() ?? "";
-      }
-    });
+  //       input.value = value?.toString() ?? "";
+  //     }
+  //   });
 
-    if (
-      currentIntegrationValues?.available &&
-      typeof currentIntegrationValues.available === "object"
-    ) {
-      setAvailabilityValues(currentIntegrationValues.available);
-    }
+  //   if (
+  //     currentIntegrationValues?.available &&
+  //     typeof currentIntegrationValues.available === "object"
+  //   ) {
+  //     setAvailabilityValues(currentIntegrationValues.available);
+  //   }
 
-    setIsDisabledIntegrationForm(true);
-  }, [currentIntegrationSchema, currentIntegration, currentIntegrationValues]);
+  //   setIsDisabledIntegrationForm(true);
+  // }, [currentIntegrationSchema, currentIntegration, currentIntegrationValues]);
 
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -253,11 +256,14 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         rawFormValues,
       ).reduce<Integration["integr_values"]>((acc, key) => {
         const field = currentIntegrationSchema.fields[key];
-        switch (field.f_type) {
+        const [f_type, _f_size] = (field.f_type as string).split("_");
+        switch (f_type) {
           case "int":
             acc[key] = parseInt(rawFormValues[key] as string, 10);
             break;
           case "string":
+            acc[key] = rawFormValues[key] as string;
+            break;
           default:
             acc[key] = rawFormValues[key] as string;
             break;
@@ -317,11 +323,14 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         rawFormValues,
       ).reduce<Integration["integr_values"]>((acc, key) => {
         const field = currentIntegrationSchema.fields[key];
-        switch (field.f_type) {
+        const [f_type, _f_size] = (field.f_type as string).split("_");
+        switch (f_type) {
           case "int":
             acc[key] = parseInt(rawFormValues[key] as string, 10);
             break;
           case "string":
+            acc[key] = rawFormValues[key] as string;
+            break;
           default:
             acc[key] = rawFormValues[key] as string;
             break;
@@ -329,22 +338,29 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         return acc;
       }, {});
 
-      const maybeDisabled =
-        Object.entries(formValues).every(([fieldKey, fieldValue]) => {
+      const eachFormValueIsNotChanged = Object.entries(formValues).every(
+        ([fieldKey, fieldValue]) => {
           return (
             fieldKey in currentIntegrationValues &&
             fieldValue === currentIntegrationValues[fieldKey]
           );
-        }) &&
-        Object.entries(availabilityValues).every(([fieldKey, fieldValue]) => {
-          const availableObj = currentIntegrationValues.available;
-          if (availableObj && typeof availableObj === "object") {
-            return (
-              fieldKey in availableObj && fieldValue === availableObj[fieldKey]
-            );
-          }
-          return false;
-        });
+        },
+      );
+
+      const eachAvailabilityOptionIsNotChanged = Object.entries(
+        availabilityValues,
+      ).every(([fieldKey, fieldValue]) => {
+        const availableObj = currentIntegrationValues.available;
+        if (availableObj && typeof availableObj === "object") {
+          return (
+            fieldKey in availableObj && fieldValue === availableObj[fieldKey]
+          );
+        }
+        return false;
+      });
+
+      const maybeDisabled =
+        eachFormValueIsNotChanged && eachAvailabilityOptionIsNotChanged;
 
       setIsDisabledIntegrationForm(maybeDisabled);
     },
@@ -424,7 +440,6 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
               integrationPath={currentIntegration.integr_config_path}
               isApplying={isApplyingIntegrationForm}
               isDisabled={isDisabledIntegrationForm}
-              onCancel={handleFormCancel}
               onSchema={handleSetCurrentIntegrationSchema}
               onValues={handleSetCurrentIntegrationValues}
               handleChange={handleIntegrationFormChange}
@@ -433,7 +448,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             />
             {information && (
               <InformationCallout
-                // timeout={3000}
+                timeout={3000}
                 mx="0"
                 onClick={() => dispatch(clearInformation())}
                 className={styles.popup}
@@ -446,6 +461,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                 mx="0"
                 timeout={3000}
                 onClick={() => setLocalError("")}
+                className={styles.popup}
               >
                 {localError}
               </ErrorCallout>
