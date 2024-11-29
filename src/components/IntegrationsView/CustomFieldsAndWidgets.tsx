@@ -16,7 +16,7 @@ export const CustomInputField = ({
   type,
   id,
   name,
-  width = "100%",
+  width,
   size = "long",
 }: {
   id?: string;
@@ -38,11 +38,22 @@ export const CustomInputField = ({
   name?: string;
   defaultValue?: string | number;
   placeholder?: string;
-  width?: string;
   size?: string;
+  width?: string;
 }) => {
   return (
-    <Box minWidth={width}>
+    <Box
+      width={
+        width
+          ? width
+          : size === "short"
+            ? {
+                xs: "50%",
+                initial: "100%",
+              }
+            : "100%"
+      }
+    >
       {size !== "multiline" ? (
         <TextField.Root
           id={id}
@@ -50,6 +61,8 @@ export const CustomInputField = ({
           type={type}
           size="2"
           value={value}
+          variant="soft"
+          color="gray"
           defaultValue={defaultValue}
           placeholder={placeholder}
         />
@@ -60,6 +73,8 @@ export const CustomInputField = ({
           size="2"
           rows={3}
           value={value}
+          variant="soft"
+          color="gray"
           defaultValue={defaultValue?.toString()}
           placeholder={placeholder}
         />
@@ -101,7 +116,14 @@ export const CustomDescriptionField = ({
   mb?: string;
 }) => {
   return (
-    <Text size="1" mb={mb} style={{ display: "block", opacity: 0.85 }}>
+    <Text
+      size="1"
+      mb={{
+        initial: "0",
+        xs: mb,
+      }}
+      style={{ display: "block", opacity: 0.85 }}
+    >
       <Markdown>{children}</Markdown>
     </Text>
   );

@@ -120,7 +120,6 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
           key={fieldKey}
           style={{
             width: "100%",
-            marginBottom: "1rem",
           }}
         >
           <DataList.Label>
@@ -132,10 +131,16 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
           </DataList.Label>
           <DataList.Value
             style={{
-              width: f_size === "short" ? "50%" : "100%",
+              width: "100%",
             }}
           >
-            <Flex direction="column" gap="2" align="start" width="100%">
+            <Flex
+              direction="column"
+              gap="2"
+              align="start"
+              // width={f_size === "short" ? "50%" : "100%"}
+              width={"100%"}
+            >
               <CustomInputField
                 {...commonProps}
                 type={f_type === "int" ? "number" : "text"}
@@ -185,7 +190,15 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         id={`form-${integration.data.integr_name}`}
       >
         <Flex direction="column" gap="2">
-          <DataList.Root mb="5" size="1">
+          <DataList.Root
+            mt="2"
+            mb="0"
+            size="1"
+            orientation={{
+              xs: "horizontal",
+              initial: "vertical",
+            }}
+          >
             {integration.data.integr_values.available &&
               Object.entries(integration.data.integr_values.available).map(
                 ([key, _]: [string, boolean]) => (
@@ -198,7 +211,13 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
                 ),
               )}
           </DataList.Root>
-          <DataList.Root size="1">
+          <DataList.Root
+            size="1"
+            orientation={{
+              xs: "horizontal",
+              initial: "vertical",
+            }}
+          >
             {Object.keys(integration.data.integr_schema.fields).map(
               (fieldKey) => {
                 if (integration.data) {
@@ -359,23 +378,31 @@ const IntegrationAvailability: FC<IntegrationAvailabilityProps> = ({
         marginBottom: "0.75rem",
       }}
     >
-      <Flex width="100%" gap="3">
-        <DataList.Label>
-          <CustomLabel label={toPascalCase(fieldName)} />
-        </DataList.Label>
-        <DataList.Value>
-          <Flex width="100%" align="center" gap="3">
-            <Switch
-              size="2"
-              checked={value}
-              onCheckedChange={handleSwitchChange}
-            />
-            <CustomDescriptionField mb="0">
-              {availabilityMessage}
-            </CustomDescriptionField>
-          </Flex>
-        </DataList.Value>
-      </Flex>
+      {/* <Flex width="100%" gap="3"> */}
+      <DataList.Label>
+        <CustomLabel label={toPascalCase(fieldName)} />
+      </DataList.Label>
+      <DataList.Value>
+        <Flex
+          width="100%"
+          align="center"
+          gap="3"
+          mt={{
+            xs: "0",
+            initial: "2",
+          }}
+        >
+          <Switch
+            size="2"
+            checked={value}
+            onCheckedChange={handleSwitchChange}
+          />
+          <CustomDescriptionField mb="0">
+            {availabilityMessage}
+          </CustomDescriptionField>
+        </Flex>
+      </DataList.Value>
+      {/* </Flex> */}
     </DataList.Item>
   );
 };
