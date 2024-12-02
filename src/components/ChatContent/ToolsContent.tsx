@@ -31,7 +31,7 @@ const Result: React.FC<ResultProps> = ({
 }) => {
   const lines = children.split("\n");
   return (
-    <Reveal defaultOpen={lines.length < 9}>
+    <Reveal defaultOpen={lines.length < 9} isRevealingCode>
       <ResultMarkdown
         className={styles.tool_result}
         isInsideScrollArea={isInsideScrollArea}

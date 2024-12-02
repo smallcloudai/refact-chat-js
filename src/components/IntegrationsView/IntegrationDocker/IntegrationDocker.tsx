@@ -2,8 +2,8 @@
 import type { FC } from "react";
 import { useEffect, useState } from "react";
 import {
-  useGetDockerContainersByImageQuery,
-  // useGetDockerContainersQuery,
+  // useGetDockerContainersByImageQuery,
+  useGetDockerContainersQuery,
 } from "../../../hooks/useGetDockerContainersQuery";
 import { dockerApi } from "../../../services/refact";
 import type {
@@ -28,10 +28,10 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
   dockerData,
 }) => {
   const dispatch = useAppDispatch();
-  const { dockerContainers } = useGetDockerContainersByImageQuery(
-    dockerData.filter_image,
-  );
-  // const { dockerContainers } = useGetDockerContainersQuery();
+  // const { dockerContainers } = useGetDockerContainersByImageQuery(
+  //   dockerData.filter_image,
+  // );
+  const { dockerContainers } = useGetDockerContainersQuery();
   const [dockerContainerActionTrigger] =
     useExecuteActionForDockerContainerMutation();
   const [isActionInProgress, setIsActionInProgress] = useState(false);

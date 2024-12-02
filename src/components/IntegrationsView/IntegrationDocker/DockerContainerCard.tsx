@@ -1,5 +1,6 @@
 import {
   Badge,
+  Button,
   Card,
   Code,
   DataList,
@@ -9,13 +10,15 @@ import {
   IconButton,
 } from "@radix-ui/themes";
 import { DockerActionPayload, DockerContainer } from "../../../services/refact";
-import type { FC } from "react";
+import { useState, type FC } from "react";
 import { CopyIcon, DotsVerticalIcon } from "@radix-ui/react-icons";
 import { toPascalCase } from "../../../utils/toPascalCase";
 import { Markdown } from "../../Markdown";
 import { Link } from "../../Link";
 import { fallbackCopying } from "../../../utils/fallbackCopying";
 import { TruncateRight } from "../../Text/TruncateRight";
+import * as Collapsible from "@radix-ui/react-collapsible";
+import { Reveal } from "../../Reveal";
 
 type DockerContainerCardProps = {
   container: DockerContainer;
@@ -58,6 +61,8 @@ export const DockerContainerCard: FC<DockerContainerCardProps> = ({
   isActionInProgress,
   handleDockerContainerActionClick,
 }) => {
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
   // needed to handle disabled state of buttons accordingly to the status of docker container
   const isDockerActionButtonDisabled = (
     el: DockerContainer,
@@ -155,66 +160,85 @@ export const DockerContainerCard: FC<DockerContainerCardProps> = ({
           </DataList.Root>
         </Flex>
         <Flex direction="column" gap="4">
-          <Heading as="h5" size="4">
-            Environment variables
-          </Heading>
-          <DataList.Root size="1">
-            {Object.values(container.env).map((value) => {
-              const [variableName, variableValue] = value.split("=");
-              if (variableValue.startsWith("http")) {
-                return (
-                  <DataList.Item key={variableName}>
-                    <DataList.Label>{variableName}: </DataList.Label>
-                    <DataList.Value>
-                      <TruncateRight
-                        size="1"
-                        style={{
-                          width: "100%",
-                        }}
-                        title={variableValue}
-                      >
-                        <Link href={variableValue}>{variableValue}</Link>
-                      </TruncateRight>
-                    </DataList.Value>
-                  </DataList.Item>
-                );
-              }
-              return (
-                <DataList.Item key={variableName}>
-                  <DataList.Label>{variableName}: </DataList.Label>
-                  <DataList.Value>
-                    <Flex align="center" gap="2" maxWidth="100%">
-                      <TruncateRight
-                        size="1"
-                        style={{
-                          width: "100%",
-                        }}
-                        title={variableValue}
-                      >
-                        <Code
-                          variant="ghost"
-                          style={{
-                            width: "100%",
-                          }}
-                        >
-                          {variableValue}
-                        </Code>
-                      </TruncateRight>
-                      <IconButton
-                        size="1"
-                        title="Copy value"
-                        color="gray"
-                        variant="ghost"
-                        onClick={() => fallbackCopying(variableValue)}
-                      >
-                        <CopyIcon />
-                      </IconButton>
-                    </Flex>
-                  </DataList.Value>
-                </DataList.Item>
-              );
-            })}
-          </DataList.Root>
+          <Collapsible.Root open={detailsOpen} onOpenChange={setDetailsOpen}>
+            <Collapsible.Trigger asChild>
+              <Button variant="outline" size="1">
+                {detailsOpen ? "Hide details" : "Show more details"}
+              </Button>
+            </Collapsible.Trigger>
+            <Collapsible.Content
+              style={{
+                marginTop: "1.15rem",
+              }}
+            >
+              <Reveal defaultOpen={Object.values(container.env).length < 9}>
+                <Flex direction="column" gap="2" align="start">
+                  <Heading as="h5" size="4">
+                    Environment variables
+                  </Heading>
+                  <DataList.Root size="1">
+                    {Object.values(container.env).map((value) => {
+                      const [variableName, variableValue] = value.split("=");
+                      if (variableValue.startsWith("http")) {
+                        return (
+                          <DataList.Item key={variableName}>
+                            <DataList.Label>{variableName}: </DataList.Label>
+                            <DataList.Value>
+                              <TruncateRight
+                                size="1"
+                                style={{
+                                  width: "100%",
+                                }}
+                                title={variableValue}
+                              >
+                                <Link href={variableValue}>
+                                  {variableValue}
+                                </Link>
+                              </TruncateRight>
+                            </DataList.Value>
+                          </DataList.Item>
+                        );
+                      }
+                      return (
+                        <DataList.Item key={variableName}>
+                          <DataList.Label>{variableName}: </DataList.Label>
+                          <DataList.Value>
+                            <Flex align="center" gap="2" maxWidth="100%">
+                              <TruncateRight
+                                size="1"
+                                style={{
+                                  width: "100%",
+                                }}
+                                title={variableValue}
+                              >
+                                <Code
+                                  variant="ghost"
+                                  style={{
+                                    width: "100%",
+                                  }}
+                                >
+                                  {variableValue}
+                                </Code>
+                              </TruncateRight>
+                              <IconButton
+                                size="1"
+                                title="Copy value"
+                                color="gray"
+                                variant="ghost"
+                                onClick={() => fallbackCopying(variableValue)}
+                              >
+                                <CopyIcon />
+                              </IconButton>
+                            </Flex>
+                          </DataList.Value>
+                        </DataList.Item>
+                      );
+                    })}
+                  </DataList.Root>
+                </Flex>
+              </Reveal>
+            </Collapsible.Content>
+          </Collapsible.Root>
         </Flex>
       </Flex>
     </Card>
