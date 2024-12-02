@@ -94,7 +94,7 @@ export const DockerContainerCard: FC<DockerContainerCardProps> = ({
 
   return (
     <Card key={container.id}>
-      <Flex direction="column" gap="3">
+      <Flex direction="column" gap="4">
         <Flex direction="column" gap="4">
           <Flex justify="between" gap="3">
             <Heading as="h6" size="4" title={container.name}>
@@ -162,7 +162,7 @@ export const DockerContainerCard: FC<DockerContainerCardProps> = ({
         <Flex direction="column" gap="4">
           <Collapsible.Root open={detailsOpen} onOpenChange={setDetailsOpen}>
             <Collapsible.Trigger asChild>
-              <Button variant="outline" size="1">
+              <Button variant="outline" size="1" color="gray">
                 {detailsOpen ? "Hide details" : "Show more details"}
               </Button>
             </Collapsible.Trigger>

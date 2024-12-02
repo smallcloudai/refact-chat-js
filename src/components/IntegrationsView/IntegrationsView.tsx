@@ -489,8 +489,8 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                 ([projectPath, integrations], index) => {
                   const formattedProjectName =
                     "```" +
-                    projectPath.split("\\")[
-                      projectPath.split("\\").length - 1
+                    projectPath.split(/[/\\]/)[
+                      projectPath.split(/[/\\]/).length - 1
                     ] +
                     "```";
 
