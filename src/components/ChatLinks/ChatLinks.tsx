@@ -9,6 +9,15 @@ import {
   selectMessages,
 } from "../../features/Chat";
 
+function maybeConcatActionAndGoToStrings(
+  action?: string,
+  goto?: string,
+): string | undefined {
+  if (!action && !goto) return "";
+  if (action && goto) return `action: ${action}\ngoto: ${goto}`;
+  return action ?? goto;
+}
+
 export const ChatLinks: React.FC = () => {
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
@@ -43,13 +52,9 @@ export const ChatLinks: React.FC = () => {
     <Flex gap="2" wrap="wrap" direction="column" align="start">
       {linksRequest.data.links.map((link, index) => {
         const key = `chat-link-${index}`;
+        const title = maybeConcatActionAndGoToStrings(link.action, link.goto);
         return (
-          <Button
-            size="1"
-            radius="full"
-            key={key}
-            title={link.action ?? link.goto}
-          >
+          <Button size="1" radius="full" key={key} title={title}>
             {link.text}
           </Button>
         );
