@@ -7,10 +7,15 @@ import { Theme } from "../Theme";
 import { Container } from "@radix-ui/themes";
 import { http, HttpResponse, type HttpHandler } from "msw";
 import { CHAT_LINKS_URL } from "../../services/refact/consts";
-import { STUB_LINKS_FOR_CHAT_RESPONSE } from "../../__fixtures__";
+import {
+  STUB_LINKS_FOR_CHAT_RESPONSE,
+  CHAT_CONFIG_THREAD,
+} from "../../__fixtures__";
 
 const Template = () => {
-  const store = setUpStore();
+  const store = setUpStore({
+    chat: CHAT_CONFIG_THREAD,
+  });
   return (
     <Provider store={store}>
       <Theme>
