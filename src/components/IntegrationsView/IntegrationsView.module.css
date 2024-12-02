@@ -58,9 +58,9 @@
 }
 
 .popup {
-  position: absolute;
-  width: calc(100% - 1.5rem);
+  position: fixed;
+  width: calc(100% - 6rem);
   background-color: var(--accent-3);
   overflow: hidden;
-  bottom: 0;
+  bottom: 20px;
 }

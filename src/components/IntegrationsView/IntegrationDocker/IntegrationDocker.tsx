@@ -2,8 +2,8 @@
 import type { FC } from "react";
 import { useEffect, useState } from "react";
 import {
-  // useGetDockerContainersByImageQuery,
-  useGetDockerContainersQuery,
+  useGetDockerContainersByImageQuery,
+  // useGetDockerContainersQuery,
 } from "../../../hooks/useGetDockerContainersQuery";
 import { dockerApi } from "../../../services/refact";
 import type {
@@ -17,7 +17,7 @@ import { useExecuteActionForDockerContainerMutation } from "../../../hooks/useEx
 import { useAppDispatch } from "../../../hooks";
 import { setInformation } from "../../../features/Errors/informationSlice";
 import { setError } from "../../../features/Errors/errorsSlice";
-import { Flex } from "@radix-ui/themes";
+import { Card, Flex, Text } from "@radix-ui/themes";
 import { DockerContainerCard } from "./DockerContainerCard";
 
 type IntegrationDockerProps = {
@@ -28,10 +28,12 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
   dockerData,
 }) => {
   const dispatch = useAppDispatch();
-  // const { dockerContainers } = useGetDockerContainersByImageQuery(
-  //   dockerData.filter_image,
-  // );
-  const { dockerContainers } = useGetDockerContainersQuery();
+  const { dockerContainers } = useGetDockerContainersByImageQuery(
+    dockerData.filter_image,
+  );
+  const [areContainersLoaded, setAreContainersLoaded] = useState(false);
+
+  // const { dockerContainers } = useGetDockerContainersQuery();
   const [dockerContainerActionTrigger] =
     useExecuteActionForDockerContainerMutation();
   const [isActionInProgress, setIsActionInProgress] = useState(false);
@@ -43,32 +45,43 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
   >(null);
 
   useEffect(() => {
-    console.log(`[DEBUG]: dockerContainers: `, dockerContainers);
-
+    let timeoutId: NodeJS.Timeout;
     if (dockerContainers.data) {
       console.log(`[DEBUG]: loaded containers: `, dockerContainers.data);
-      setDockerContainersList(dockerContainers.data.containers);
-    }
-  }, [dockerContainers]);
 
-  if (dockerContainers.isLoading) {
+      setDockerContainersList(dockerContainers.data.containers);
+      if (dockerContainers.isSuccess) {
+        timeoutId = setTimeout(() => {
+          setAreContainersLoaded(true);
+        }, 100);
+      }
+    }
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [dockerContainers, areContainersLoaded]);
+
+  if (dockerContainers.isLoading || !areContainersLoaded) {
     return <Spinner spinning />;
   }
 
   if (dockerContainers.error ?? !dockerContainers.data) {
     return (
-      <div>
-        Unexpected error on fetching list of docker containers with &quot;
-        {dockerData.filter_image}&quot; image
-      </div>
+      <DockerErrorCard
+        errorTitle="Unexpected error"
+        errorMessage={`Unexpected error on fetching list of docker containers with
+            "${dockerData.filter_image}" image.`}
+      />
     );
   }
 
   if (!dockerContainersList || dockerContainersList.length === 0) {
     return (
-      <div>
-        No docker containers found for &quot;{dockerData.filter_image}&quot;
-      </div>
+      <DockerErrorCard
+        errorTitle="No Docker Containers Found"
+        errorMessage={`No docker containers found for "${dockerData.filter_image}" image.`}
+      />
     );
   }
 
@@ -129,5 +142,36 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
         />
       ))}
     </Flex>
+  );
+};
+
+type DockerErrorCardProps = {
+  errorTitle: string;
+  errorMessage: string;
+};
+
+const DockerErrorCard: FC<DockerErrorCardProps> = ({
+  errorTitle,
+  errorMessage,
+}) => {
+  return (
+    <Card
+      style={{
+        margin: "1rem auto 0",
+      }}
+    >
+      <Flex
+        direction="column"
+        align="center"
+        justify="center"
+        gap="4"
+        width="100%"
+      >
+        <Text size="3" weight="bold">
+          {errorTitle}
+        </Text>
+        <Text size="2">{errorMessage}</Text>
+      </Flex>
+    </Card>
   );
 };
