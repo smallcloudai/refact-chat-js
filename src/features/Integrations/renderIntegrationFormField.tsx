@@ -51,12 +51,14 @@ export const renderIntegrationFormField = ({
   fieldKey,
   integrationName,
   integrationPath,
+  isFieldVisible = true,
 }: {
   fieldKey: string;
   values: Integration["integr_values"];
   field: IntegrationField<NonNullable<IntegrationPrimitive>>;
   integrationName: string;
   integrationPath: string;
+  isFieldVisible?: boolean;
 }) => {
   const [f_type_raw, f_size] = field.f_type.toString().split("_");
   const f_type = isFieldType(f_type_raw) ? f_type_raw : "string";
@@ -75,6 +77,11 @@ export const renderIntegrationFormField = ({
       key={fieldKey}
       style={{
         width: "100%",
+        opacity: isFieldVisible ? 1 : 0,
+        transform: isFieldVisible ? "translateY(0px)" : "translateY(-10px)",
+        height: isFieldVisible ? "auto" : 0,
+        visibility: isFieldVisible ? "visible" : "hidden",
+        transition: "opacity 0.3s ease-in-out, tranform 0.3s ease-in-out",
       }}
     >
       <DataList.Label>

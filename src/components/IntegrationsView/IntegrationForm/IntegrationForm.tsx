@@ -1,10 +1,14 @@
 /* eslint-disable no-console */
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import classNames from "classnames";
 import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrationDataByPathQuery";
 
 import type { FC, FormEvent, Dispatch } from "react";
-import type { Integration } from "../../../services/refact";
+import type {
+  Integration,
+  IntegrationField,
+  IntegrationPrimitive,
+} from "../../../services/refact";
 
 import styles from "./IntegrationForm.module.css";
 import { Spinner } from "../../Spinner";
@@ -13,6 +17,7 @@ import { IntegrationDocker } from "../IntegrationDocker";
 import { SmartLink } from "../../SmartLink";
 import { renderIntegrationFormField } from "../../../features/Integrations/renderIntegrationFormField";
 import { IntegrationAvailability } from "./IntegrationAvailability";
+import { toPascalCase } from "../../../utils/toPascalCase";
 
 type IntegrationFormProps = {
   integrationPath: string;
@@ -39,6 +44,8 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   onValues,
   setAvailabilityValues,
 }) => {
+  const [areExtraFieldsRevealed, setAreExtraFieldsRevealed] = useState(false);
+
   const { integration } = useGetIntegrationDataByPathQuery(integrationPath);
 
   const handleAvailabilityChange = useCallback(
@@ -71,6 +78,28 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
     }
     console.log(`[DEBUG]: integration.data: `, integration);
   }, [integration, onSchema, onValues]);
+
+  const importantFields = Object.entries(
+    integration.data?.integr_schema.fields ?? {},
+  )
+    .filter(([_, field]) => !field.f_extra)
+    .reduce<
+      Record<string, IntegrationField<NonNullable<IntegrationPrimitive>>>
+    >((acc, [key, field]) => {
+      acc[key] = field;
+      return acc;
+    }, {});
+
+  const extraFields = Object.entries(
+    integration.data?.integr_schema.fields ?? {},
+  )
+    .filter(([_, field]) => field.f_extra)
+    .reduce<
+      Record<string, IntegrationField<NonNullable<IntegrationPrimitive>>>
+    >((acc, [key, field]) => {
+      acc[key] = field;
+      return acc;
+    }, {});
 
   if (integration.isLoading) {
     return <Spinner spinning />;
@@ -112,20 +141,40 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
                   />
                 ),
               )}
-            {Object.keys(integration.data.integr_schema.fields).map(
-              (fieldKey) => {
-                if (integration.data) {
-                  return renderIntegrationFormField({
-                    fieldKey: fieldKey,
-                    values: integration.data.integr_values,
-                    field: integration.data.integr_schema.fields[fieldKey],
-                    integrationName: integration.data.integr_name,
-                    integrationPath: integration.data.project_path,
-                  });
-                }
-              },
-            )}
+            {Object.keys(importantFields).map((fieldKey) => {
+              if (integration.data) {
+                return renderIntegrationFormField({
+                  fieldKey: fieldKey,
+                  values: integration.data.integr_values,
+                  field: integration.data.integr_schema.fields[fieldKey],
+                  integrationName: integration.data.integr_name,
+                  integrationPath: integration.data.project_path,
+                });
+              }
+            })}
+            {Object.keys(extraFields).map((fieldKey) => {
+              if (integration.data) {
+                return renderIntegrationFormField({
+                  fieldKey: fieldKey,
+                  values: integration.data.integr_values,
+                  field: integration.data.integr_schema.fields[fieldKey],
+                  integrationName: integration.data.integr_name,
+                  integrationPath: integration.data.project_path,
+                  isFieldVisible: areExtraFieldsRevealed,
+                });
+              }
+            })}
           </DataList.Root>
+          <Button
+            variant="soft"
+            type="button"
+            color="gray"
+            size="2"
+            onClick={() => setAreExtraFieldsRevealed((prev) => !prev)}
+            mb="2"
+          >
+            {areExtraFieldsRevealed ? "Hide" : "Show more"}
+          </Button>
           <Flex justify="between" width="100%">
             <Flex gap="4">
               <Button
@@ -163,10 +212,12 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
       {integration.data.integr_schema.docker && (
         <Flex mt="6" direction="column" align="start" gap="3">
           <Heading as="h3" align="center" className={styles.SectionTitle}>
-            Docker Containers
+            {toPascalCase(integration.data.integr_name)} Containers
           </Heading>
           <IntegrationDocker
             dockerData={integration.data.integr_schema.docker}
+            integrationName={integration.data.integr_name}
+            integrationPath={integration.data.project_path}
           />
         </Flex>
       )}

@@ -19,13 +19,18 @@ import { setInformation } from "../../../features/Errors/informationSlice";
 import { setError } from "../../../features/Errors/errorsSlice";
 import { Card, Flex, Text } from "@radix-ui/themes";
 import { DockerContainerCard } from "./DockerContainerCard";
+import { SmartLink } from "../../SmartLink";
 
 type IntegrationDockerProps = {
   dockerData: SchemaDocker;
+  integrationName: string;
+  integrationPath: string;
 };
 
 export const IntegrationDocker: FC<IntegrationDockerProps> = ({
   dockerData,
+  integrationName,
+  integrationPath,
 }) => {
   const dispatch = useAppDispatch();
   const { dockerContainers } = useGetDockerContainersByImageQuery(
@@ -132,15 +137,27 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
 
   return (
     <Flex direction="column" gap="4" width="100%">
-      {dockerContainersList.map((el) => (
-        <DockerContainerCard
-          key={el.id}
-          container={el}
-          currentContainerAction={currentContainerAction}
-          isActionInProgress={isActionInProgress}
-          handleDockerContainerActionClick={handleDockerContainerActionClick}
-        />
-      ))}
+      <Flex direction="column" gap="2">
+        {dockerContainersList.map((el) => (
+          <DockerContainerCard
+            key={el.id}
+            container={el}
+            currentContainerAction={currentContainerAction}
+            isActionInProgress={isActionInProgress}
+            handleDockerContainerActionClick={handleDockerContainerActionClick}
+          />
+        ))}
+      </Flex>
+      <Flex gap="2" align="center">
+        {dockerData.smartlinks.map((smartlink) => (
+          <SmartLink
+            key={`docker-container-${dockerData.filter_image}`}
+            integrationName={integrationName}
+            integrationPath={integrationPath}
+            smartlink={smartlink}
+          />
+        ))}
+      </Flex>
     </Flex>
   );
 };

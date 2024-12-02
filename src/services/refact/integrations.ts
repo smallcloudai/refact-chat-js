@@ -228,6 +228,7 @@ export type SchemaDocker = DockerFilter & {
 type DockerEnvironment = Record<string, IntegrationPrimitive>;
 
 type IntegrationSchema = {
+  description?: string;
   fields: Record<string, IntegrationField<NonNullable<IntegrationPrimitive>>>;
   available: Record<string, boolean>;
   smartlinks: SmartLink[];
@@ -291,6 +292,11 @@ function isIntegrationSchema(json: unknown): json is IntegrationSchema {
   if (typeof json !== "object") {
     return false;
   }
+
+  if ("description" in json && typeof json.description !== "string") {
+    return false;
+  }
+
   if (!("fields" in json)) {
     return false;
   }
@@ -362,6 +368,7 @@ export type IntegrationField<T extends IntegrationPrimitive> = {
   f_placeholder?: T; // should match f_type
   f_default?: T;
   f_label?: string;
+  f_extra?: boolean; // rather the field is hidden by default or not
   smartlinks?: SmartLink[];
 };
 
@@ -385,6 +392,10 @@ function isIntegrationField<T extends IntegrationPrimitive>(
     return false;
   }
   if ("f_label" in json && typeof json.f_label !== "string") {
+    return false;
+  }
+
+  if ("f_extra" in json && typeof json.f_extra !== "boolean") {
     return false;
   }
   if ("f_placeholder" in json && !isPrimitive(json.f_placeholder)) {

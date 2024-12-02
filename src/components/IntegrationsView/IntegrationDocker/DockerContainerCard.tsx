@@ -1,6 +1,5 @@
 import {
   Badge,
-  Button,
   Card,
   Code,
   DataList,
@@ -19,6 +18,7 @@ import { fallbackCopying } from "../../../utils/fallbackCopying";
 import { TruncateRight } from "../../Text/TruncateRight";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { Reveal } from "../../Reveal";
+import { Chevron } from "../../Collapsible";
 
 type DockerContainerCardProps = {
   container: DockerContainer;
@@ -93,84 +93,86 @@ export const DockerContainerCard: FC<DockerContainerCardProps> = ({
   };
 
   return (
-    <Card key={container.id}>
-      <Flex direction="column" gap="4">
+    <Collapsible.Root open={detailsOpen}>
+      <Card key={container.id}>
         <Flex direction="column" gap="4">
-          <Flex justify="between" gap="3">
-            <Heading as="h6" size="4" title={container.name}>
-              <Markdown>{formattedMarkdown(container.name)}</Markdown>
-            </Heading>
-            {/* actions for containers */}
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                <IconButton variant="outline" color="gray" size="1">
-                  <DotsVerticalIcon />
-                </IconButton>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content size="1" side="bottom" align="end">
-                {DOCKER_ACTIONS.map((dockerActionButton) => {
-                  const action = dockerActionButton.action;
-                  const label =
-                    currentContainerAction?.action ===
-                      dockerActionButton.action &&
-                    currentContainerAction.container === container.name
-                      ? dockerActionButton.loadingLabel
-                      : dockerActionButton.label;
-
-                  return (
-                    <DropdownMenu.Item
-                      key={dockerActionButton.label}
-                      disabled={isDockerActionButtonDisabled(container, action)}
-                      onClick={() =>
-                        handleClickOnAction({
-                          container: container.name,
-                          action: dockerActionButton.action,
-                        })
-                      }
-                      color={
-                        dockerActionButton.action !== "start"
-                          ? "red"
-                          : undefined
-                      }
-                    >
-                      {label}
-                    </DropdownMenu.Item>
-                  );
-                })}
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
-          </Flex>
-          <DataList.Root size="1">
-            <DataList.Item align="center">
-              <DataList.Label minWidth="60px">Status</DataList.Label>
-              <DataList.Value>
-                <Badge
-                  color={container.status !== "running" ? "gray" : "jade"}
-                  variant="soft"
-                  radius="large"
-                >
-                  {toPascalCase(container.status)}
-                </Badge>
-              </DataList.Value>
-            </DataList.Item>
-            <DataList.Item align="center">
-              <DataList.Label minWidth="60px">Image</DataList.Label>
-              <DataList.Value>{container.image}</DataList.Value>
-            </DataList.Item>
-          </DataList.Root>
-        </Flex>
-        <Flex direction="column" gap="4">
-          <Collapsible.Root open={detailsOpen} onOpenChange={setDetailsOpen}>
+          <Flex direction="column" gap="4">
             <Collapsible.Trigger asChild>
-              <Button variant="outline" size="1" color="gray">
-                {detailsOpen ? "Hide details" : "Show more details"}
-              </Button>
+              <Flex justify="between" gap="3">
+                <Flex
+                  gap="3"
+                  align="center"
+                  onClick={() => setDetailsOpen((prev) => !prev)}
+                  style={{
+                    cursor: "pointer",
+                  }}
+                >
+                  <Heading as="h6" size="3" title={container.name}>
+                    <Markdown>{formattedMarkdown(container.name)}</Markdown>
+                  </Heading>
+                  <Badge
+                    color={container.status !== "running" ? "gray" : "jade"}
+                    variant="soft"
+                    radius="large"
+                  >
+                    {toPascalCase(container.status)}
+                  </Badge>
+                  <Chevron open={!detailsOpen} isUpDownChevron />
+                </Flex>
+                <Flex gap="3" align="center">
+                  {/* actions for containers */}
+                  <DropdownMenu.Root>
+                    <DropdownMenu.Trigger>
+                      <IconButton variant="outline" color="gray" size="1">
+                        <DotsVerticalIcon />
+                      </IconButton>
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content size="1" side="bottom" align="end">
+                      {DOCKER_ACTIONS.map((dockerActionButton) => {
+                        const action = dockerActionButton.action;
+                        const label =
+                          currentContainerAction?.action ===
+                            dockerActionButton.action &&
+                          currentContainerAction.container === container.name
+                            ? dockerActionButton.loadingLabel
+                            : dockerActionButton.label;
+
+                        return (
+                          <DropdownMenu.Item
+                            key={dockerActionButton.label}
+                            disabled={isDockerActionButtonDisabled(
+                              container,
+                              action,
+                            )}
+                            onClick={() =>
+                              handleClickOnAction({
+                                container: container.name,
+                                action: dockerActionButton.action,
+                              })
+                            }
+                            color={
+                              dockerActionButton.action !== "start"
+                                ? "red"
+                                : undefined
+                            }
+                          >
+                            {label}
+                          </DropdownMenu.Item>
+                        );
+                      })}
+                      <DropdownMenu.Separator />
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Root>
+                </Flex>
+              </Flex>
             </Collapsible.Trigger>
-            <Collapsible.Content
-              style={{
-                marginTop: "1.15rem",
-              }}
-            >
+          </Flex>
+          <Collapsible.Content
+            style={{
+              marginTop: "1.15rem",
+            }}
+          >
+            <Flex direction="column" gap="4">
               <Reveal defaultOpen={Object.values(container.env).length < 9}>
                 <Flex direction="column" gap="2" align="start">
                   <Heading as="h5" size="4">
@@ -237,10 +239,10 @@ export const DockerContainerCard: FC<DockerContainerCardProps> = ({
                   </DataList.Root>
                 </Flex>
               </Reveal>
-            </Collapsible.Content>
-          </Collapsible.Root>
+            </Flex>
+          </Collapsible.Content>
         </Flex>
-      </Flex>
-    </Card>
+      </Card>
+    </Collapsible.Root>
   );
 };

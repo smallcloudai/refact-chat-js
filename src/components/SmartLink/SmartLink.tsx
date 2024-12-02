@@ -100,6 +100,7 @@ export const SmartLink: FC<{
       variant="outline"
     >
       {smartlink.sl_label}
+      {smartlink.sl_chat ? " 🪄" : ""}
     </Button>
   );
 };
