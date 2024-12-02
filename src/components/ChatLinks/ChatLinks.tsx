@@ -2,7 +2,11 @@ import React, { useEffect } from "react";
 import { Flex, Button } from "@radix-ui/themes";
 import { linksApi, type ChatLink } from "../../services/refact/links";
 import { diffApi, isUserMessage } from "../../services/refact";
-import { useAppSelector, useEventsBusForIDE } from "../../hooks";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useEventsBusForIDE,
+} from "../../hooks";
 import {
   selectChatId,
   selectIsStreaming,
@@ -26,6 +30,7 @@ const isAbsolutePath = (path: string) => {
 };
 
 export const ChatLinks: React.FC = () => {
+  const dispatch = useAppDispatch();
   const { queryPathThenOpenFile } = useEventsBusForIDE();
 
   const [applyPatches, _applyPatchesResult] =
@@ -48,7 +53,7 @@ export const ChatLinks: React.FC = () => {
 
   const handleGoTo = (goto?: string) => {
     if (!goto) return;
-    // TODO: handle goto, duplicated in smart links.
+    // TODO:  uplicated in smart links.
     const [action, payload] = goto.split(":");
 
     switch (action.toLowerCase()) {
@@ -58,24 +63,26 @@ export const ChatLinks: React.FC = () => {
       }
       case "settings": {
         const isFile = isAbsolutePath(payload);
-        popBackTo({
-          name: "integrations page",
-          projectPath: isFile ? payload : undefined,
-          integrationName: !isFile ? payload : undefined,
-        });
+        dispatch(
+          popBackTo({
+            name: "integrations page",
+            projectPath: isFile ? payload : undefined,
+            integrationName: !isFile ? payload : undefined,
+          }),
+        );
         // TODO: open in the integrations
         return;
       }
       default: {
+        // eslint-disable-next-line no-console
         console.log(`[DEBUG]: unexpected action, doing nothing`);
-        // detect if name or file.
         return;
       }
     }
   };
   const handleLinkAction = (link: ChatLink) => {
     if (!("action" in link)) return;
-    if (link.action === "go-to" && "goto" in link) {
+    if (link.action === "goto" && "goto" in link) {
       handleGoTo(link.goto);
       return;
     }
@@ -121,7 +128,7 @@ export const ChatLinks: React.FC = () => {
     }
   }, [chatId, isStreaming, isWaiting, linksRequest, messages, unCalledTools]);
 
-  // TODO: waiting.
+  // TODO: waiting, errors, maybe add a title
 
   if (!linksResult.data) return null;
 
