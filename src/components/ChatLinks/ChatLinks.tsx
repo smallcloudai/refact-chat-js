@@ -33,6 +33,7 @@ export const ChatLinks: React.FC = () => {
   );
 
   // TODO: loading state
+  // TODO: similar code for handling goto: here https://github.com/smallcloudai/refact-chat-js/pull/185/files#diff-2bd903c64449082f680be3f2a6202399a322a44b1a16c023432962e9491a00e8R244-R283
 
   // TODO: error state
 
