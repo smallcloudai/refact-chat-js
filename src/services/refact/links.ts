@@ -4,10 +4,19 @@ import { ChatMessages } from "./types";
 import { formatMessagesForLsp } from "../../features/Chat/Thread/utils";
 import { CHAT_LINKS_URL } from "./consts";
 
-type ChatLink =
-  | { text: string; goto: string; action: string }
+export enum ChatLinkActions {
+  PatchAll = "patch-all",
+  FollowUp = "follow-up",
+  Commit = "commit",
+  Goto = "go-to",
+  SummarizeProject = "summarize-project",
+}
+// goto: can be an integration file to open in settings, a file to open in an idea or a global integration.
+export type ChatLink =
+  | { text: string; goto: string; action: ChatLinkActions | string }
   | { text: string; goto: string; action: undefined }
-  | { text: string; goto: undefined; action: string };
+  | { text: string; goto: undefined; action: ChatLinkActions | string }
+  | { text: string; goto: string; action: ChatLinkActions.Goto };
 
 function isChatLink(json: unknown): json is ChatLink {
   if (!json || typeof json !== "object") return false;

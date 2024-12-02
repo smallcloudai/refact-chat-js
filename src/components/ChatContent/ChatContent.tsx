@@ -30,6 +30,7 @@ import { GroupedDiffs } from "./DiffContent";
 import { ScrollToBottomButton } from "./ScrollToBottomButton";
 import { currentTipOfTheDay } from "../../features/TipOfTheDay";
 import { popBackTo } from "../../features/Pages/pagesSlice";
+import { ChatLinks } from "../ChatLinks";
 
 const TipOfTheDay: React.FC = () => {
   const tip = useAppSelector(currentTipOfTheDay);
@@ -187,6 +188,8 @@ export const ChatContent: React.FC<ChatContentProps> = ({
       <Flex direction="column" className={styles.content} p="2" gap="1">
         {messages.length === 0 && <PlaceHolderText />}
         {renderMessages(messages, onRetryWrapper)}
+        {/* {isConfig && messages.length === 0 && <ChatLinks />} */}
+        <ChatLinks />
         <Container py="4">
           <Spinner spinning={isWaiting} />
         </Container>
