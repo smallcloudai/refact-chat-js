@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Flex, Button } from "@radix-ui/themes";
+import { Flex, Button, Heading, Container } from "@radix-ui/themes";
 import { linksApi, type ChatLink } from "../../services/refact/links";
 import { diffApi, isUserMessage } from "../../services/refact";
 import {
@@ -133,12 +133,18 @@ export const ChatLinks: React.FC = () => {
   if (!linksResult.data) return null;
 
   return (
-    <Flex gap="2" wrap="wrap" direction="column" align="start">
-      {linksResult.data.links.map((link, index) => {
-        const key = `chat-link-${index}`;
-        return <ChatLinkButton key={key} link={link} onClick={handleClick} />;
-      })}
-    </Flex>
+    <Container mt="4">
+      <Heading as="h4" size="2" mb="2">
+        Available Actions:{" "}
+      </Heading>
+
+      <Flex gap="2" wrap="wrap" direction="column" align="start">
+        {linksResult.data.links.map((link, index) => {
+          const key = `chat-link-${index}`;
+          return <ChatLinkButton key={key} link={link} onClick={handleClick} />;
+        })}
+      </Flex>
+    </Container>
   );
 };
 
@@ -150,7 +156,16 @@ const ChatLinkButton: React.FC<{
   const handleClick = React.useCallback(() => onClick(link), [link, onClick]);
 
   return (
-    <Button size="1" radius="full" title={title} onClick={handleClick}>
+    <Button
+      // variant="classic"
+      // variant="solid"
+      // variant="outline"
+      // variant="soft"
+      // variant="ghost"
+      variant="surface"
+      title={title}
+      onClick={handleClick}
+    >
       {link.text}
     </Button>
   );
