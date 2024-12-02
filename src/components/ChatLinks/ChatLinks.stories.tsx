@@ -5,6 +5,9 @@ import { setUpStore } from "../../app/store";
 import { Provider } from "react-redux";
 import { Theme } from "../Theme";
 import { Container } from "@radix-ui/themes";
+import { http, HttpResponse, type HttpHandler } from "msw";
+import { CHAT_LINKS_URL } from "../../services/refact/consts";
+import { STUB_LINKS_FOR_CHAT_RESPONSE } from "../../__fixtures__";
 
 const Template = () => {
   const store = setUpStore();
@@ -25,7 +28,18 @@ const meta = {
   argTypes: {
     //...
   },
-} satisfies Meta<typeof Template>;
+  parameters: {
+    msw: {
+      handlers: [
+        http.post(CHAT_LINKS_URL, () => {
+          return HttpResponse.json(STUB_LINKS_FOR_CHAT_RESPONSE);
+        }),
+      ],
+    },
+  },
+} satisfies Meta<
+  typeof Template & { parameters: { msw: { handlers: HttpHandler[] } } }
+>;
 
 export default meta;
 

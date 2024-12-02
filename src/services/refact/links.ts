@@ -1,6 +1,9 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { RootState } from "../../app/store";
-import { STUB_LINKS_FOR_CHAT_RESPONSE } from "../../__fixtures__";
+import { ChatMessages } from "./types";
+import { formatMessagesForLsp } from "../../features/Chat/Thread/utils";
+import { CHAT_LINKS_URL } from "./consts";
+
 type ChatLink =
   | { text: string; goto: string; action: string }
   | { text: string; goto: string; action: undefined }
@@ -23,6 +26,11 @@ export type LinksForChatResponse = {
   links: ChatLink[];
 };
 
+export type LinksApiRequest = {
+  chat_id: string;
+  messages: ChatMessages;
+};
+
 function isLinksForChatResponse(json: unknown): json is LinksForChatResponse {
   if (!json || typeof json !== "object") return false;
   if (!("links" in json)) return false;
@@ -42,18 +50,34 @@ export const linksApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    getLinksForChat: builder.query<LinksForChatResponse, null>({
-      async queryFn(_arg, _api, _extraOptions, _baseQuery) {
-        if (!isLinksForChatResponse(STUB_LINKS_FOR_CHAT_RESPONSE)) {
+    getLinksForChat: builder.query<LinksForChatResponse, LinksApiRequest>({
+      async queryFn(args, _api, extraOptions, baseQuery) {
+        const messageFotLsp = formatMessagesForLsp(args.messages);
+
+        const response = await baseQuery({
+          ...extraOptions,
+          method: "POST",
+          url: CHAT_LINKS_URL,
+          body: {
+            chat_id: args.chat_id,
+            messages: messageFotLsp,
+          },
+        });
+
+        if (response.error) {
+          return { error: response.error };
+        }
+
+        if (!isLinksForChatResponse(response.data)) {
           return {
             error: {
               error: "Invalid response for chat links",
-              data: STUB_LINKS_FOR_CHAT_RESPONSE,
+              data: response.data,
               status: "CUSTOM_ERROR",
             },
           };
         }
-        return Promise.resolve({ data: STUB_LINKS_FOR_CHAT_RESPONSE });
+        return { data: response.data };
       },
     }),
   }),

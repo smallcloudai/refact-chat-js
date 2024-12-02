@@ -15,3 +15,5 @@ export const DOCUMENTATION_ADD = `/v1/docs-add`;
 export const DOCUMENTATION_REMOVE = `/v1/docs-remove`;
 export const PING_URL = `/v1/ping`;
 export const PATCH_URL = `/v1/patch-single-file-from-ticket`;
+// TODO: update this
+export const CHAT_LINKS_URL = "/v1/links-for-chat";
