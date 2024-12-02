@@ -91,17 +91,17 @@ export const ChatLinks: React.FC = () => {
       return;
     }
 
-    if (link.action === "commit") {
-      return;
-    }
+    // if (link.action === "commit") {
+    //   return;
+    // }
 
-    if (link.action === "follow-up") {
-      return;
-    }
+    // if (link.action === "follow-up") {
+    //   return;
+    // }
 
-    if (link.action === "summarize-project") {
-      return;
-    }
+    // if (link.action === "summarize-project") {
+    //   return;
+    // }
 
     // eslint-disable-next-line no-console
     console.warn(`unknown action: ${JSON.stringify(link)}`);
