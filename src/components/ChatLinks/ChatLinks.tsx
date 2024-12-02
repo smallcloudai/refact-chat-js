@@ -1,11 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Flex, Button } from "@radix-ui/themes";
-import {
-  linksApi,
-  type ChatLink,
-  ChatLinkActions,
-} from "../../services/refact/links";
-import { diffApi } from "../../services/refact";
+import { linksApi, type ChatLink } from "../../services/refact/links";
+import { diffApi, isUserMessage } from "../../services/refact";
 import { useAppSelector, useEventsBusForIDE } from "../../hooks";
 import {
   selectChatId,
@@ -15,13 +11,13 @@ import {
 } from "../../features/Chat";
 import { popBackTo } from "../../features/Pages/pagesSlice";
 
-function maybeConcatActionAndGoToStrings(
-  action?: string,
-  goto?: string,
-): string | undefined {
-  if (!action && !goto) return "";
-  if (action && goto) return `action: ${action}\ngoto: ${goto}`;
-  return action ?? goto;
+function maybeConcatActionAndGoToStrings(link: ChatLink): string | undefined {
+  const hasAction = "action" in link;
+  const hasGoTo = "goto" in link;
+  if (!hasAction && !hasGoTo) return "";
+  if (hasAction && hasGoTo) return `action: ${link.action}\ngoto: ${link.goto}`;
+  if (hasAction) return `action: ${link.action}`;
+  return `goto: ${link.goto}`;
 }
 
 const isAbsolutePath = (path: string) => {
@@ -78,62 +74,60 @@ export const ChatLinks: React.FC = () => {
     }
   };
   const handleLinkAction = (link: ChatLink) => {
-    switch (link.action) {
-      case undefined: {
-        return;
-      }
-      case ChatLinkActions.Goto: {
-        // will have "goto"
-        // handle goto
-        handleGoTo(link.goto);
-        return;
-      }
-      case ChatLinkActions.PatchAll: {
-        // "/v1/patch-apply-all"
-        void applyPatches(messages);
-        return;
-      }
-      case ChatLinkActions.Commit: {
-        // "/v1/git-stage-and-commit"
-        return;
-      }
-      case ChatLinkActions.FollowUp: {
-        return;
-      }
-      case ChatLinkActions.SummarizeProject: {
-        return;
-      }
-      default: {
-        // eslint-disable-next-line no-console
-        console.warn(`unknown action: ${link.action}`);
-      }
+    if (!("action" in link)) return;
+    if (link.action === "go-to" && "goto" in link) {
+      handleGoTo(link.goto);
+      return;
     }
+    if (link.action === "patch-all") {
+      void applyPatches(messages);
+      return;
+    }
+
+    if (link.action === "commit") {
+      return;
+    }
+
+    if (link.action === "follow-up") {
+      return;
+    }
+
+    if (link.action === "summarize-project") {
+      return;
+    }
+
+    // eslint-disable-next-line no-console
+    console.warn(`unknown action: ${JSON.stringify(link)}`);
   };
   const handleClick = (link: ChatLink) => {
-    if (!link.action && link.goto) {
+    if (!("action" in link) && "goto" in link) {
       handleGoTo(link.goto);
     } else {
       handleLinkAction(link);
     }
   };
 
-  const linksRequest = linksApi.useGetLinksForChatQuery(
-    { chat_id: chatId, messages: messages },
-    {
-      skip: isStreaming || isWaiting || unCalledTools,
-    },
-  );
+  const [linksRequest, linksResult] = linksApi.useGetLinksForChatMutation();
 
-  // TODO: loading state
-  // TODO: similar code for handling goto: here https://github.com/smallcloudai/refact-chat-js/pull/185/files#diff-2bd903c64449082f680be3f2a6202399a322a44b1a16c023432962e9491a00e8R244-R283
+  useEffect(() => {
+    if (
+      !isStreaming &&
+      !isWaiting &&
+      !unCalledTools &&
+      messages.length > 0 &&
+      !isUserMessage(messages[messages.length - 1])
+    ) {
+      void linksRequest({ chat_id: chatId, messages: messages });
+    }
+  }, [chatId, isStreaming, isWaiting, linksRequest, messages, unCalledTools]);
 
-  // TODO: error state
+  // TODO: waiting.
 
-  if (!linksRequest.data) return null;
+  if (!linksResult.data) return null;
 
   return (
     <Flex gap="2" wrap="wrap" direction="column" align="start">
-      {linksRequest.data.links.map((link, index) => {
+      {linksResult.data.links.map((link, index) => {
         const key = `chat-link-${index}`;
         return <ChatLinkButton key={key} link={link} onClick={handleClick} />;
       })}
@@ -145,7 +139,7 @@ const ChatLinkButton: React.FC<{
   link: ChatLink;
   onClick: (link: ChatLink) => void;
 }> = ({ link, onClick }) => {
-  const title = maybeConcatActionAndGoToStrings(link.action, link.goto);
+  const title = maybeConcatActionAndGoToStrings(link);
   const handleClick = React.useCallback(() => onClick(link), [link, onClick]);
 
   return (

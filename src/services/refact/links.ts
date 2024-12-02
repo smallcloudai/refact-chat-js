@@ -4,19 +4,12 @@ import { ChatMessages } from "./types";
 import { formatMessagesForLsp } from "../../features/Chat/Thread/utils";
 import { CHAT_LINKS_URL } from "./consts";
 
-export enum ChatLinkActions {
-  PatchAll = "patch-all",
-  FollowUp = "follow-up",
-  Commit = "commit",
-  Goto = "go-to",
-  SummarizeProject = "summarize-project",
-}
 // goto: can be an integration file to open in settings, a file to open in an idea or a global integration.
 export type ChatLink =
-  | { text: string; goto: string; action: ChatLinkActions | string }
-  | { text: string; goto: string; action: undefined }
-  | { text: string; goto: undefined; action: ChatLinkActions | string }
-  | { text: string; goto: string; action: ChatLinkActions.Goto };
+  | { text: string; goto: string; action: string }
+  | { text: string; goto: string /* action: undefined */ }
+  | { text: string; /* goto: undefined; */ action: string }
+  | { text: string; goto: string; action: "go-to" };
 
 function isChatLink(json: unknown): json is ChatLink {
   if (!json || typeof json !== "object") return false;
@@ -59,7 +52,7 @@ export const linksApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    getLinksForChat: builder.query<LinksForChatResponse, LinksApiRequest>({
+    getLinksForChat: builder.mutation<LinksForChatResponse, LinksApiRequest>({
       async queryFn(args, _api, extraOptions, baseQuery) {
         const messageFotLsp = formatMessagesForLsp(args.messages);
 
@@ -90,4 +83,5 @@ export const linksApi = createApi({
       },
     }),
   }),
+  // refetchOnMountOrArgChange: true,
 });

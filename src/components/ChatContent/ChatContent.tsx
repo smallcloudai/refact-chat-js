@@ -188,8 +188,8 @@ export const ChatContent: React.FC<ChatContentProps> = ({
       <Flex direction="column" className={styles.content} p="2" gap="1">
         {messages.length === 0 && <PlaceHolderText />}
         {renderMessages(messages, onRetryWrapper)}
-        {/* {isConfig && messages.length === 0 && <ChatLinks />} */}
-        <ChatLinks />
+        {/** isConfig could be calculate in ChatLinks */}
+        {isConfig && <ChatLinks />}
         <Container py="4">
           <Spinner spinning={isWaiting} />
         </Container>
