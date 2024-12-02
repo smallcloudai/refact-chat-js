@@ -46,15 +46,15 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
-    if (dockerContainers.data) {
+    if (!dockerContainers.isLoading) {
       console.log(`[DEBUG]: loaded containers: `, dockerContainers.data);
 
-      setDockerContainersList(dockerContainers.data.containers);
-      if (dockerContainers.isSuccess) {
-        timeoutId = setTimeout(() => {
-          setAreContainersLoaded(true);
-        }, 100);
+      if (dockerContainers.data) {
+        setDockerContainersList(dockerContainers.data.containers);
       }
+      timeoutId = setTimeout(() => {
+        setAreContainersLoaded(true);
+      }, 100);
     }
 
     return () => {
