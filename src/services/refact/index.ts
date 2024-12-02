@@ -11,3 +11,4 @@ export * from "./path";
 export * from "./ping";
 export * from "./links";
 export * from "./integrations";
+export * from "./docker";
