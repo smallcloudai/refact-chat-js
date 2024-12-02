@@ -19,6 +19,7 @@ import {
   diffApi,
   pathApi,
   pingApi,
+  integrationsApi,
 } from "../services/refact";
 import { smallCloudApi } from "../services/smallcloud";
 import { reducer as fimReducer } from "../features/FIM/reducer";
@@ -42,6 +43,8 @@ import { confirmationSlice } from "../features/ToolConfirmation/confirmationSlic
 import { attachedImagesSlice } from "../features/AttachedImages";
 import { userSurveySlice } from "../features/UserSurvey/userSurveySlice";
 import { linksApi } from "../services/refact/links";
+import { integrationsSlice } from "../features/Integrations";
+
 const tipOfTheDayPersistConfig = {
   key: "totd",
   storage: storage(),
@@ -80,9 +83,11 @@ const rootReducer = combineSlices(
   errorSlice,
   informationSlice,
   pagesSlice,
+  integrationsApi,
   confirmationSlice,
   attachedImagesSlice,
   userSurveySlice,
+  integrationsSlice,
 );
 
 const rootPersistConfig = {
@@ -145,6 +150,7 @@ export function setUpStore(preloadedState?: Partial<RootState>) {
             smallCloudApi.middleware,
             pathApi.middleware,
             linksApi.middleware,
+            integrationsApi.middleware,
           )
           .prepend(historyMiddleware.middleware)
           // .prepend(errorMiddleware.middleware)

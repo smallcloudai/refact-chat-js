@@ -1,0 +1,22 @@
+.button {
+  cursor: pointer;
+  padding: 0 0.75rem;
+  transition: all 0.3s ease-in-out;
+}
+
+.disabledButton {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.SectionTitle {
+  width: 100%;
+}
+
+.IntegrationForm {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: flex-start;
+  margin-top: 0.5rem;
+}
