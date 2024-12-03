@@ -22,6 +22,7 @@ const handleGotoAction = (
 ) => {
   const [action, payload] = sl_goto.split(":");
   switch (action.toLowerCase()) {
+    // TODO: could be possible to share it between Marc's implementation
     case "editor":
       void queryPathThenOpenFile({ file_name: payload });
       break;
