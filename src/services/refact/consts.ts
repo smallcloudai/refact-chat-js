@@ -16,3 +16,6 @@ export const DOCUMENTATION_REMOVE = `/v1/docs-remove`;
 export const PING_URL = `/v1/ping`;
 export const PATCH_URL = `/v1/patch-single-file-from-ticket`;
 export const APPLY_ALL_URL = "/v1/patch-apply-all";
+// Docker endpoints
+export const DOCKER_CONTAINER_LIST = "/v1/docker-container-list";
+export const DOCKER_CONTAINER_ACTION = "/v1/docker-container-action";
