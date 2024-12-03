@@ -88,7 +88,7 @@ export const renderIntegrationFormField = ({
         <CustomLabel
           htmlFor={fieldKey}
           label={field.f_label ? field.f_label : toPascalCase(fieldKey)}
-          marginTop="7px"
+          mt="2"
         />
       </DataList.Label>
       <DataList.Value
