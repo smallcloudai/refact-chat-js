@@ -72,22 +72,11 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
   }
 
   if (dockerContainers.error ?? !dockerContainers.data) {
-    return (
-      <DockerErrorCard
-        errorTitle="Unexpected error"
-        errorMessage={`Unexpected error on fetching list of docker containers with
-            "${dockerData.filter_image}" image.`}
-      />
-    );
+    return <DockerErrorCard errorType="no-connection" />;
   }
 
   if (!dockerContainersList || dockerContainersList.length === 0) {
-    return (
-      <DockerErrorCard
-        errorTitle="No Docker Containers Found"
-        errorMessage={`No docker containers found for "${dockerData.filter_image}" image.`}
-      />
-    );
+    return <DockerErrorCard errorType="unexpected" />;
   }
 
   const handleDockerContainerActionClick = async (
@@ -163,14 +152,10 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
 };
 
 type DockerErrorCardProps = {
-  errorTitle: string;
-  errorMessage: string;
+  errorType: "no-connection" | "unexpected";
 };
 
-const DockerErrorCard: FC<DockerErrorCardProps> = ({
-  errorTitle,
-  errorMessage,
-}) => {
+const DockerErrorCard: FC<DockerErrorCardProps> = ({ errorType }) => {
   return (
     <Card
       style={{
@@ -185,9 +170,13 @@ const DockerErrorCard: FC<DockerErrorCardProps> = ({
         width="100%"
       >
         <Text size="3" weight="bold">
-          {errorTitle}
+          {errorType === "no-connection" ? "No connection" : "Unexpected error"}
         </Text>
-        <Text size="2">{errorMessage}</Text>
+        <Text size="2">
+          {errorType === "no-connection"
+            ? "Seems, that there is no connection to Docker Daemon. Please, setup Docker properly or launch Docker Engine"
+            : "Something went wrong during connection or listing containers"}
+        </Text>
       </Flex>
     </Card>
   );
