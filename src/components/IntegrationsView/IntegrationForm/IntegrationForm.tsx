@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import React, { useCallback, useEffect, useState } from "react";
 import classNames from "classnames";
 import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrationDataByPathQuery";
@@ -18,6 +17,7 @@ import { SmartLink } from "../../SmartLink";
 import { renderIntegrationFormField } from "../../../features/Integrations/renderIntegrationFormField";
 import { IntegrationAvailability } from "./IntegrationAvailability";
 import { toPascalCase } from "../../../utils/toPascalCase";
+import { debugIntegrations } from "../../../debugConfig";
 
 type IntegrationFormProps = {
   integrationPath: string;
@@ -76,7 +76,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
     if (integration.data?.integr_values) {
       onValues(integration.data.integr_values);
     }
-    console.log(`[DEBUG]: integration.data: `, integration);
+    debugIntegrations(`[DEBUG]: integration.data: `, integration);
   }, [integration, onSchema, onValues]);
 
   const importantFields = Object.entries(

@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent, FC } from "react";
 import { Box, Flex, Heading } from "@radix-ui/themes";
@@ -38,6 +37,7 @@ import {
 } from "../../features/Pages/pagesSlice";
 import { IntegrationCard } from "./IntegrationCard";
 import { IntegrationsHeader } from "./IntegrationsHeader";
+import { debugIntegrations } from "../../debugConfig";
 
 type IntegrationViewProps = {
   integrationsMap?: IntegrationWithIconResponse;
@@ -107,7 +107,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   >({});
 
   useEffect(() => {
-    console.log(`[DEBUG]: integrationsData: `, integrationsMap);
+    debugIntegrations(`[DEBUG]: integrationsData: `, integrationsMap);
   }, [integrationsMap]);
 
   useEffect(() => {
@@ -199,16 +199,16 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       if (!currentIntegration) return;
-      console.log(`[DEBUG]: schema: `, currentIntegrationSchema);
+      debugIntegrations(`[DEBUG]: schema: `, currentIntegrationSchema);
       if (!currentIntegrationSchema) return;
       event.preventDefault();
       setIsApplyingIntegrationForm(true);
 
-      console.log(`[DEBUG]: event: `, event);
+      debugIntegrations(`[DEBUG]: event: `, event);
 
       const formData = new FormData(event.currentTarget);
       const rawFormValues = Object.fromEntries(formData.entries());
-      console.log(`[DEBUG]: rawFormValues: `, rawFormValues);
+      debugIntegrations(`[DEBUG]: rawFormValues: `, rawFormValues);
       // Adjust types of data based on f_type of each field in schema
       const formValues: Integration["integr_values"] = Object.keys(
         rawFormValues,
@@ -232,7 +232,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         return acc;
       }, {});
 
-      console.log(`[DEBUG]: formValues: `, formValues);
+      debugIntegrations(`[DEBUG]: formValues: `, formValues);
 
       formValues.available = availabilityValues;
 
@@ -243,7 +243,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
 
       if (response.error) {
         const error = response.error as FetchBaseQueryError;
-        console.log(`[DEBUG]: error is present, error: `, error);
+        debugIntegrations(`[DEBUG]: error is present, error: `, error);
         dispatch(
           setError(
             isDetailMessage(error.data)
@@ -326,7 +326,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       });
       const maybeDisabled =
         eachFormValueIsNotChanged && eachAvailabilityOptionIsNotChanged;
-      console.log(`[DEBUG CHANGE]: maybeDisabled: `, maybeDisabled);
+      debugIntegrations(`[DEBUG CHANGE]: maybeDisabled: `, maybeDisabled);
 
       setIsDisabledIntegrationForm(maybeDisabled);
     },
@@ -351,7 +351,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   const handleIntegrationShowUp = (
     integration: IntegrationWithIconResponse["integrations"][number],
   ) => {
-    console.log(`[DEBUG]: open form: `, integration);
+    debugIntegrations(`[DEBUG]: open form: `, integration);
     setCurrentIntegration(integration);
   };
   const handleNotSetupIntegrationShowUp = (
@@ -359,7 +359,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   ) => {
     if (!integrationsMap) return;
 
-    console.log(
+    debugIntegrations(
       `[DEBUG]: open form for not configured integration: `,
       integration,
     );
@@ -378,19 +378,19 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     );
 
     if (!maybeConfiguredGlobalIntegration && !maybeConfiguredLocalIntegration) {
-      console.log(
+      debugIntegrations(
         `[DEBUG]: no locally neither globally configured ${integration.integr_name} were found. asking to choose to configure local or global configuration`,
       );
       return;
     }
     if (maybeConfiguredGlobalIntegration) {
-      console.log(
+      debugIntegrations(
         `[DEBUG]: found globally configured ${maybeConfiguredGlobalIntegration.integr_name} integration! should configure local configuration`,
       );
     }
 
     if (maybeConfiguredLocalIntegration) {
-      console.log(
+      debugIntegrations(
         `[DEBUG]: found locally configured ${maybeConfiguredLocalIntegration.integr_name} integration! should configure global configuration`,
       );
     }
