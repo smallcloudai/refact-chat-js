@@ -1,11 +1,13 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { RootState } from "../../app/store";
 import { isLspChatMessage, LspChatMessage } from "./chat";
+import {
+  INTEGRATION_GET_URL,
+  INTEGRATION_SAVE_URL,
+  INTEGRATIONS_URL,
+} from "./consts";
 
-const INTEGRATIONS_URL = "/v1/integrations";
-const INTEGRATION_GET_URL = "/v1/integration-get";
-const INTEGRATION_SAVE_URL = "/v1/integration-save";
-
+// TODO: Cache invalidation logic.
 export const integrationsApi = createApi({
   reducerPath: "integrationsApi",
   tagTypes: ["INTEGRATIONS", "INTEGRATION"],
