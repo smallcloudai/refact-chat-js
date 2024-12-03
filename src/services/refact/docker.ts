@@ -19,6 +19,7 @@ export const dockerApi = createApi({
   }),
   endpoints: (builder) => ({
     getAllDockerContainers: builder.query<DockerContainersResponse, undefined>({
+      // TODO: make a function for settings tags
       providesTags: ["DOCKER"],
       async queryFn(_arg, api, extraOptions, baseQuery) {
         const state = api.getState() as RootState;
