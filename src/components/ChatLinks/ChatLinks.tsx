@@ -100,14 +100,17 @@ export const ChatLinks: React.FC = () => {
     }
 
     // if (link.action === "commit") {
+    // ???
     //   return;
     // }
 
     // if (link.action === "follow-up") {
+    // follow up is a user messages
     //   return;
     // }
 
     // if (link.action === "summarize-project") {
+    // dedicated handler in the lsp, or a new chat
     //   return;
     // }
 
