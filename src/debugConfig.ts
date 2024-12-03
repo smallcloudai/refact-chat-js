@@ -8,7 +8,7 @@ export const debugComponent = createDebug("component");
 export const debugIntegrations = createDebug("integrations");
 
 createDebug.enable("root");
-debugRoot(`DEBUG: ${debugNamespaces}`);
+debugRoot(`Debugging: ${debugNamespaces ? "enabled" : "disabled"}`);
 
 if (debugNamespaces) {
   if (debugNamespaces === "*") {
