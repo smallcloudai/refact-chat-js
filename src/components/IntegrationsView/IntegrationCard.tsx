@@ -27,6 +27,7 @@ export const IntegrationCard: FC<IntegrationCardProps> = ({
         [styles.integrationCardInline]: isInline,
       })}
       onClick={() => handleIntegrationShowUp(integration)}
+      pt
     >
       <Flex
         gap="4"

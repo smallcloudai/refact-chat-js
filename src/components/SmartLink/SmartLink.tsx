@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 import { useCallback } from "react";
 import type { FC } from "react";
 import type {
@@ -22,7 +20,6 @@ const handleGotoAction = (
   sl_goto: string,
   queryPathThenOpenFile: (file: OpenFilePayload) => Promise<void>,
 ) => {
-  console.log(`[DEBUG]: sl_goto: `, sl_goto);
   const [action, payload] = sl_goto.split(":");
   switch (action.toLowerCase()) {
     case "editor":

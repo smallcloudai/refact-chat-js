@@ -1,4 +1,3 @@
-/* eslint-disable no-console */ // TODO: remove in the future
 import type { FC } from "react";
 import { useEffect, useState } from "react";
 import {
@@ -52,8 +51,6 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     if (!dockerContainers.isLoading) {
-      console.log(`[DEBUG]: loaded containers: `, dockerContainers.data);
-
       if (dockerContainers.data) {
         setDockerContainersList(dockerContainers.data.containers);
       }
