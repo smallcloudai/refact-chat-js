@@ -53,8 +53,8 @@ export const INTEGRATIONS_RESPONSE: Integration = {
       },
     ],
     docker: {
-      filter_image: "postgres",
       filter_label: "",
+      filter_image: "postgres",
       new_container_default: {
         image: "postgres:13",
         environment: {
@@ -70,7 +70,7 @@ export const INTEGRATIONS_RESPONSE: Integration = {
             {
               role: "user",
               content:
-                '🔧 Your job is to create a new section under "docker" that will define a new postgres container, inside the current config file %CURRENT_CONFIG%. Follow the system prompt.\n',
+                "🔧 Your job is to create a postgres container, using the image and environment from new_container_default section in the current config file: %CURRENT_CONFIG%. Follow the system prompt.\n",
             },
           ],
         },
