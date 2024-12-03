@@ -210,7 +210,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
 
       const formData = new FormData(event.currentTarget);
       const rawFormValues = Object.fromEntries(formData.entries());
-
+      console.log(`[DEBUG]: rawFormValues: `, rawFormValues);
       // Adjust types of data based on f_type of each field in schema
       const formValues: Integration["integr_values"] = Object.keys(
         rawFormValues,
@@ -328,7 +328,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       });
       const maybeDisabled =
         eachFormValueIsNotChanged && eachAvailabilityOptionIsNotChanged;
-      console.log(`[DEBUG]: maybeDisabled: `, maybeDisabled);
+      console.log(`[DEBUG CHANGE]: maybeDisabled: `, maybeDisabled);
 
       setIsDisabledIntegrationForm(maybeDisabled);
     },
