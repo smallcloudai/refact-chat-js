@@ -6,12 +6,14 @@ import {
   useAppDispatch,
   useAppSelector,
   useEventsBusForIDE,
+  useGetCapsQuery,
 } from "../../hooks";
 import {
   selectChatId,
   selectIsStreaming,
   selectIsWaiting,
   selectMessages,
+  selectModel,
 } from "../../features/Chat";
 import { popBackTo } from "../../features/Pages/pagesSlice";
 
@@ -40,6 +42,12 @@ export const ChatLinks: React.FC = () => {
   const isWaiting = useAppSelector(selectIsWaiting);
   const messages = useAppSelector(selectMessages);
   const chatId = useAppSelector(selectChatId);
+
+  // TODO: add the model
+  const caps = useGetCapsQuery();
+
+  const model =
+    (useAppSelector(selectModel) || caps.data?.code_chat_default_model) ?? "";
 
   const unCalledTools = React.useMemo(() => {
     if (messages.length === 0) return false;
@@ -124,9 +132,17 @@ export const ChatLinks: React.FC = () => {
       messages.length > 0 &&
       !isUserMessage(messages[messages.length - 1])
     ) {
-      void linksRequest({ chat_id: chatId, messages: messages });
+      void linksRequest({ chat_id: chatId, messages: messages, model });
     }
-  }, [chatId, isStreaming, isWaiting, linksRequest, messages, unCalledTools]);
+  }, [
+    chatId,
+    isStreaming,
+    isWaiting,
+    linksRequest,
+    messages,
+    model,
+    unCalledTools,
+  ]);
 
   // TODO: waiting, errors, maybe add a title
 

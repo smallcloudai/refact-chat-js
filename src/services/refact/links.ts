@@ -31,6 +31,7 @@ export type LinksForChatResponse = {
 export type LinksApiRequest = {
   chat_id: string;
   messages: ChatMessages;
+  model: string;
 };
 
 function isLinksForChatResponse(json: unknown): json is LinksForChatResponse {
@@ -63,6 +64,7 @@ export const linksApi = createApi({
           body: {
             chat_id: args.chat_id,
             messages: messageFotLsp,
+            model_name: args.model,
           },
         });
 
