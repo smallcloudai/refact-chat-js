@@ -5,8 +5,10 @@ import {
   TextArea,
   Button,
   Text,
+  Switch,
 } from "@radix-ui/themes";
 import { Markdown } from "../Markdown";
+import { useState } from "react";
 
 // Custom Input Field
 export const CustomInputField = ({
@@ -16,6 +18,8 @@ export const CustomInputField = ({
   type,
   id,
   name,
+  width,
+  size = "long",
 }: {
   id?: string;
   type?:
@@ -36,18 +40,47 @@ export const CustomInputField = ({
   name?: string;
   defaultValue?: string | number;
   placeholder?: string;
+  size?: string;
+  width?: string;
 }) => {
   return (
-    <Box width="100%">
-      <TextField.Root
-        id={id}
-        name={name}
-        type={type}
-        size="2"
-        value={value}
-        defaultValue={defaultValue}
-        placeholder={placeholder}
-      />
+    <Box
+      width={
+        width
+          ? width
+          : size === "short"
+            ? {
+                xs: "50%",
+                initial: "100%",
+              }
+            : "100%"
+      }
+    >
+      {size !== "multiline" ? (
+        <TextField.Root
+          id={id}
+          name={name}
+          type={type}
+          size="2"
+          value={value}
+          variant="soft"
+          color="gray"
+          defaultValue={defaultValue}
+          placeholder={placeholder}
+        />
+      ) : (
+        <TextArea
+          id={id}
+          name={name}
+          size="2"
+          rows={3}
+          value={value}
+          variant="soft"
+          color="gray"
+          defaultValue={defaultValue?.toString()}
+          placeholder={placeholder}
+        />
+      )}
     </Box>
   );
 };
@@ -55,37 +88,71 @@ export const CustomInputField = ({
 export const CustomLabel = ({
   label,
   htmlFor,
-  width,
+  mt,
 }: {
   label: string;
   htmlFor?: string;
-  width?: string;
+  mt?: string;
 }) => {
   return (
-    <label
+    <Text
+      as="label"
       htmlFor={htmlFor}
+      size="2"
+      weight="medium"
+      mt={mt ? mt : "0"}
       style={{
         display: "block",
-        fontWeight: 500,
-        fontSize: 14,
-        lineHeight: 1.15,
-        width: width ? width : "40%",
       }}
     >
       {label}
-    </label>
+    </Text>
   );
 };
 
 export const CustomDescriptionField = ({
   children = "",
+  mb = "2",
 }: {
   children?: string;
+  mb?: string;
 }) => {
   return (
-    <Text size="1" mb="2" style={{ display: "block", opacity: 0.85 }}>
+    <Text
+      size="1"
+      mb={{
+        initial: "0",
+        xs: mb,
+      }}
+      style={{ display: "block", opacity: 0.85 }}
+    >
       <Markdown>{children}</Markdown>
     </Text>
+  );
+};
+
+export const CustomBoolField = ({
+  id,
+  name,
+  defaultValue,
+}: {
+  id: string;
+  name: string;
+  defaultValue: boolean;
+}) => {
+  const [checked, setChecked] = useState(defaultValue);
+  return (
+    <Box>
+      <Switch
+        name={name}
+        id={id}
+        size="2"
+        checked={checked}
+        defaultChecked={defaultValue}
+        onCheckedChange={(value: boolean) => setChecked(value)}
+      />
+      <input type="hidden" name={name} value={checked ? "on" : "off"} />
+    </Box>
   );
 };
 
