@@ -165,16 +165,18 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
               }
             })}
           </DataList.Root>
-          <Button
-            variant="soft"
-            type="button"
-            color="gray"
-            size="2"
-            onClick={() => setAreExtraFieldsRevealed((prev) => !prev)}
-            mb="2"
-          >
-            {areExtraFieldsRevealed ? "Hide" : "Show more"}
-          </Button>
+          {Object.values(extraFields).length > 0 && (
+            <Button
+              variant="soft"
+              type="button"
+              color="gray"
+              size="2"
+              onClick={() => setAreExtraFieldsRevealed((prev) => !prev)}
+              mb="2"
+            >
+              {areExtraFieldsRevealed ? "Hide" : "Show more"}
+            </Button>
+          )}
           <Flex justify="between" width="100%">
             <Flex gap="4">
               <Button
