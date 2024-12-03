@@ -140,8 +140,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         Record<string, IntegrationWithIconResponse["integrations"]>
       >((acc, integration) => {
         if (integration.integr_config_exists) {
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          if (!acc[integration.project_path]) {
+          if (!(integration.project_path in acc)) {
             acc[integration.project_path] = [];
           }
           acc[integration.project_path].push(integration);
@@ -157,8 +156,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         Record<string, IntegrationWithIconResponse["integrations"]>
       >((acc, integration) => {
         if (!integration.integr_config_exists) {
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          if (!acc[integration.project_path]) {
+          if (!(integration.project_path in acc)) {
             acc[integration.project_path] = [];
           }
           acc[integration.project_path].push(integration);
