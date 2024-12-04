@@ -37,9 +37,12 @@ import { IntegrationCard } from "./IntegrationCard";
 import { IntegrationForm } from "./IntegrationForm";
 import { IntegrationsHeader } from "./IntegrationsHeader";
 import styles from "./IntegrationsView.module.css";
+import { iconMap } from "./icons/iconMap";
+import { LeftRightPadding } from "../../features/Integrations/Integrations";
 
 type IntegrationViewProps = {
   integrationsMap?: IntegrationWithIconResponse;
+  leftRightPadding: LeftRightPadding;
   // integrationsIcons?: IntegrationIcon[];
   isLoading: boolean;
   goBack?: () => void;
@@ -51,6 +54,7 @@ const INTEGRATIONS_WITH_TERMINAL_ICON = ["cmdline", "service"];
 export const IntegrationsView: FC<IntegrationViewProps> = ({
   integrationsMap,
   isLoading,
+  leftRightPadding,
   goBack,
   handleIfInnerIntegrationWasSet,
 }) => {
@@ -344,8 +348,8 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     return INTEGRATIONS_WITH_TERMINAL_ICON.includes(
       currentIntegration.integr_name.split("_")[0],
     )
-      ? `/integrations/cmdline.png`
-      : `/integrations/${currentIntegration.integr_name}.png`;
+      ? iconMap.cmdline
+      : iconMap[currentIntegration.integr_name];
   }, [currentIntegration]);
 
   if (isLoading) {
@@ -436,6 +440,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       >
         {currentIntegration && (
           <IntegrationsHeader
+            leftRightPadding={leftRightPadding}
             handleFormReturn={handleFormReturn}
             integrationName={currentIntegration.integr_name}
             icon={integrationLogo}

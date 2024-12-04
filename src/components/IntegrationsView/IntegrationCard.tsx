@@ -7,6 +7,7 @@ import {
 } from "../../services/refact";
 import { FC } from "react";
 import classNames from "classnames";
+import { iconMap } from "./icons/iconMap";
 
 type IntegrationCardProps = {
   integration: IntegrationWithIconRecord;
@@ -26,8 +27,8 @@ export const IntegrationCard: FC<IntegrationCardProps> = ({
   const integrationLogo = INTEGRATIONS_WITH_TERMINAL_ICON.includes(
     integration.integr_name.split("_")[0],
   )
-    ? `/integrations/cmdline.png`
-    : `/integrations/${integration.integr_name}.png`;
+    ? iconMap.cmdline
+    : iconMap[integration.integr_name];
 
   return (
     <Card

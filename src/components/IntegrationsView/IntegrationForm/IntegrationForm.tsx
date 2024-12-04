@@ -18,6 +18,7 @@ import { renderIntegrationFormField } from "../../../features/Integrations/rende
 import { IntegrationAvailability } from "./IntegrationAvailability";
 import { toPascalCase } from "../../../utils/toPascalCase";
 import { debugIntegrations } from "../../../debugConfig";
+import { iconMap } from "../icons/iconMap";
 
 type IntegrationFormProps = {
   integrationPath: string;
@@ -215,7 +216,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         <Flex mt="6" direction="column" align="start" gap="5">
           <Flex gap="2" align="center" justify="center" width="100%">
             <img
-              src={"/integrations/docker.png"}
+              src={iconMap.docker}
               className={styles.DockerIcon}
               alt={integration.data.integr_name}
             />

@@ -15,6 +15,24 @@ export type IntegrationsProps = {
   tabbed: Config["tabbed"];
 };
 
+export type LeftRightPadding =
+  | {
+      initial: string;
+      xl: string;
+      xs?: undefined;
+      sm?: undefined;
+      md?: undefined;
+      lg?: undefined;
+    }
+  | {
+      initial: string;
+      xs: string;
+      sm: string;
+      md: string;
+      lg: string;
+      xl: string;
+    };
+
 export const Integrations: React.FC<IntegrationsProps> = ({
   onCloseIntegrations,
   backFromIntegrations,
@@ -92,6 +110,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({
           }}
         >
           <IntegrationsView
+            leftRightPadding={LeftRightPadding}
             handleIfInnerIntegrationWasSet={handleIfInnerIntegrationWasSet}
             integrationsMap={integrations.data}
             // integrationsIcons={icons.data}
