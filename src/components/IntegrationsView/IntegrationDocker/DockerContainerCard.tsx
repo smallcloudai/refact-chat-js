@@ -156,12 +156,17 @@ export const DockerContainerCard: FC<DockerContainerCardProps> = ({
                               container,
                               action,
                             )}
-                            onClick={() =>
+                            onClick={() => {
+                              if (
+                                isDockerActionButtonDisabled(container, action)
+                              ) {
+                                return;
+                              }
                               handleClickOnAction({
                                 container: container.name,
                                 action: dockerActionButton.action,
-                              })
-                            }
+                              });
+                            }}
                             color={
                               dockerActionButton.action !== "start"
                                 ? "red"
