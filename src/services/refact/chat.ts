@@ -139,6 +139,8 @@ export async function sendChat({
     meta: {
       chat_id,
       // chat_remote,
+      // TODO: pass this through
+      chat_mode: "EXPLORE",
       // chat_mode: "EXPLORE", // NOTOOLS, EXPLORE, AGENT, CONFIGURE, PROJECTSUMMARY,
       ...(integration?.path ? { current_config_file: integration.path } : {}),
     },

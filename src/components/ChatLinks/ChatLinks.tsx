@@ -7,6 +7,7 @@ import {
   useAppSelector,
   useEventsBusForIDE,
   useGetCapsQuery,
+  useSendChatRequest,
 } from "../../hooks";
 import {
   selectChatId,
@@ -36,6 +37,7 @@ const isAbsolutePath = (path: string) => {
 export const ChatLinks: React.FC = () => {
   const dispatch = useAppDispatch();
   const { queryPathThenOpenFile } = useEventsBusForIDE();
+  const { submit } = useSendChatRequest();
 
   const [applyPatches, _applyPatchesResult] =
     diffApi.useApplyAllPatchesInMessagesMutation();
@@ -104,13 +106,13 @@ export const ChatLinks: React.FC = () => {
       return;
     }
 
+    if (link.action === "follow-up") {
+      submit(link.text);
+      return;
+    }
+
     // if (link.action === "commit") {
     // ???
-    //   return;
-    // }
-
-    // if (link.action === "follow-up") {
-    // follow up is a user messages
     //   return;
     // }
 
@@ -164,7 +166,9 @@ export const ChatLinks: React.FC = () => {
 
   // TODO: waiting, errors, maybe add a title
 
-  if (!linksResult.data) return null;
+  if (!linksResult.data || isStreaming || isWaiting || unCalledTools) {
+    return null;
+  }
 
   return (
     <Container mt="4">
