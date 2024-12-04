@@ -30,7 +30,7 @@ const getDefaultValue = ({
   field: IntegrationField<NonNullable<IntegrationPrimitive>>;
   f_type: "bool" | "int" | "string";
 }) => {
-  if (values[fieldKey]) {
+  if (fieldKey in values) {
     return values[fieldKey]?.toString(); // Use the value from 'values' if present
   }
 
