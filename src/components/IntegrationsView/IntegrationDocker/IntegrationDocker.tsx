@@ -24,12 +24,14 @@ type IntegrationDockerProps = {
   dockerData: SchemaDocker;
   integrationName: string;
   integrationPath: string;
+  integrationProject: string;
 };
 
 export const IntegrationDocker: FC<IntegrationDockerProps> = ({
   dockerData,
   integrationName,
   integrationPath,
+  integrationProject,
 }) => {
   const dispatch = useAppDispatch();
   const { dockerContainers } = useGetDockerContainersByImageQuery(
@@ -140,6 +142,7 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
             key={`docker-container-${dockerData.filter_image}`}
             integrationName={integrationName}
             integrationPath={integrationPath}
+            integrationProject={integrationProject}
             smartlink={smartlink}
           />
         ))}

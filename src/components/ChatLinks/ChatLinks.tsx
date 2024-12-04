@@ -74,8 +74,9 @@ export const ChatLinks: React.FC = () => {
         dispatch(
           popBackTo({
             name: "integrations page",
-            projectPath: isFile ? payload : "",
+            // projectPath: isFile ? payload : "",
             integrationName: !isFile ? payload : "",
+            integrationPath: isFile ? payload : "",
           }),
         );
         // TODO: open in the integrations

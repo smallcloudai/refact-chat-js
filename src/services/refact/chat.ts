@@ -1,3 +1,4 @@
+import { IntegrationMeta } from "../../features/Chat";
 import { CHAT_URL } from "./consts";
 import { ToolCommand } from "./tools";
 import { ChatRole, ToolCall, ToolResult, UserMessage } from "./types";
@@ -43,7 +44,8 @@ type SendChatArgs = {
   tools: ToolCommand[] | null;
   port?: number;
   apiKey?: string | null;
-  isConfig?: boolean;
+  // isConfig?: boolean;
+  integration?: IntegrationMeta | null;
 } & StreamArgs;
 
 type GetChatTitleArgs = {
@@ -110,7 +112,8 @@ export async function sendChat({
   tools,
   port = 8001,
   apiKey,
-  isConfig = false,
+  // isConfig = false,
+  integration,
 }: SendChatArgs): Promise<Response> {
   // const toolsResponse = await getAvailableTools();
 
@@ -132,7 +135,13 @@ export async function sendChat({
     tools,
     max_tokens: 2048,
     only_deterministic_messages,
-    chat_id,
+    // chat_id,
+    meta: {
+      chat_id,
+      // chat_remote,
+      // chat_mode: "EXPLORE", // NOTOOLS, EXPLORE, AGENT, CONFIGURE, PROJECTSUMMARY,
+      ...(integration?.path ? { current_config_file: integration.path } : {}),
+    },
   });
 
   //   const apiKey = getApiKey();
@@ -142,7 +151,7 @@ export async function sendChat({
   };
 
   const url = `http://127.0.0.1:${port}${
-    isConfig ? "/v1/chat-configuration" : CHAT_URL
+    integration ? "/v1/chat-configuration" : CHAT_URL
   }`;
 
   return fetch(url, {

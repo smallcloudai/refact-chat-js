@@ -4,6 +4,7 @@ import {
   type ChatThread,
   type PayloadWithId,
   type ToolUse,
+  IntegrationMeta,
 } from "./types";
 import {
   isAssistantMessage,
@@ -26,7 +27,7 @@ import { scanFoDuplicatesWith, takeFromEndWhile } from "../../../utils";
 export const newChatAction = createAction("chatThread/new");
 
 export const newIntegrationChat = createAction<{
-  integration: { name: string; path: string };
+  integration: IntegrationMeta;
   messages: ChatMessages;
 }>("chatThread/newIntegrationChat");
 
@@ -217,8 +218,6 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
         ? state.chat.thread
         : null;
 
-  const isConfig = !!thread?.integration;
-
   const onlyDeterministicMessages = checkForToolLoop(messages);
 
   const messagesForLsp = formatMessagesForLsp(messages);
@@ -233,7 +232,7 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
     apiKey: state.config.apiKey,
     port: state.config.lspPort,
     onlyDeterministicMessages,
-    isConfig,
+    integration: thread?.integration,
   })
     .then((response) => {
       if (!response.ok) {

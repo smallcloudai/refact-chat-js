@@ -40,13 +40,18 @@ const handleChatAction = (
   dispatch: AppDispatch,
   integrationName: string,
   integrationPath: string,
+  integrationProject: string,
 ) => {
   const messages = formatMessagesForChat(sl_chat);
 
   dispatch(clearInformation());
   dispatch(
     newIntegrationChat({
-      integration: { name: integrationName, path: integrationPath },
+      integration: {
+        name: integrationName,
+        path: integrationPath,
+        project: integrationProject,
+      },
       messages,
     }),
   );
@@ -57,8 +62,15 @@ export const SmartLink: FC<{
   smartlink: SmartLinkType;
   integrationName: string;
   integrationPath: string;
+  integrationProject: string;
   isSmall?: boolean;
-}> = ({ smartlink, integrationName, integrationPath, isSmall = false }) => {
+}> = ({
+  smartlink,
+  integrationName,
+  integrationPath,
+  integrationProject,
+  isSmall = false,
+}) => {
   const dispatch = useAppDispatch();
 
   const { queryPathThenOpenFile } = useEventsBusForIDE();
@@ -71,7 +83,13 @@ export const SmartLink: FC<{
       return;
     }
     if (sl_chat) {
-      handleChatAction(sl_chat, dispatch, integrationName, integrationPath);
+      handleChatAction(
+        sl_chat,
+        dispatch,
+        integrationName,
+        integrationPath,
+        integrationProject,
+      );
     }
   }, [
     sl_goto,
@@ -80,6 +98,7 @@ export const SmartLink: FC<{
     integrationName,
     integrationPath,
     queryPathThenOpenFile,
+    integrationProject,
   ]);
 
   const title = sl_chat?.reduce<string[]>((acc, cur) => {
