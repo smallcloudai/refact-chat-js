@@ -147,7 +147,7 @@ export const ChatLinks: React.FC = () => {
         chat_id: chatId,
         messages: messages,
         model,
-        mode: maybeIntegration ? "CONFIGURE" : chatMode,
+        mode: maybeIntegration ? "CONFIGURE" : "EXPLORE",
         current_config_file: maybeIntegration?.path,
       });
     }
