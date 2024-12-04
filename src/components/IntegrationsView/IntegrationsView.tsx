@@ -47,6 +47,8 @@ type IntegrationViewProps = {
   handleIfInnerIntegrationWasSet: (state: boolean) => void;
 };
 
+const INTEGRATIONS_WITH_TERMINAL_ICON = ["cmdline", "service"];
+
 export const IntegrationsView: FC<IntegrationViewProps> = ({
   integrationsMap,
   isLoading,
@@ -338,6 +340,15 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     ],
   );
 
+  const integrationLogo = useMemo(() => {
+    if (!currentIntegration) return "https://placehold.jp/150x150.png";
+    return INTEGRATIONS_WITH_TERMINAL_ICON.includes(
+      currentIntegration.integr_name.split("_")[0],
+    )
+      ? `/integrations/cmdline.png`
+      : `/integrations/${currentIntegration.integr_name}.png`;
+  }, [currentIntegration]);
+
   if (isLoading) {
     return <Spinner spinning />;
   }
@@ -428,7 +439,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
           <IntegrationsHeader
             handleFormReturn={handleFormReturn}
             integrationName={currentIntegration.integr_name}
-            icon="https://placehold.jp/150x150.png"
+            icon={integrationLogo}
           />
         )}
         {currentIntegration && (

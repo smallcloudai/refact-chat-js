@@ -16,11 +16,19 @@ type IntegrationCardProps = {
   isInline?: boolean;
 };
 
+const INTEGRATIONS_WITH_TERMINAL_ICON = ["cmdline", "service"];
+
 export const IntegrationCard: FC<IntegrationCardProps> = ({
   integration,
   handleIntegrationShowUp,
   isInline = false,
 }) => {
+  const integrationLogo = INTEGRATIONS_WITH_TERMINAL_ICON.includes(
+    integration.integr_name.split("_")[0],
+  )
+    ? `/integrations/cmdline.png`
+    : `/integrations/${integration.integr_name}.png`;
+
   return (
     <Card
       className={classNames(styles.integrationCard, {
@@ -30,7 +38,7 @@ export const IntegrationCard: FC<IntegrationCardProps> = ({
     >
       <Flex gap="4" direction={isInline ? "column" : "row"} align={"center"}>
         <img
-          src={"https://placehold.jp/150x150.png"}
+          src={integrationLogo}
           className={styles.integrationIcon}
           alt={integration.integr_name}
         />
