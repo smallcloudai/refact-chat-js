@@ -10,10 +10,12 @@ import {
 } from "../../hooks";
 import {
   selectChatId,
+  selectIntegration,
   selectIsStreaming,
   selectIsWaiting,
   selectMessages,
   selectModel,
+  selectThreadToolUse,
 } from "../../features/Chat";
 import { popBackTo } from "../../features/Pages/pagesSlice";
 
@@ -42,6 +44,8 @@ export const ChatLinks: React.FC = () => {
   const isWaiting = useAppSelector(selectIsWaiting);
   const messages = useAppSelector(selectMessages);
   const chatId = useAppSelector(selectChatId);
+  const maybeIntegration = useAppSelector(selectIntegration);
+  const chatMode = useAppSelector(selectThreadToolUse);
 
   // TODO: add the model
   const caps = useGetCapsQuery();
@@ -137,13 +141,22 @@ export const ChatLinks: React.FC = () => {
       !isUserMessage(messages[messages.length - 1]) &&
       model
     ) {
-      void linksRequest({ chat_id: chatId, messages: messages, model });
+      void linksRequest({
+        chat_id: chatId,
+        messages: messages,
+        model,
+        mode: maybeIntegration ? "CONFIGURE" : chatMode,
+        current_config_file: maybeIntegration?.path,
+      });
     }
   }, [
     chatId,
+    chatMode,
     isStreaming,
     isWaiting,
     linksRequest,
+    maybeIntegration,
+    maybeIntegration?.path,
     messages,
     model,
     unCalledTools,

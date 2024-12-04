@@ -32,6 +32,8 @@ export type LinksApiRequest = {
   chat_id: string;
   messages: ChatMessages;
   model: string;
+  mode?: string;
+  current_config_file?: string;
 };
 
 function isLinksForChatResponse(json: unknown): json is LinksForChatResponse {
@@ -62,7 +64,11 @@ export const linksApi = createApi({
           method: "POST",
           url: CHAT_LINKS_URL,
           body: {
-            chat_id: args.chat_id,
+            meta: {
+              chat_id: args.chat_id,
+              current: args.current_config_file,
+              chat_mode: args.mode,
+            },
             messages: messageFotLsp,
             model_name: args.model,
           },
