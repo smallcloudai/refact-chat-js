@@ -110,6 +110,16 @@ startListening({
     }
 
     if (
+      integrationsApi.endpoints.getIntegrationByPath.matchRejected(action) &&
+      !action.meta.condition
+    ) {
+      const errorMessage = isDetailMessage(action.payload?.data)
+        ? action.payload.data.detail
+        : `fetching integrations.`;
+      listenerApi.dispatch(setError(errorMessage));
+    }
+
+    if (
       dockerApi.endpoints.getAllDockerContainers.matchRejected(action) &&
       !action.meta.condition
     ) {

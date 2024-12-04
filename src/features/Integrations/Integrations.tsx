@@ -10,6 +10,7 @@ import { IntegrationsView } from "../../components/IntegrationsView";
 export type IntegrationsProps = {
   onCloseIntegrations?: () => void;
   backFromIntegrations: () => void;
+  handlePaddingShift: (state: boolean) => void;
   host: Config["host"];
   tabbed: Config["tabbed"];
 };
@@ -17,6 +18,7 @@ export type IntegrationsProps = {
 export const Integrations: React.FC<IntegrationsProps> = ({
   onCloseIntegrations,
   backFromIntegrations,
+  handlePaddingShift,
   host,
   tabbed,
 }) => {
@@ -40,9 +42,13 @@ export const Integrations: React.FC<IntegrationsProps> = ({
   //   console.log(`[DEBUG]: icons: `, icons);
   // }, [icons]);
 
-  const handleIfInnerIntegrationWasSet = useCallback((state: boolean) => {
-    setIsInnerIntegrationSelected(state);
-  }, []);
+  const handleIfInnerIntegrationWasSet = useCallback(
+    (state: boolean) => {
+      setIsInnerIntegrationSelected(state);
+      handlePaddingShift(state);
+    },
+    [handlePaddingShift],
+  );
 
   return (
     <PageWrapper
