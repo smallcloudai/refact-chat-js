@@ -1,7 +1,6 @@
 import { DataList, Flex, Switch } from "@radix-ui/themes";
-import { useMemo } from "react";
 import type { FC } from "react";
-import { CustomDescriptionField, CustomLabel } from "../CustomFieldsAndWidgets";
+import { CustomLabel } from "../CustomFieldsAndWidgets";
 import { toPascalCase } from "../../../utils/toPascalCase";
 
 type IntegrationAvailabilityProps = {
@@ -15,14 +14,6 @@ export const IntegrationAvailability: FC<IntegrationAvailabilityProps> = ({
   value,
   onChange,
 }) => {
-  const availabilityMessage = useMemo(
-    () =>
-      value
-        ? `Available \`\`\`(${value})\`\`\``
-        : `Not Available \`\`\`(${value})\`\`\``,
-    [value],
-  );
-
   const handleSwitchChange = (checked: boolean) => {
     onChange(fieldName, checked);
   };
@@ -33,7 +24,6 @@ export const IntegrationAvailability: FC<IntegrationAvailabilityProps> = ({
         marginBottom: "0.75rem",
       }}
     >
-      {/* <Flex width="100%" gap="3"> */}
       <DataList.Label>
         <CustomLabel label={toPascalCase(fieldName)} />
       </DataList.Label>
@@ -52,9 +42,6 @@ export const IntegrationAvailability: FC<IntegrationAvailabilityProps> = ({
             checked={value}
             onCheckedChange={handleSwitchChange}
           />
-          <CustomDescriptionField mb="0">
-            {availabilityMessage}
-          </CustomDescriptionField>
         </Flex>
       </DataList.Value>
     </DataList.Item>

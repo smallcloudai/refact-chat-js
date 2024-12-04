@@ -1,4 +1,4 @@
-import { Card, Checkbox, Flex, Text } from "@radix-ui/themes";
+import { Badge, Card, Flex, Text } from "@radix-ui/themes";
 import { toPascalCase } from "../../utils/toPascalCase";
 import styles from "./IntegrationCard.module.css";
 import {
@@ -28,19 +28,14 @@ export const IntegrationCard: FC<IntegrationCardProps> = ({
       })}
       onClick={() => handleIntegrationShowUp(integration)}
     >
-      <Flex
-        gap="4"
-        direction={isInline ? "column" : "row"}
-        align={isInline ? "center" : "start"}
-      >
+      <Flex gap="4" direction={isInline ? "column" : "row"} align={"center"}>
         <img
           src={"https://placehold.jp/150x150.png"}
           className={styles.integrationIcon}
           alt={integration.integr_name}
         />
         <Flex
-          direction="column"
-          align="start"
+          align="center"
           justify="between"
           gap={isInline ? "0" : "2"}
           width={isInline ? "auto" : "100%"}
@@ -54,33 +49,23 @@ export const IntegrationCard: FC<IntegrationCardProps> = ({
             {toPascalCase(integration.integr_name)}
           </Text>
           {!isInline && (
-            <Card
-              size="1"
-              style={{
-                width: "100%",
-              }}
+            <Badge
+              color={
+                integration.on_your_laptop || integration.when_isolated
+                  ? "jade"
+                  : "red"
+              }
+              variant={
+                integration.on_your_laptop || integration.when_isolated
+                  ? "soft"
+                  : "solid"
+              }
+              radius="medium"
             >
-              <Flex direction="column" gap="3" width="100%">
-                <Text size="1">
-                  <Checkbox
-                    checked={integration.on_your_laptop}
-                    disabled
-                    mr="1"
-                    size="1"
-                  />{" "}
-                  Available on your laptop
-                </Text>
-                <Text size="1">
-                  <Checkbox
-                    checked={integration.when_isolated}
-                    disabled
-                    mr="1"
-                    size="1"
-                  />{" "}
-                  When isolated
-                </Text>
-              </Flex>
-            </Card>
+              {integration.on_your_laptop || integration.when_isolated
+                ? "On"
+                : "Off"}
+            </Badge>
           )}
         </Flex>
       </Flex>

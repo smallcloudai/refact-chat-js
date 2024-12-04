@@ -473,7 +473,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
           </Flex>
         )}
         {!currentIntegration && (
-          <Flex direction="column" width="100%" gap="6">
+          <Flex direction="column" width="100%" gap="4">
             <Flex
               align="start"
               direction="column"
@@ -511,6 +511,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             {groupedProjectIntegrations &&
               Object.entries(groupedProjectIntegrations).map(
                 ([projectPath, integrations], index) => {
+                  debugIntegrations(projectPath);
                   const formattedProjectName =
                     "```.../" +
                     projectPath.split(/[/\\]/)[
@@ -522,7 +523,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                     <Flex
                       key={`project-group-${index}`}
                       direction="column"
-                      gap="6"
+                      gap="4"
                       align="start"
                     >
                       <Heading as="h4" size="3">
@@ -561,7 +562,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                     <Flex
                       key={`project-group-${index}`}
                       direction="column"
-                      gap="6"
+                      gap="4"
                       align="start"
                     >
                       <Heading as="h4" size="3">
