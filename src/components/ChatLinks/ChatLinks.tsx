@@ -65,7 +65,7 @@ export const ChatLinks: React.FC = () => {
 
   const handleGoTo = (goto?: string) => {
     if (!goto) return;
-    // TODO:  uplicated in smart links.
+    // TODO:  duplicated in smart links.
     const [action, payload] = goto.split(":");
 
     switch (action.toLowerCase()) {

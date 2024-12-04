@@ -151,7 +151,6 @@ export const ChatContent: React.FC<ChatContentProps> = ({
   };
 
   const handleReturnToConfigurationClick = useCallback(() => {
-    // eslint-disable-next-line no-console
     // console.log(`[DEBUG]: going back to configuration page`);
     // TBD: should it be allowed to run in the background?
     onStopStreaming();
