@@ -96,7 +96,10 @@ export const SmartLink: FC<{
   }, []);
 
   const smartlinkElement = isDockerSmartlink ? (
-    <DropdownMenu.Item onClick={handleClick}>
+    <DropdownMenu.Item
+      onClick={handleClick}
+      title={title ? title.join("\n") : ""}
+    >
       {smartlink.sl_label} 🪄
     </DropdownMenu.Item>
   ) : (
