@@ -61,13 +61,9 @@ export const IntegrationCard: FC<IntegrationCardProps> = ({
               color={
                 integration.on_your_laptop || integration.when_isolated
                   ? "jade"
-                  : "red"
+                  : "gray"
               }
-              variant={
-                integration.on_your_laptop || integration.when_isolated
-                  ? "soft"
-                  : "solid"
-              }
+              variant="soft"
               radius="medium"
             >
               {integration.on_your_laptop || integration.when_isolated
