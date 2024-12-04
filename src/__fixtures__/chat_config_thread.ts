@@ -455,6 +455,7 @@ export const CHAT_CONFIG_THREAD: Chat = {
     integration: {
       name: "postgres",
       path: "",
+      project: "",
     },
     read: true,
     createdAt: "2024-12-02T14:42:18.902Z",
