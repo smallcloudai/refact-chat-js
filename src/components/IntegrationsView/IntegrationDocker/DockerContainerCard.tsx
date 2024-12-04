@@ -8,7 +8,11 @@ import {
   Heading,
   IconButton,
 } from "@radix-ui/themes";
-import { DockerActionPayload, DockerContainer } from "../../../services/refact";
+import {
+  DockerActionPayload,
+  DockerContainer,
+  SmartLink as SmartLinkType,
+} from "../../../services/refact";
 import { useState, type FC } from "react";
 import { CopyIcon, DotsVerticalIcon } from "@radix-ui/react-icons";
 import { toPascalCase } from "../../../utils/toPascalCase";
@@ -19,8 +23,14 @@ import { TruncateRight } from "../../Text/TruncateRight";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { Reveal } from "../../Reveal";
 import { Chevron } from "../../Collapsible";
+import { SmartLink } from "../../SmartLink";
 
 type DockerContainerCardProps = {
+  containerSmartlinks?: SmartLinkType[];
+  integrationData: {
+    integrationName: string;
+    integrationPath: string;
+  };
   container: DockerContainer;
   currentContainerAction: DockerActionPayload | null;
   isActionInProgress: boolean;
@@ -56,6 +66,8 @@ const DOCKER_ACTIONS: (Omit<DockerActionPayload, "container"> & {
 ];
 
 export const DockerContainerCard: FC<DockerContainerCardProps> = ({
+  containerSmartlinks,
+  integrationData,
   container,
   currentContainerAction,
   isActionInProgress,
@@ -160,7 +172,20 @@ export const DockerContainerCard: FC<DockerContainerCardProps> = ({
                           </DropdownMenu.Item>
                         );
                       })}
-                      <DropdownMenu.Separator />
+                      {containerSmartlinks && (
+                        <>
+                          <DropdownMenu.Separator />
+                          {containerSmartlinks.map((link, index) => (
+                            <SmartLink
+                              key={index}
+                              smartlink={link}
+                              integrationName={integrationData.integrationName}
+                              integrationPath={integrationData.integrationPath}
+                              isDockerSmartlink
+                            />
+                          ))}
+                        </>
+                      )}
                     </DropdownMenu.Content>
                   </DropdownMenu.Root>
                 </Flex>

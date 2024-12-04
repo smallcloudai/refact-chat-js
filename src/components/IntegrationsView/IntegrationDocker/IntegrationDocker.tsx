@@ -131,6 +131,11 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
             currentContainerAction={currentContainerAction}
             isActionInProgress={isActionInProgress}
             handleDockerContainerActionClick={handleDockerContainerActionClick}
+            integrationData={{
+              integrationName,
+              integrationPath,
+            }}
+            containerSmartlinks={dockerData.smartlinks_for_each_container}
           />
         ))}
       </Flex>

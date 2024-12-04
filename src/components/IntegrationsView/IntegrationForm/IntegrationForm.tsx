@@ -212,14 +212,14 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         </Flex>
       </form>
       {integration.data.integr_schema.docker && (
-        <Flex mt="6" direction="column" align="center" gap="3">
-          <Flex gap="2" align="center">
+        <Flex mt="6" direction="column" align="start" gap="5">
+          <Flex gap="2" align="center" justify="center" width="100%">
             <img
               src={"/integrations/docker.png"}
               className={styles.DockerIcon}
               alt={integration.data.integr_name}
             />
-            <Heading as="h3" align="center" className={styles.SectionTitle}>
+            <Heading as="h3" align="left">
               {toPascalCase(integration.data.integr_name)} Containers
             </Heading>
           </Flex>
