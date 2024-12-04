@@ -1,43 +1,42 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { FormEvent, FC } from "react";
 import { Box, Flex, Heading } from "@radix-ui/themes";
-import {
-  dockerApi,
-  Integration,
-  IntegrationWithIconRecord,
-  IntegrationWithIconResponse,
-  isDetailMessage,
-} from "../../services/refact";
-import { Spinner } from "../Spinner";
-import { ErrorCallout } from "../Callout";
-import { useAppDispatch, useAppSelector } from "../../hooks";
+import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import type { FC, FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { debugIntegrations } from "../../debugConfig";
 import {
   clearError,
   getErrorMessage,
   setError,
 } from "../../features/Errors/errorsSlice";
-import styles from "./IntegrationsView.module.css";
-import "./JSONFormStyles.css";
-import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
-import { IntegrationForm } from "./IntegrationForm";
-import { Markdown } from "../Markdown";
 import {
   clearInformation,
   getInformationMessage,
   setInformation,
 } from "../../features/Errors/informationSlice";
-import { InformationCallout } from "../Callout/Callout";
-import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
-import { integrationsApi } from "../../services/refact";
 import {
   isIntegrationSetupPage,
   pop,
   popBackTo,
   selectCurrentPage,
 } from "../../features/Pages/pagesSlice";
+import { useAppDispatch, useAppSelector } from "../../hooks";
+import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
+import {
+  dockerApi,
+  Integration,
+  integrationsApi,
+  IntegrationWithIconRecord,
+  IntegrationWithIconResponse,
+  isDetailMessage,
+} from "../../services/refact";
+import { ErrorCallout } from "../Callout";
+import { InformationCallout } from "../Callout/Callout";
+import { Markdown } from "../Markdown";
+import { Spinner } from "../Spinner";
 import { IntegrationCard } from "./IntegrationCard";
+import { IntegrationForm } from "./IntegrationForm";
 import { IntegrationsHeader } from "./IntegrationsHeader";
-import { debugIntegrations } from "../../debugConfig";
+import styles from "./IntegrationsView.module.css";
 
 type IntegrationViewProps = {
   integrationsMap?: IntegrationWithIconResponse;

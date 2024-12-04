@@ -198,8 +198,6 @@ export const chatReducer = createReducer(initialState, (builder) => {
     next.thread.integration = action.payload.integration;
     next.thread.messages = action.payload.messages;
 
-    // TODO: not this
-    // next.thread.model = "gpt-4o";
     next.thread.model = state.thread.model;
     next.system_prompt = state.system_prompt;
     next.cache = { ...state.cache };
