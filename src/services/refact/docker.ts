@@ -1,8 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { RootState } from "../../app/store";
-
-const DOCKER_CONTAINER_LIST = "/v1/docker-container-list";
-const DOCKER_CONTAINER_ACTION = "/v1/docker-container-action";
+import { DOCKER_CONTAINER_ACTION, DOCKER_CONTAINER_LIST } from "./consts";
 
 export const dockerApi = createApi({
   reducerPath: "dockerApi",
@@ -21,6 +19,7 @@ export const dockerApi = createApi({
   }),
   endpoints: (builder) => ({
     getAllDockerContainers: builder.query<DockerContainersResponse, undefined>({
+      // TODO: make a function for settings tags
       providesTags: ["DOCKER"],
       async queryFn(_arg, api, extraOptions, baseQuery) {
         const state = api.getState() as RootState;

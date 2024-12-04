@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Host, InitialSetup } from "../components/InitialSetup";
 import { CloudLogin } from "../components/CloudLogin";
 import { EnterpriseSetup } from "../components/EnterpriseSetup";
@@ -59,6 +59,12 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
   const chatId = useAppSelector(selectChatId);
   useEventBusForWeb();
   useEventBusForApp();
+
+  const [isPaddingApplied, setIsPaddingApplied] = useState<boolean>(false);
+
+  const handlePaddingShift = (state: boolean) => {
+    setIsPaddingApplied(state);
+  };
 
   const config = useConfig();
 
@@ -165,7 +171,9 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
         flexDirection: "column",
         alignItems: "stretch",
         height:
-          page.name === "integrations page" ? "calc(100vh - 80px)" : "100vh",
+          page.name === "integrations page" && isPaddingApplied
+            ? "calc(100vh - 80px)"
+            : "100vh",
         ...style,
       }}
     >
@@ -226,6 +234,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
             tabbed={config.tabbed}
             host={config.host}
             onCloseIntegrations={goBackFromIntegrations}
+            handlePaddingShift={handlePaddingShift}
           />
         )}
         {page.name === "thread history page" && (

@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 import { useCallback } from "react";
 import type { FC } from "react";
 import type {
@@ -22,9 +20,9 @@ const handleGotoAction = (
   sl_goto: string,
   queryPathThenOpenFile: (file: OpenFilePayload) => Promise<void>,
 ) => {
-  console.log(`[DEBUG]: sl_goto: `, sl_goto);
   const [action, payload] = sl_goto.split(":");
   switch (action.toLowerCase()) {
+    // TODO: could be possible to share it between Marc's implementation
     case "editor":
       void queryPathThenOpenFile({ file_name: payload });
       break;
@@ -100,6 +98,7 @@ export const SmartLink: FC<{
       variant="outline"
     >
       {smartlink.sl_label}
+      {smartlink.sl_chat ? " 🪄" : ""}
     </Button>
   );
 };

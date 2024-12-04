@@ -5,8 +5,10 @@ import {
   TextArea,
   Button,
   Text,
+  Switch,
 } from "@radix-ui/themes";
 import { Markdown } from "../Markdown";
+import { useState } from "react";
 
 // Custom Input Field
 export const CustomInputField = ({
@@ -86,25 +88,25 @@ export const CustomInputField = ({
 export const CustomLabel = ({
   label,
   htmlFor,
-  marginTop,
+  mt,
 }: {
   label: string;
   htmlFor?: string;
-  marginTop?: string;
+  mt?: string;
 }) => {
   return (
-    <label
+    <Text
+      as="label"
       htmlFor={htmlFor}
+      size="2"
+      weight="medium"
+      mt={mt ? mt : "0"}
       style={{
         display: "block",
-        fontWeight: 500,
-        fontSize: 14,
-        lineHeight: 1.15,
-        marginTop,
       }}
     >
       {label}
-    </label>
+    </Text>
   );
 };
 
@@ -126,6 +128,31 @@ export const CustomDescriptionField = ({
     >
       <Markdown>{children}</Markdown>
     </Text>
+  );
+};
+
+export const CustomBoolField = ({
+  id,
+  name,
+  defaultValue,
+}: {
+  id: string;
+  name: string;
+  defaultValue: boolean;
+}) => {
+  const [checked, setChecked] = useState(defaultValue);
+  return (
+    <Box>
+      <Switch
+        name={name}
+        id={id}
+        size="2"
+        checked={checked}
+        defaultChecked={defaultValue}
+        onCheckedChange={(value: boolean) => setChecked(value)}
+      />
+      <input type="hidden" name={name} value={checked ? "on" : "off"} />
+    </Box>
   );
 };
 

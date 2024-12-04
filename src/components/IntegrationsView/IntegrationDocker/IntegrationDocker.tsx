@@ -1,9 +1,8 @@
-/* eslint-disable no-console */ // TODO: remove in the future
 import type { FC } from "react";
 import { useEffect, useState } from "react";
 import {
-  // useGetDockerContainersByImageQuery,
-  useGetDockerContainersQuery,
+  useGetDockerContainersByImageQuery,
+  // useGetDockerContainersQuery,
 } from "../../../hooks/useGetDockerContainersQuery";
 import { dockerApi } from "../../../services/refact";
 import type {
@@ -17,21 +16,28 @@ import { useExecuteActionForDockerContainerMutation } from "../../../hooks/useEx
 import { useAppDispatch } from "../../../hooks";
 import { setInformation } from "../../../features/Errors/informationSlice";
 import { setError } from "../../../features/Errors/errorsSlice";
-import { Flex } from "@radix-ui/themes";
+import { Card, Flex, Text } from "@radix-ui/themes";
 import { DockerContainerCard } from "./DockerContainerCard";
+import { SmartLink } from "../../SmartLink";
 
 type IntegrationDockerProps = {
   dockerData: SchemaDocker;
+  integrationName: string;
+  integrationPath: string;
 };
 
 export const IntegrationDocker: FC<IntegrationDockerProps> = ({
   dockerData,
+  integrationName,
+  integrationPath,
 }) => {
   const dispatch = useAppDispatch();
-  // const { dockerContainers } = useGetDockerContainersByImageQuery(
-  //   dockerData.filter_image,
-  // );
-  const { dockerContainers } = useGetDockerContainersQuery();
+  const { dockerContainers } = useGetDockerContainersByImageQuery(
+    dockerData.filter_image,
+  );
+  const [areContainersLoaded, setAreContainersLoaded] = useState(false);
+
+  // const { dockerContainers } = useGetDockerContainersQuery();
   const [dockerContainerActionTrigger] =
     useExecuteActionForDockerContainerMutation();
   const [isActionInProgress, setIsActionInProgress] = useState(false);
@@ -43,33 +49,31 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
   >(null);
 
   useEffect(() => {
-    console.log(`[DEBUG]: dockerContainers: `, dockerContainers);
-
-    if (dockerContainers.data) {
-      console.log(`[DEBUG]: loaded containers: `, dockerContainers.data);
-      setDockerContainersList(dockerContainers.data.containers);
+    let timeoutId: NodeJS.Timeout;
+    if (!dockerContainers.isLoading) {
+      if (dockerContainers.data) {
+        setDockerContainersList(dockerContainers.data.containers);
+      }
+      timeoutId = setTimeout(() => {
+        setAreContainersLoaded(true);
+      }, 100);
     }
-  }, [dockerContainers]);
 
-  if (dockerContainers.isLoading) {
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [dockerContainers, areContainersLoaded]);
+
+  if (dockerContainers.isLoading || !areContainersLoaded) {
     return <Spinner spinning />;
   }
 
   if (dockerContainers.error ?? !dockerContainers.data) {
-    return (
-      <div>
-        Unexpected error on fetching list of docker containers with &quot;
-        {dockerData.filter_image}&quot; image
-      </div>
-    );
+    return <DockerErrorCard errorType="no-connection" />;
   }
 
   if (!dockerContainersList || dockerContainersList.length === 0) {
-    return (
-      <div>
-        No docker containers found for &quot;{dockerData.filter_image}&quot;
-      </div>
-    );
+    return <DockerErrorCard errorType="unexpected" />;
   }
 
   const handleDockerContainerActionClick = async (
@@ -119,15 +123,58 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
 
   return (
     <Flex direction="column" gap="4" width="100%">
-      {dockerContainersList.map((el) => (
-        <DockerContainerCard
-          key={el.id}
-          container={el}
-          currentContainerAction={currentContainerAction}
-          isActionInProgress={isActionInProgress}
-          handleDockerContainerActionClick={handleDockerContainerActionClick}
-        />
-      ))}
+      <Flex direction="column" gap="2">
+        {dockerContainersList.map((el) => (
+          <DockerContainerCard
+            key={el.id}
+            container={el}
+            currentContainerAction={currentContainerAction}
+            isActionInProgress={isActionInProgress}
+            handleDockerContainerActionClick={handleDockerContainerActionClick}
+          />
+        ))}
+      </Flex>
+      <Flex gap="2" align="center">
+        {dockerData.smartlinks.map((smartlink) => (
+          <SmartLink
+            key={`docker-container-${dockerData.filter_image}`}
+            integrationName={integrationName}
+            integrationPath={integrationPath}
+            smartlink={smartlink}
+          />
+        ))}
+      </Flex>
     </Flex>
+  );
+};
+
+type DockerErrorCardProps = {
+  errorType: "no-connection" | "unexpected";
+};
+
+const DockerErrorCard: FC<DockerErrorCardProps> = ({ errorType }) => {
+  return (
+    <Card
+      style={{
+        margin: "1rem auto 0",
+      }}
+    >
+      <Flex
+        direction="column"
+        align="center"
+        justify="center"
+        gap="4"
+        width="100%"
+      >
+        <Text size="3" weight="bold">
+          {errorType === "no-connection" ? "No connection" : "Unexpected error"}
+        </Text>
+        <Text size="2">
+          {errorType === "no-connection"
+            ? "Seems, that there is no connection to Docker Daemon. Please, setup Docker properly or launch Docker Engine"
+            : "Something went wrong during connection or listing containers"}
+        </Text>
+      </Flex>
+    </Card>
   );
 };
