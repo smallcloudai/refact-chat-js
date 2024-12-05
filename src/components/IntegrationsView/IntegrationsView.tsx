@@ -496,6 +496,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
               gap="4"
               width="100%"
             >
+              <div>
+                Integrations allow Refact.ai Agent to interact with other
+                services and tools
+              </div>
               <Heading
                 as="h4"
                 size="3"
@@ -511,6 +515,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                     ? "integrations"
                     : "integration")}
               </Heading>
+              <div>
+                Global configurations are shared in your IDE and availalbe for
+                all your projects.
+              </div>
               {globalIntegrations && (
                 <Flex direction="column" align="start" gap="3" width="100%">
                   {globalIntegrations.map((integration, index) => (
