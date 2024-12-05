@@ -30,7 +30,7 @@ const getDefaultValue = ({
   field: IntegrationField<NonNullable<IntegrationPrimitive>>;
   f_type: "bool" | "int" | "string";
 }) => {
-  if (values[fieldKey]) {
+  if (fieldKey in values) {
     return values[fieldKey]?.toString(); // Use the value from 'values' if present
   }
 
@@ -52,12 +52,14 @@ export const renderIntegrationFormField = ({
   integrationName,
   integrationPath,
   isFieldVisible = true,
+  integrationProject,
 }: {
   fieldKey: string;
   values: Integration["integr_values"];
   field: IntegrationField<NonNullable<IntegrationPrimitive>>;
   integrationName: string;
   integrationPath: string;
+  integrationProject: string;
   isFieldVisible?: boolean;
 }) => {
   const [f_type_raw, f_size] = field.f_type.toString().split("_");
@@ -123,6 +125,7 @@ export const renderIntegrationFormField = ({
                   smartlink={smartlink}
                   integrationName={integrationName}
                   integrationPath={integrationPath}
+                  integrationProject={integrationProject}
                 />
               ))}
             </Flex>

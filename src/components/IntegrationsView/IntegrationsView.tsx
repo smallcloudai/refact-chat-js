@@ -1,55 +1,60 @@
+import { Box, Flex, Heading, Text } from "@radix-ui/themes";
+import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import type { FC, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { FormEvent, FC } from "react";
-import { Box, Flex, Heading } from "@radix-ui/themes";
-import {
-  dockerApi,
-  Integration,
-  IntegrationWithIconRecord,
-  IntegrationWithIconResponse,
-  isDetailMessage,
-} from "../../services/refact";
-import { Spinner } from "../Spinner";
-import { ErrorCallout } from "../Callout";
-import { useAppDispatch, useAppSelector } from "../../hooks";
+import { debugIntegrations } from "../../debugConfig";
 import {
   clearError,
   getErrorMessage,
   setError,
 } from "../../features/Errors/errorsSlice";
-import styles from "./IntegrationsView.module.css";
-import "./JSONFormStyles.css";
-import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
-import { IntegrationForm } from "./IntegrationForm";
-import { Markdown } from "../Markdown";
 import {
   clearInformation,
   getInformationMessage,
   setInformation,
 } from "../../features/Errors/informationSlice";
-import { InformationCallout } from "../Callout/Callout";
-import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
-import { integrationsApi } from "../../services/refact";
 import {
   isIntegrationSetupPage,
   pop,
   popBackTo,
   selectCurrentPage,
 } from "../../features/Pages/pagesSlice";
+import { useAppDispatch, useAppSelector } from "../../hooks";
+import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
+import {
+  dockerApi,
+  Integration,
+  integrationsApi,
+  IntegrationWithIconRecord,
+  IntegrationWithIconResponse,
+  isDetailMessage,
+} from "../../services/refact";
+import { ErrorCallout } from "../Callout";
+import { InformationCallout } from "../Callout/Callout";
+import { Markdown } from "../Markdown";
+import { Spinner } from "../Spinner";
 import { IntegrationCard } from "./IntegrationCard";
+import { IntegrationForm } from "./IntegrationForm";
 import { IntegrationsHeader } from "./IntegrationsHeader";
-import { debugIntegrations } from "../../debugConfig";
+import styles from "./IntegrationsView.module.css";
+import { iconMap } from "./icons/iconMap";
+import { LeftRightPadding } from "../../features/Integrations/Integrations";
 
 type IntegrationViewProps = {
   integrationsMap?: IntegrationWithIconResponse;
+  leftRightPadding: LeftRightPadding;
   // integrationsIcons?: IntegrationIcon[];
   isLoading: boolean;
   goBack?: () => void;
   handleIfInnerIntegrationWasSet: (state: boolean) => void;
 };
 
+const INTEGRATIONS_WITH_TERMINAL_ICON = ["cmdline", "service"];
+
 export const IntegrationsView: FC<IntegrationViewProps> = ({
   integrationsMap,
   isLoading,
+  leftRightPadding,
   goBack,
   handleIfInnerIntegrationWasSet,
 }) => {
@@ -71,8 +76,8 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     return (
       integrationsMap.integrations.find(
         (integration) =>
-          integration.project_path === currentThreadIntegration.projectPath &&
-          integration.integr_name === currentThreadIntegration.integrationName,
+          integration.integr_config_path ===
+          currentThreadIntegration.integrationPath,
       ) ?? null
     );
   }, [currentThreadIntegration, integrationsMap]);
@@ -338,6 +343,15 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     ],
   );
 
+  const integrationLogo = useMemo(() => {
+    if (!currentIntegration) return "https://placehold.jp/150x150.png";
+    return INTEGRATIONS_WITH_TERMINAL_ICON.includes(
+      currentIntegration.integr_name.split("_")[0],
+    )
+      ? iconMap.cmdline
+      : iconMap[currentIntegration.integr_name];
+  }, [currentIntegration]);
+
   if (isLoading) {
     return <Spinner spinning />;
   }
@@ -426,9 +440,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       >
         {currentIntegration && (
           <IntegrationsHeader
+            leftRightPadding={leftRightPadding}
             handleFormReturn={handleFormReturn}
             integrationName={currentIntegration.integr_name}
-            icon="https://placehold.jp/150x150.png"
+            icon={integrationLogo}
           />
         )}
         {currentIntegration && (
@@ -473,7 +488,11 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
           </Flex>
         )}
         {!currentIntegration && (
-          <Flex direction="column" width="100%" gap="6">
+          <Flex direction="column" width="100%" gap="4">
+            <Text my="2">
+              Integrations allow Refact.ai Agent to interact with other services
+              and tools
+            </Text>
             <Flex
               align="start"
               direction="column"
@@ -496,6 +515,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                     ? "integrations"
                     : "integration")}
               </Heading>
+              <Text size="2" color="gray">
+                Global configurations are shared in your IDE and available for
+                all your projects.
+              </Text>
               {globalIntegrations && (
                 <Flex direction="column" align="start" gap="3" width="100%">
                   {globalIntegrations.map((integration, index) => (
@@ -511,6 +534,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             {groupedProjectIntegrations &&
               Object.entries(groupedProjectIntegrations).map(
                 ([projectPath, integrations], index) => {
+                  debugIntegrations(projectPath);
                   const formattedProjectName =
                     "```.../" +
                     projectPath.split(/[/\\]/)[
@@ -522,7 +546,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                     <Flex
                       key={`project-group-${index}`}
                       direction="column"
-                      gap="6"
+                      gap="4"
                       align="start"
                     >
                       <Heading as="h4" size="3">
@@ -535,6 +559,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                             : "integration"}
                         </Flex>
                       </Heading>
+                      <Text size="2" color="gray">
+                        Folder-specific integrations are local integrations,
+                        which are shared only in folder-specific scope.
+                      </Text>
                       <Flex
                         direction="column"
                         align="start"
@@ -561,7 +589,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                     <Flex
                       key={`project-group-${index}`}
                       direction="column"
-                      gap="6"
+                      gap="4"
                       align="start"
                     >
                       <Heading as="h4" size="3">

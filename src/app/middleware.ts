@@ -110,6 +110,16 @@ startListening({
     }
 
     if (
+      integrationsApi.endpoints.getIntegrationByPath.matchRejected(action) &&
+      !action.meta.condition
+    ) {
+      const errorMessage = isDetailMessage(action.payload?.data)
+        ? action.payload.data.detail
+        : `fetching integrations.`;
+      listenerApi.dispatch(setError(errorMessage));
+    }
+
+    if (
       dockerApi.endpoints.getAllDockerContainers.matchRejected(action) &&
       !action.meta.condition
     ) {
@@ -241,14 +251,12 @@ startListening({
     toolsRequest.unsubscribe();
     const toolResult = await toolsRequest.unwrap();
 
-    const tools = toolResult.filter((tool) => !tool.function.agentic);
-
     // TODO: create a dedicated thunk for this.
     await listenerApi.dispatch(
       chatAskQuestionThunk({
         messages: state.chat.thread.messages,
         chatId: state.chat.thread.id,
-        tools,
+        tools: toolResult,
       }),
     );
   },

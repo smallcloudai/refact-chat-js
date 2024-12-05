@@ -10,13 +10,33 @@ import { IntegrationsView } from "../../components/IntegrationsView";
 export type IntegrationsProps = {
   onCloseIntegrations?: () => void;
   backFromIntegrations: () => void;
+  handlePaddingShift: (state: boolean) => void;
   host: Config["host"];
   tabbed: Config["tabbed"];
 };
 
+export type LeftRightPadding =
+  | {
+      initial: string;
+      xl: string;
+      xs?: undefined;
+      sm?: undefined;
+      md?: undefined;
+      lg?: undefined;
+    }
+  | {
+      initial: string;
+      xs: string;
+      sm: string;
+      md: string;
+      lg: string;
+      xl: string;
+    };
+
 export const Integrations: React.FC<IntegrationsProps> = ({
   onCloseIntegrations,
   backFromIntegrations,
+  handlePaddingShift,
   host,
   tabbed,
 }) => {
@@ -40,9 +60,13 @@ export const Integrations: React.FC<IntegrationsProps> = ({
   //   console.log(`[DEBUG]: icons: `, icons);
   // }, [icons]);
 
-  const handleIfInnerIntegrationWasSet = useCallback((state: boolean) => {
-    setIsInnerIntegrationSelected(state);
-  }, []);
+  const handleIfInnerIntegrationWasSet = useCallback(
+    (state: boolean) => {
+      setIsInnerIntegrationSelected(state);
+      handlePaddingShift(state);
+    },
+    [handlePaddingShift],
+  );
 
   return (
     <PageWrapper
@@ -86,6 +110,7 @@ export const Integrations: React.FC<IntegrationsProps> = ({
           }}
         >
           <IntegrationsView
+            leftRightPadding={LeftRightPadding}
             handleIfInnerIntegrationWasSet={handleIfInnerIntegrationWasSet}
             integrationsMap={integrations.data}
             // integrationsIcons={icons.data}

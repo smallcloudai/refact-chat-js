@@ -1,11 +1,13 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { RootState } from "../../app/store";
 import { isLspChatMessage, LspChatMessage } from "./chat";
+import {
+  INTEGRATION_GET_URL,
+  INTEGRATION_SAVE_URL,
+  INTEGRATIONS_URL,
+} from "./consts";
 
-const INTEGRATIONS_URL = "/v1/integrations";
-const INTEGRATION_GET_URL = "/v1/integration-get";
-const INTEGRATION_SAVE_URL = "/v1/integration-save";
-
+// TODO: Cache invalidation logic.
 export const integrationsApi = createApi({
   reducerPath: "integrationsApi",
   tagTypes: ["INTEGRATIONS", "INTEGRATION"],
@@ -223,6 +225,7 @@ type SchemaDockerContainer = {
 export type SchemaDocker = DockerFilter & {
   new_container_default: SchemaDockerContainer;
   smartlinks: SmartLink[];
+  smartlinks_for_each_container?: SmartLink[];
 };
 
 type DockerEnvironment = Record<string, IntegrationPrimitive>;
@@ -357,6 +360,16 @@ function isIntegrationSchema(json: unknown): json is IntegrationSchema {
     }
     if (!json.docker.smartlinks.every(isSmartLink)) {
       return false;
+    }
+
+    if ("smartlinks_for_each_container" in json.docker) {
+      if (!Array.isArray(json.docker.smartlinks_for_each_container)) {
+        return false;
+      }
+
+      if (!json.docker.smartlinks_for_each_container.every(isSmartLink)) {
+        return false;
+      }
     }
   }
   return true;

@@ -18,8 +18,9 @@ import { renderIntegrationFormField } from "../../../features/Integrations/rende
 import { IntegrationAvailability } from "./IntegrationAvailability";
 import { toPascalCase } from "../../../utils/toPascalCase";
 import { debugIntegrations } from "../../../debugConfig";
+import { iconMap } from "../icons/iconMap";
 
-export type IntegrationFormProps = {
+type IntegrationFormProps = {
   integrationPath: string;
   isApplying: boolean;
   isDisabled: boolean;
@@ -148,7 +149,8 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
                   values: integration.data.integr_values,
                   field: integration.data.integr_schema.fields[fieldKey],
                   integrationName: integration.data.integr_name,
-                  integrationPath: integration.data.project_path,
+                  integrationPath: integration.data.integr_config_path,
+                  integrationProject: integration.data.project_path,
                 });
               }
             })}
@@ -159,7 +161,8 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
                   values: integration.data.integr_values,
                   field: integration.data.integr_schema.fields[fieldKey],
                   integrationName: integration.data.integr_name,
-                  integrationPath: integration.data.project_path,
+                  integrationPath: integration.data.integr_config_path,
+                  integrationProject: integration.data.project_path,
                   isFieldVisible: areExtraFieldsRevealed,
                 });
               }
@@ -202,7 +205,10 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
                       key={`smartlink-${index}`}
                       smartlink={smartlink}
                       integrationName={integration.data?.integr_name ?? ""}
-                      integrationPath={integration.data?.project_path ?? ""}
+                      integrationProject={integration.data?.project_path ?? ""}
+                      integrationPath={
+                        integration.data?.integr_config_path ?? ""
+                      }
                     />
                   );
                 },
@@ -212,14 +218,22 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         </Flex>
       </form>
       {integration.data.integr_schema.docker && (
-        <Flex mt="6" direction="column" align="start" gap="3">
-          <Heading as="h3" align="center" className={styles.SectionTitle}>
-            {toPascalCase(integration.data.integr_name)} Containers
-          </Heading>
+        <Flex mt="6" direction="column" align="start" gap="5">
+          <Flex gap="2" align="center" justify="center" width="100%">
+            <img
+              src={iconMap.docker}
+              className={styles.DockerIcon}
+              alt={integration.data.integr_name}
+            />
+            <Heading as="h3" align="left">
+              {toPascalCase(integration.data.integr_name)} Containers
+            </Heading>
+          </Flex>
           <IntegrationDocker
             dockerData={integration.data.integr_schema.docker}
             integrationName={integration.data.integr_name}
-            integrationPath={integration.data.project_path}
+            integrationProject={integration.data.project_path}
+            integrationPath={integration.data.integr_config_path}
           />
         </Flex>
       )}
