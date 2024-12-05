@@ -32,6 +32,7 @@ type IntegrationFormProps = {
   setAvailabilityValues: Dispatch<
     React.SetStateAction<Record<string, boolean>>
   >;
+  getIntegrationFormSchema: (integrationPath: string) => void;
 };
 
 export const IntegrationForm: FC<IntegrationFormProps> = ({
@@ -44,10 +45,16 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   onSchema,
   onValues,
   setAvailabilityValues,
+  getIntegrationFormSchema,
 }) => {
   const [areExtraFieldsRevealed, setAreExtraFieldsRevealed] = useState(false);
 
-  const { integration } = useGetIntegrationDataByPathQuery(integrationPath);
+  if (getIntegrationFormSchema == null) {
+    getIntegrationFormSchema = useGetIntegrationDataByPathQuery
+  }
+  
+
+  const { integration } = getIntegrationFormSchema(integrationPath);
 
   const handleAvailabilityChange = useCallback(
     (fieldName: string, value: boolean) => {
@@ -110,6 +117,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
     return (
       <div>
         <p>No integration found</p>
+        {JSON.stringify(integration)}
       </div>
     );
   }
