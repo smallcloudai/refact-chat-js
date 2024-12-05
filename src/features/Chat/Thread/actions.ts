@@ -10,7 +10,6 @@ import {
   isAssistantMessage,
   isCDInstructionMessage,
   isChatGetTitleResponse,
-  isSystemMessage,
   isToolCallMessage,
   isToolMessage,
   ToolCall,
@@ -226,8 +225,7 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
         ? state.chat.thread
         : null;
 
-  const onlyDeterministicMessages =
-    checkForToolLoop(messages) || !messages.some(isSystemMessage);
+  const onlyDeterministicMessages = checkForToolLoop(messages);
 
   const messagesForLsp = formatMessagesForLsp(messages);
 
