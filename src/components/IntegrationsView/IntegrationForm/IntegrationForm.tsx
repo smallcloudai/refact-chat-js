@@ -20,7 +20,7 @@ import { toPascalCase } from "../../../utils/toPascalCase";
 import { debugIntegrations } from "../../../debugConfig";
 import { iconMap } from "../icons/iconMap";
 
-type IntegrationFormProps = {
+export type IntegrationFormProps = {
   integrationPath: string;
   isApplying: boolean;
   isDisabled: boolean;
