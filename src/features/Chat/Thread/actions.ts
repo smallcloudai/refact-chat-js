@@ -201,6 +201,12 @@ function checkForToolLoop(message: ChatMessages): boolean {
   return hasDuplicates;
 }
 // TODO: add props for config chat
+
+function chatModeToLspMode(mode?: ToolUse) {
+  if (mode === "agent") return "AGENT";
+  if (mode === "quick") return "NOTOOLS";
+  return "EXPLORE";
+}
 export const chatAskQuestionThunk = createAppAsyncThunk<
   unknown,
   {
@@ -225,6 +231,14 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
 
   const messagesForLsp = formatMessagesForLsp(messages);
 
+  const maybeMode = mode
+    ? mode
+    : thread?.integration
+      ? "CONFIGURE"
+      : thread?.tool_use
+        ? chatModeToLspMode(thread.tool_use)
+        : chatModeToLspMode(state.chat.tool_use);
+
   return sendChat({
     messages: messagesForLsp,
     model: state.chat.thread.model,
@@ -236,7 +250,7 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
     port: state.config.lspPort,
     onlyDeterministicMessages,
     integration: thread?.integration,
-    mode,
+    mode: maybeMode,
   })
     .then((response) => {
       if (!response.ok) {
