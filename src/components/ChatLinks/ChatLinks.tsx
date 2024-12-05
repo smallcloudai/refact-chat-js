@@ -136,12 +136,14 @@ export const ChatLinks: React.FC = () => {
   const [linksRequest, linksResult] = linksApi.useGetLinksForChatMutation();
 
   useEffect(() => {
+    const isEmpty = messages.length === 0;
+    const lastMessageIsUserMessage =
+      !isEmpty && isUserMessage(messages[messages.length - 1]);
     if (
       !isStreaming &&
       !isWaiting &&
       !unCalledTools &&
-      messages.length > 0 &&
-      !isUserMessage(messages[messages.length - 1]) &&
+      !lastMessageIsUserMessage &&
       model
     ) {
       void linksRequest({
