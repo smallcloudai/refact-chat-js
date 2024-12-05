@@ -46,6 +46,7 @@ type SendChatArgs = {
   apiKey?: string | null;
   // isConfig?: boolean;
   integration?: IntegrationMeta | null;
+  mode?: string; // used for chat actions
 } & StreamArgs;
 
 type GetChatTitleArgs = {
@@ -114,6 +115,7 @@ export async function sendChat({
   apiKey,
   // isConfig = false,
   integration,
+  mode,
 }: SendChatArgs): Promise<Response> {
   // const toolsResponse = await getAvailableTools();
 
@@ -140,7 +142,7 @@ export async function sendChat({
       chat_id,
       // chat_remote,
       // TODO: pass this through
-      chat_mode: "EXPLORE",
+      chat_mode: mode ?? "EXPLORE",
       // chat_mode: "EXPLORE", // NOTOOLS, EXPLORE, AGENT, CONFIGURE, PROJECTSUMMARY,
       ...(integration?.path ? { current_config_file: integration.path } : {}),
     },

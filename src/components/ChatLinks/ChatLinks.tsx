@@ -107,17 +107,17 @@ export const ChatLinks: React.FC = () => {
     }
 
     if (link.action === "follow-up") {
-      submit(link.text);
+      submit(link.text, "FOLLOWUP");
+      return;
+    }
+
+    if (link.action === "summarize-project") {
+      submit(link.text, "PROJECTSUMMARY");
       return;
     }
 
     // if (link.action === "commit") {
     // ???
-    //   return;
-    // }
-
-    // if (link.action === "summarize-project") {
-    // dedicated handler in the lsp, or a new chat
     //   return;
     // }
 
