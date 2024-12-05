@@ -194,7 +194,7 @@ export const chatReducer = createReducer(initialState, (builder) => {
 
   builder.addCase(newIntegrationChat, (state, action) => {
     // TODO: find out about tool use
-    // TODO: should be CONFIGURE
+    // TODO: should be CONFIGURE ?
     const next = createInitialState("agent", action.payload.integration);
     next.thread.integration = action.payload.integration;
     next.thread.messages = action.payload.messages;
@@ -205,7 +205,6 @@ export const chatReducer = createReducer(initialState, (builder) => {
     if (state.streaming) {
       next.cache[state.thread.id] = { ...state.thread, read: false };
     }
-
     return next;
   });
 

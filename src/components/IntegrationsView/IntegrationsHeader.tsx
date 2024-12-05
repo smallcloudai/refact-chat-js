@@ -3,23 +3,26 @@ import { useWindowDimensions } from "../../hooks/useWindowDimensions";
 import type { FC } from "react";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import styles from "./IntegrationsHeader.module.css";
+import { LeftRightPadding } from "../../features/Integrations/Integrations";
 
 type IntegrationsHeaderProps = {
   handleFormReturn: () => void;
   integrationName: string;
+  leftRightPadding: LeftRightPadding;
   icon: string;
 };
 
 export const IntegrationsHeader: FC<IntegrationsHeaderProps> = ({
   handleFormReturn,
   integrationName,
+  leftRightPadding,
   icon,
 }) => {
   const { width } = useWindowDimensions();
 
   return (
-    <Flex className={styles.IntegrationsHeader}>
-      <Flex align="center" justify="between" width="100%">
+    <Flex className={styles.IntegrationsHeader} px={leftRightPadding}>
+      <Flex align="center" justify="between" width="100%" px={leftRightPadding}>
         <Flex
           gap={{
             initial: "4",

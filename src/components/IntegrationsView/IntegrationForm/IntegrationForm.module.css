@@ -9,6 +9,7 @@
   cursor: not-allowed;
 }
 
-.SectionTitle {
-  width: 100%;
+.DockerIcon {
+  max-width: 40px;
+  object-fit: cover;
 }

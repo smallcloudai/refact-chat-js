@@ -13,7 +13,7 @@ import { formatMessagesForChat } from "../../features/Chat/Thread/utils";
 import { clearInformation } from "../../features/Errors/informationSlice";
 import { newIntegrationChat } from "../../features/Chat";
 import { push } from "../../features/Pages/pagesSlice";
-import { Button } from "@radix-ui/themes";
+import { Button, DropdownMenu } from "@radix-ui/themes";
 import { AppDispatch } from "../../app/store";
 
 const handleGotoAction = (
@@ -64,12 +64,14 @@ export const SmartLink: FC<{
   integrationPath: string;
   integrationProject: string;
   isSmall?: boolean;
+  isDockerSmartlink?: boolean;
 }> = ({
   smartlink,
   integrationName,
   integrationPath,
   integrationProject,
   isSmall = false,
+  isDockerSmartlink = false,
 }) => {
   const dispatch = useAppDispatch();
 
@@ -107,7 +109,14 @@ export const SmartLink: FC<{
     return acc;
   }, []);
 
-  return (
+  const smartlinkElement = isDockerSmartlink ? (
+    <DropdownMenu.Item
+      onClick={handleClick}
+      title={title ? title.join("\n") : ""}
+    >
+      {smartlink.sl_label} 🪄
+    </DropdownMenu.Item>
+  ) : (
     <Button
       size={isSmall ? "1" : "2"}
       onClick={handleClick}
@@ -120,4 +129,6 @@ export const SmartLink: FC<{
       {smartlink.sl_chat ? " 🪄" : ""}
     </Button>
   );
+
+  return <>{smartlinkElement}</>;
 };

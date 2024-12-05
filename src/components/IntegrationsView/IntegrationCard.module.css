@@ -1,5 +1,5 @@
 .integrationCard {
-  padding: 1.5rem;
+  padding: 1rem;
   width: 100%;
   cursor: pointer;
   user-select: none;
@@ -11,6 +11,6 @@
 }
 
 .integrationIcon {
-  max-width: 100px;
+  max-width: 30px;
   object-fit: cover;
 }
