@@ -201,7 +201,7 @@ function checkForToolLoop(message: ChatMessages): boolean {
 }
 // TODO: add props for config chat
 
-function chatModeToLspMode(mode?: ToolUse) {
+export function chatModeToLspMode(mode?: ToolUse) {
   if (mode === "agent") return "AGENT";
   if (mode === "quick") return "NOTOOLS";
   return "EXPLORE";

@@ -10,6 +10,7 @@ import {
   useSendChatRequest,
 } from "../../hooks";
 import {
+  chatModeToLspMode,
   selectChatId,
   selectIntegration,
   selectIsStreaming,
@@ -107,7 +108,7 @@ export const ChatLinks: React.FC = () => {
     }
 
     if (link.action === "follow-up") {
-      submit(link.text, "FOLLOWUP");
+      submit(link.text);
       return;
     }
 
@@ -147,7 +148,7 @@ export const ChatLinks: React.FC = () => {
         chat_id: chatId,
         messages: messages,
         model,
-        mode: maybeIntegration ? "CONFIGURE" : "EXPLORE",
+        mode: maybeIntegration ? "CONFIGURE" : chatModeToLspMode(chatMode),
         current_config_file: maybeIntegration?.path,
       });
     }
