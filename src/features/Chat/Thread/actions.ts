@@ -10,6 +10,7 @@ import {
   isAssistantMessage,
   isCDInstructionMessage,
   isChatGetTitleResponse,
+  isSystemMessage,
   isToolCallMessage,
   isToolMessage,
   ToolCall,
@@ -18,7 +19,7 @@ import {
   type ChatResponse,
 } from "../../../services/refact/types";
 import type { AppDispatch, RootState } from "../../../app/store";
-import type { SystemPrompts } from "../../../services/refact/prompts";
+import { type SystemPrompts } from "../../../services/refact/prompts";
 import { formatMessagesForLsp, consumeStream } from "./utils";
 import { generateChatTitle, sendChat } from "../../../services/refact/chat";
 import { ToolCommand } from "../../../services/refact/tools";
@@ -218,7 +219,8 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
         ? state.chat.thread
         : null;
 
-  const onlyDeterministicMessages = checkForToolLoop(messages);
+  const onlyDeterministicMessages =
+    checkForToolLoop(messages) || !messages.some(isSystemMessage);
 
   const messagesForLsp = formatMessagesForLsp(messages);
 
