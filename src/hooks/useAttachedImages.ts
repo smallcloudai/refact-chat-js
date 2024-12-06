@@ -48,7 +48,12 @@ export function useAttachedImages() {
 
   const processAndInsertImages = useCallback(
     (files: File[]) => {
-      void processImages(files, insertImage, handleError, handleWarning);
+      if (files.length > 5) {
+        handleError("You can only upload 5 images at a time");
+        return;
+      } else {
+        void processImages(files, insertImage, handleError, handleWarning);
+      }
     },
     [handleError, handleWarning, insertImage],
   );
