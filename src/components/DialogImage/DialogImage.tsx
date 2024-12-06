@@ -1,5 +1,5 @@
 import React from "react";
-import { Dialog, Avatar, AvatarProps, Inset } from "@radix-ui/themes";
+import { Dialog, Avatar, AvatarProps } from "@radix-ui/themes";
 import { ImageIcon } from "@radix-ui/react-icons";
 
 export const DialogImage: React.FC<{
@@ -13,9 +13,7 @@ export const DialogImage: React.FC<{
         <Avatar radius="small" src={src} size={size} fallback={fallback} />
       </Dialog.Trigger>
       <Dialog.Content maxWidth="800px">
-        <Inset>
-          <img style={{ objectFit: "cover", width: "100%" }} src={src} />
-        </Inset>
+        <img style={{ objectFit: "cover", width: "100%" }} src={src} />
       </Dialog.Content>
     </Dialog.Root>
   );
