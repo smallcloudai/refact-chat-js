@@ -80,7 +80,7 @@ async function processImages(
           content: scaledImage,
           type: file.type,
         };
-
+        console.log({ fileForChat });
         onSuccess(fileForChat);
       } catch (error) {
         if (error === "abort") {
