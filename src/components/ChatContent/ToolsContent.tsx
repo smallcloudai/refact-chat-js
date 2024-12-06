@@ -302,7 +302,7 @@ const MultiModalToolContent: React.FC<{
   return (
     <Container>
       <Collapsible.Root open={open} onOpenChange={setOpen}>
-        <Collapsible.Trigger>
+        <Collapsible.Trigger asChild>
           <ToolUsageSummary
             toolUsageAmount={toolUsageAmount}
             open={open}
