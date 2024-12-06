@@ -10,7 +10,13 @@ export const DialogImage: React.FC<{
   return (
     <Dialog.Root>
       <Dialog.Trigger>
-        <Avatar radius="small" src={src} size={size} fallback={fallback} />
+        <Avatar
+          radius="small"
+          src={src}
+          size={size}
+          fallback={fallback}
+          style={{ cursor: "zoom-in" }}
+        />
       </Dialog.Trigger>
       <Dialog.Content maxWidth="800px">
         <img style={{ objectFit: "cover", width: "100%" }} src={src} />
