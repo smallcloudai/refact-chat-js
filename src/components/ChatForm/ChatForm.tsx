@@ -76,8 +76,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   const { processAndInsertImages } = useAttachedImages();
   const handlePastingFile = useCallback(
     (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-      console.log("handlePasting");
-      console.log(event);
       const files: File[] = [];
       const items = event.clipboardData.items;
       for (const item of items) {
@@ -86,7 +84,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
           file && files.push(file);
         }
       }
-      console.log({ files });
       if (files.length > 0) {
         event.preventDefault();
         processAndInsertImages(files);
