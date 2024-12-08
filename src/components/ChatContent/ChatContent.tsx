@@ -1,6 +1,8 @@
-import React, { useCallback, useRef } from "react";
+import React, { useCallback, useRef, useMemo } from "react";
 import {
   ChatMessages,
+  diffApi,
+  isAssistantMessage,
   isChatContextFileMessage,
   isDiffMessage,
   isToolMessage,
@@ -15,17 +17,20 @@ import { ContextFiles } from "./ContextFiles";
 import { AssistantInput } from "./AssistantInput";
 import { useAutoScroll } from "./useAutoScroll";
 import { PlainText } from "./PlainText";
-import { useConfig, useEventsBusForIDE } from "../../hooks";
+import { useAppDispatch, useConfig, useEventsBusForIDE } from "../../hooks";
 import { useAppSelector } from "../../hooks";
 import {
   selectIsStreaming,
   selectIsWaiting,
   selectMessages,
+  selectThread,
 } from "../../features/Chat/Thread/selectors";
 import { takeWhile } from "../../utils";
 import { GroupedDiffs } from "./DiffContent";
 import { ScrollToBottomButton } from "./ScrollToBottomButton";
 import { currentTipOfTheDay } from "../../features/TipOfTheDay";
+import { popBackTo } from "../../features/Pages/pagesSlice";
+import { ChatLinks } from "../ChatLinks";
 
 const TipOfTheDay: React.FC = () => {
   const tip = useAppSelector(currentTipOfTheDay);
@@ -106,11 +111,31 @@ export type ChatContentProps = {
   onStopStreaming: () => void;
 };
 
-export const ChatContent: React.FC<ChatContentProps> = (props) => {
+export const ChatContent: React.FC<ChatContentProps> = ({
+  onStopStreaming,
+  onRetry,
+}) => {
+  const dispatch = useAppDispatch();
   const scrollRef = useRef<HTMLDivElement>(null);
   const messages = useAppSelector(selectMessages);
   const isStreaming = useAppSelector(selectIsStreaming);
+  const thread = useAppSelector(selectThread);
+  const isConfig = !!thread.integration;
   const isWaiting = useAppSelector(selectIsWaiting);
+  const [applyAll, applyAllResult] =
+    diffApi.useApplyAllPatchesInMessagesMutation();
+
+  const hasPins = useMemo(
+    () =>
+      messages.some((message) => {
+        if (!isAssistantMessage(message)) return false;
+        if (!message.content) return false;
+        return message.content
+          .split("\n")
+          .some((line) => line.startsWith("📍"));
+      }),
+    [messages],
+  );
 
   const {
     handleScroll,
@@ -122,8 +147,35 @@ export const ChatContent: React.FC<ChatContentProps> = (props) => {
   });
 
   const onRetryWrapper = (index: number, question: UserMessage["content"]) => {
-    props.onRetry(index, question);
+    onRetry(index, question);
   };
+
+  const handleReturnToConfigurationClick = useCallback(() => {
+    // console.log(`[DEBUG]: going back to configuration page`);
+    // TBD: should it be allowed to run in the background?
+    onStopStreaming();
+    dispatch(
+      popBackTo({
+        name: "integrations page",
+        projectPath: thread.integration?.project,
+        integrationName: thread.integration?.name,
+        integrationPath: thread.integration?.path,
+      }),
+    );
+  }, [
+    onStopStreaming,
+    dispatch,
+    thread.integration?.project,
+    thread.integration?.name,
+    thread.integration?.path,
+  ]);
+
+  const handleSaveAndReturn = useCallback(async () => {
+    const result = await applyAll(messages);
+    if (!result.error) {
+      handleReturnToConfigurationClick();
+    }
+  }, [applyAll, handleReturnToConfigurationClick, messages]);
 
   return (
     <ScrollArea
@@ -137,6 +189,9 @@ export const ChatContent: React.FC<ChatContentProps> = (props) => {
       <Flex direction="column" className={styles.content} p="2" gap="1">
         {messages.length === 0 && <PlaceHolderText />}
         {renderMessages(messages, onRetryWrapper)}
+
+        <ChatLinks />
+
         <Container py="4">
           <Spinner spinning={isWaiting} />
         </Container>
@@ -145,20 +200,47 @@ export const ChatContent: React.FC<ChatContentProps> = (props) => {
         <ScrollToBottomButton onClick={handleScrollButtonClick} />
       )}
 
-      {isStreaming && (
-        <Button
-          ml="auto"
-          color="red"
-          title="stop streaming"
-          onClick={props.onStopStreaming}
-          style={{ position: "absolute", bottom: 15 }}
-        >
-          Stop
-        </Button>
-      )}
+      <Flex gap="3" style={{ position: "absolute", bottom: 15 }}>
+        {isStreaming && (
+          <Button
+            ml="auto"
+            color="red"
+            title="stop streaming"
+            onClick={onStopStreaming}
+          >
+            Stop
+          </Button>
+        )}
+        {isConfig && (
+          <Button
+            ml="auto"
+            color="gray"
+            title="Return to configuration page"
+            onClick={handleReturnToConfigurationClick}
+          >
+            Return
+          </Button>
+        )}
+
+        {isConfig && hasPins && (
+          <Button
+            ml="auto"
+            color="green"
+            title="Save and return"
+            disabled={isStreaming || applyAllResult.isLoading}
+            onClick={() => {
+              void handleSaveAndReturn();
+            }}
+          >
+            Save
+          </Button>
+        )}
+      </Flex>
     </ScrollArea>
   );
 };
+
+ChatContent.displayName = "ChatContent";
 
 function renderMessages(
   messages: ChatMessages,
