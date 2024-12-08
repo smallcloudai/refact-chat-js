@@ -20,6 +20,7 @@ import {
   setIntegrationData,
 } from "../../features/Chat";
 import { popBackTo } from "../../features/Pages/pagesSlice";
+import { Spinner } from "@radix-ui/themes";
 
 function maybeConcatActionAndGoToStrings(link: ChatLink): string | undefined {
   const hasAction = "action" in link;
@@ -176,25 +177,44 @@ export const ChatLinks: React.FC = () => {
 
   // TODO: waiting, errors, maybe add a title
 
-  if (!linksResult.data || isStreaming || isWaiting || unCalledTools) {
+  if (isStreaming || isWaiting || unCalledTools) {
     return null;
   }
 
   const Wrapper = messages.length === 0 ? Box : Container;
-  return (
-    <Wrapper position="relative" mt="6">
-      <Heading as="h4" size="2" mb="2">
-        Available Actions:{" "}
-      </Heading>
 
-      <Flex gap="2" wrap="wrap" direction="column" align="start">
-        {linksResult.data.links.map((link, index) => {
-          const key = `chat-link-${index}`;
-          return <ChatLinkButton key={key} link={link} onClick={handleClick} />;
-        })}
-      </Flex>
-    </Wrapper>
-  );
+  if (linksResult.isLoading) {
+    return (
+      <Wrapper position="relative" mt="6">
+        <Heading as="h4" size="2" mb="2">
+          <Button variant="surface" disabled>
+            <Spinner loading />
+            Checking for actions
+          </Button>
+        </Heading>
+      </Wrapper>
+    );
+  }
+
+  if (linksResult.data && linksResult.data.links.length > 0)
+    return (
+      <Wrapper position="relative" mt="6">
+        <Heading as="h4" size="2" mb="2">
+          Available Actions:{" "}
+        </Heading>
+
+        <Flex gap="2" wrap="wrap" direction="column" align="start">
+          {linksResult.data.links.map((link, index) => {
+            const key = `chat-link-${index}`;
+            return (
+              <ChatLinkButton key={key} link={link} onClick={handleClick} />
+            );
+          })}
+        </Flex>
+      </Wrapper>
+    );
+
+  return null;
 };
 
 const ChatLinkButton: React.FC<{
