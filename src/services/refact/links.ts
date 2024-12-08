@@ -6,11 +6,20 @@ import { CHAT_LINKS_URL } from "./consts";
 
 // goto: can be an integration file to open in settings, a file to open in an idea or a global integration.
 export type ChatLink =
-  | { text: string; goto: string; action: string }
-  | { text: string; goto: string /* action: undefined */ }
-  | { text: string; /* goto: undefined; */ action: string }
-  | { text: string; goto: string; action: "go-to" }
-  | { text: string; action: "summarize-project"; current_config_file?: string };
+  | { text: string; goto: string; action: string; link_tooltip: string }
+  | { text: string; goto: string; link_tooltip: string /* action: undefined */ }
+  | {
+      text: string;
+      /* goto: undefined; */ action: string;
+      link_tooltip: string;
+    }
+  | { text: string; goto: string; action: "go-to"; link_tooltip: string }
+  | {
+      text: string;
+      action: "summarize-project";
+      current_config_file?: string;
+      link_tooltip: string;
+    };
 
 function isChatLink(json: unknown): json is ChatLink {
   if (!json || typeof json !== "object") return false;

@@ -201,7 +201,7 @@ const ChatLinkButton: React.FC<{
   link: ChatLink;
   onClick: (link: ChatLink) => void;
 }> = ({ link, onClick }) => {
-  const title = maybeConcatActionAndGoToStrings(link);
+  const title = link.link_tooltip || maybeConcatActionAndGoToStrings(link);
   const handleClick = React.useCallback(() => onClick(link), [link, onClick]);
 
   return (
