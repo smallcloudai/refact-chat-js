@@ -4,6 +4,8 @@ import {
   type ChatThread,
   type PayloadWithId,
   type ToolUse,
+  IntegrationMeta,
+  LspChatMode,
 } from "./types";
 import {
   isAssistantMessage,
@@ -17,13 +19,18 @@ import {
   type ChatResponse,
 } from "../../../services/refact/types";
 import type { AppDispatch, RootState } from "../../../app/store";
-import type { SystemPrompts } from "../../../services/refact/prompts";
+import { type SystemPrompts } from "../../../services/refact/prompts";
 import { formatMessagesForLsp, consumeStream } from "./utils";
 import { generateChatTitle, sendChat } from "../../../services/refact/chat";
 import { ToolCommand } from "../../../services/refact/tools";
 import { scanFoDuplicatesWith, takeFromEndWhile } from "../../../utils";
 
 export const newChatAction = createAction("chatThread/new");
+
+export const newIntegrationChat = createAction<{
+  integration: IntegrationMeta;
+  messages: ChatMessages;
+}>("chatThread/newIntegrationChat");
 
 export const chatResponse = createAction<PayloadWithId & ChatResponse>(
   "chatThread/response",
@@ -34,7 +41,9 @@ export const chatAskedQuestion = createAction<PayloadWithId>(
 );
 
 export const backUpMessages = createAction<
-  PayloadWithId & { messages: ChatThread["messages"] }
+  PayloadWithId & {
+    messages: ChatThread["messages"];
+  }
 >("chatThread/backUpMessages");
 
 // TODO: add history actions to this, maybe not used any more
@@ -75,6 +84,17 @@ export const setToolUse = createAction<ToolUse>("chatThread/setToolUse");
 export const saveTitle = createAction<PayloadWithIdAndTitle>(
   "chatThread/saveTitle",
 );
+
+export const setSendImmediately = createAction<boolean>(
+  "chatThread/setSendImmediately",
+);
+
+export const setChatMode = createAction<LspChatMode>("chatThread/setChatMode");
+
+export const setIntegrationData = createAction<Partial<IntegrationMeta>>(
+  "chatThread/setIntegrationData",
+);
+
 // TODO: This is the circular dep when imported from hooks :/
 const createAppAsyncThunk = createAsyncThunk.withTypes<{
   state: RootState;
@@ -186,6 +206,13 @@ function checkForToolLoop(message: ChatMessages): boolean {
 
   return hasDuplicates;
 }
+// TODO: add props for config chat
+
+// export function chatModeToLspMode(mode?: ToolUse) {
+//   if (mode === "agent") return "AGENT";
+//   if (mode === "quick") return "NO_TOOLS";
+//   return "EXPLORE";
+// }
 
 export const chatAskQuestionThunk = createAppAsyncThunk<
   unknown,
@@ -193,9 +220,22 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
     messages: ChatMessages;
     chatId: string;
     tools: ToolCommand[] | null;
+    mode?: LspChatMode; // used once for actions
+    // TODO: make a separate function for this... and it'll need to be saved.
   }
->("chatThread/sendChat", ({ messages, chatId, tools }, thunkAPI) => {
+>("chatThread/sendChat", ({ messages, chatId, tools, mode }, thunkAPI) => {
   const state = thunkAPI.getState();
+
+  const thread =
+    chatId in state.chat.cache
+      ? state.chat.cache[chatId]
+      : state.chat.thread.id === chatId
+        ? state.chat.thread
+        : null;
+
+  // TODO: stops the stream.
+  // const onlyDeterministicMessages =
+  //   checkForToolLoop(messages) || !messages.some(isSystemMessage);
 
   const onlyDeterministicMessages = checkForToolLoop(messages);
 
@@ -211,6 +251,8 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
     apiKey: state.config.apiKey,
     port: state.config.lspPort,
     onlyDeterministicMessages,
+    integration: thread?.integration,
+    mode: mode ?? thread?.mode,
   })
     .then((response) => {
       if (!response.ok) {

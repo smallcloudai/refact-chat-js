@@ -1,3 +1,4 @@
+import { IntegrationMeta, LspChatMode } from "../../features/Chat";
 import { CHAT_URL } from "./consts";
 import { ToolCommand } from "./tools";
 import { ChatRole, ToolCall, ToolResult, UserMessage } from "./types";
@@ -7,11 +8,24 @@ export type LspChatMessage =
       role: ChatRole;
       // TODO make this a union type for user message
       content: string | null;
-      tool_calls?: Omit<ToolCall, "index">[];
+      // TBD: why was index omitted ?
+      // tool_calls?: Omit<ToolCall, "index">[];
+      tool_calls?: ToolCall[];
       tool_call_id?: string;
     }
   | UserMessage
   | { role: "tool"; content: ToolResult["content"]; tool_call_id: string };
+
+// could be more narrow.
+export function isLspChatMessage(json: unknown): json is LspChatMessage {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  if (!("role" in json)) return false;
+  if (typeof json.role !== "string") return false;
+  if (!("content" in json)) return false;
+  if (json.content !== null && typeof json.content !== "string") return false;
+  return true;
+}
 
 type StreamArgs =
   | {
@@ -30,6 +44,9 @@ type SendChatArgs = {
   tools: ToolCommand[] | null;
   port?: number;
   apiKey?: string | null;
+  // isConfig?: boolean;
+  integration?: IntegrationMeta | null;
+  mode?: LspChatMode; // used for chat actions
 } & StreamArgs;
 
 type GetChatTitleArgs = {
@@ -83,7 +100,7 @@ export type Usage = {
   prompt_tokens: number;
   total_tokens: number;
 };
-
+// TODO: add config url
 export async function sendChat({
   messages,
   model,
@@ -96,6 +113,9 @@ export async function sendChat({
   tools,
   port = 8001,
   apiKey,
+  // isConfig = false,
+  integration,
+  mode,
 }: SendChatArgs): Promise<Response> {
   // const toolsResponse = await getAvailableTools();
 
@@ -117,7 +137,15 @@ export async function sendChat({
     tools,
     max_tokens: 2048,
     only_deterministic_messages,
-    chat_id,
+    // chat_id,
+    meta: {
+      chat_id,
+      // chat_remote,
+      // TODO: pass this through
+      chat_mode: mode ?? "EXPLORE",
+      // chat_mode: "EXPLORE", // NOTOOLS, EXPLORE, AGENT, CONFIGURE, PROJECTSUMMARY,
+      ...(integration?.path ? { current_config_file: integration.path } : {}),
+    },
   });
 
   //   const apiKey = getApiKey();
