@@ -29,6 +29,7 @@ import {
   IntegrationWithIconResponse,
   isDetailMessage,
   isNotConfiguredIntegrationWithIconRecord,
+  isPrimitive,
   NotConfiguredIntegrationWithIconRecord,
 } from "../../services/refact";
 import { ErrorCallout } from "../Callout";
@@ -41,7 +42,8 @@ import { IntegrationsHeader } from "./IntegrationsHeader";
 import styles from "./IntegrationsView.module.css";
 import { iconMap } from "./icons/iconMap";
 import { LeftRightPadding } from "../../features/Integrations/Integrations";
-import { IntegrationCmdline } from "./IntegrationCmdline";
+import { IntermediateIntegration } from "./IntermediateIntegration";
+import { parseOrElse } from "../../utils";
 
 type IntegrationViewProps = {
   integrationsMap?: IntegrationWithIconResponse;
@@ -197,6 +199,14 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         return acc;
       }, {});
 
+      // Sort paths so that paths containing ".config" are first
+      Object.values(groupedIntegrations).forEach((integration) => {
+        integration.project_path.sort((a, _b) => (a === "" ? -1 : 1));
+        integration.integr_config_path.sort((a, _b) =>
+          a.includes(".config") ? -1 : 1,
+        );
+      });
+
       return Object.values(groupedIntegrations);
     }
   }, [integrationsMap]);
@@ -277,6 +287,18 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
           case "bool":
             acc[key] = rawFormValues[key] === "on" ? true : false;
             break;
+          case "tool":
+            acc[key] = parseOrElse<Integration["integr_values"][number]>(
+              rawFormValues[key] as string,
+              {},
+            );
+            break;
+          case "output":
+            acc[key] = parseOrElse<Integration["integr_values"][number]>(
+              rawFormValues[key] as string,
+              {},
+            );
+            break;
           default:
             acc[key] = rawFormValues[key] as string;
             break;
@@ -349,6 +371,18 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
           case "bool":
             acc[key] = rawFormValues[key] === "on" ? true : false;
             break;
+          case "tool":
+            acc[key] = parseOrElse<Integration["integr_values"][number]>(
+              rawFormValues[key] as string,
+              {},
+            );
+            break;
+          case "output":
+            acc[key] = parseOrElse<Integration["integr_values"][number]>(
+              rawFormValues[key] as string,
+              {},
+            );
+            break;
           default:
             acc[key] = rawFormValues[key] as string;
             break;
@@ -358,11 +392,26 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
 
       const eachFormValueIsNotChanged = Object.entries(formValues).every(
         ([fieldKey, fieldValue]) => {
-          return (
-            fieldKey in currentIntegrationValues &&
-            fieldValue === currentIntegrationValues[fieldKey]
-          );
+          if (isPrimitive(fieldValue)) {
+            return (
+              fieldKey in currentIntegrationValues &&
+              fieldValue === currentIntegrationValues[fieldKey]
+            );
+          }
+          // TODO: better comparison of objects?
+          if (typeof fieldValue === "object") {
+            return (
+              fieldKey in currentIntegrationValues &&
+              JSON.stringify(fieldValue) ===
+                JSON.stringify(currentIntegrationValues[fieldKey])
+            );
+          }
         },
+      );
+
+      debugIntegrations(
+        `[DEBUG]: eachFormValueIsNotChanged: `,
+        eachFormValueIsNotChanged,
       );
 
       const eachAvailabilityOptionIsNotChanged = Object.entries(
@@ -376,6 +425,17 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         }
         return false;
       });
+
+      debugIntegrations(`[DEBUG]: formValues: `, formValues);
+      debugIntegrations(
+        `[DEBUG]: currentIntegrationValues: `,
+        currentIntegrationValues,
+      );
+      debugIntegrations(
+        `[DEBUG]: eachAvailabilityOptionIsNotChanged: `,
+        eachAvailabilityOptionIsNotChanged,
+      );
+      debugIntegrations(`[DEBUG]: availabilityValues: `, availabilityValues);
       const maybeDisabled =
         eachFormValueIsNotChanged && eachAvailabilityOptionIsNotChanged;
       debugIntegrations(`[DEBUG CHANGE]: maybeDisabled: `, maybeDisabled);
@@ -407,11 +467,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       ) {
         // making integration-get call and setting the result as currentIntegration
         const commandName = rawFormValues.command_name;
-        const configPath =
-          rawFormValues.integr_config_path.split("_")[0] +
-          "_" +
-          commandName +
-          ".yaml";
+        const configPath = rawFormValues.integr_config_path.replace(
+          "TEMPLATE",
+          commandName,
+        );
 
         debugIntegrations(
           `[DEBUG]: config path for \`v1/integration-get\`: `,
@@ -585,7 +644,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             justify="between"
             height="100%"
           >
-            <IntegrationCmdline
+            <IntermediateIntegration
               handleSubmit={(event) =>
                 handleNotConfiguredIntegrationSubmit(event)
               }
