@@ -154,17 +154,19 @@ export const ChatLinks: React.FC = () => {
   const skipLinksRequest = useMemo(() => {
     const lastMessageIsUserMessage =
       messages.length > 0 && isUserMessage(messages[messages.length - 1]);
+    if (!model) return true;
+    if (!caps.data) return true;
     return (
       isStreaming || isWaiting || unCalledTools || lastMessageIsUserMessage
     );
-  }, [isStreaming, isWaiting, messages, unCalledTools]);
+  }, [caps.data, isStreaming, isWaiting, messages, model, unCalledTools]);
 
   const linksResult = linksApi.useGetLinksForChatQuery(
     {
       chat_id: chatId,
       messages,
       model: model ?? "",
-      mode: threadMode,
+      mode: threadMode, // TODO: Changing thread mode invalidates the cache.
       current_config_file: maybeIntegration?.path,
     },
     { skip: skipLinksRequest },
