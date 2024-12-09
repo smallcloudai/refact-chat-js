@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Flex, Button, Heading, Container, Box } from "@radix-ui/themes";
+import { Flex, Button, Container, Box } from "@radix-ui/themes";
 import { linksApi, type ChatLink } from "../../services/refact/links";
 import { diffApi, isUserMessage } from "../../services/refact";
 import {
@@ -20,6 +20,8 @@ import {
   setIntegrationData,
 } from "../../features/Chat";
 import { popBackTo } from "../../features/Pages/pagesSlice";
+import { Spinner } from "@radix-ui/themes";
+import { TruncateRight } from "../Text/TruncateRight";
 
 function maybeConcatActionAndGoToStrings(link: ChatLink): string | undefined {
   const hasAction = "action" in link;
@@ -82,8 +84,12 @@ export const ChatLinks: React.FC = () => {
           popBackTo({
             name: "integrations page",
             // projectPath: isFile ? payload : "",
-            integrationName: !isFile ? payload : "",
-            integrationPath: isFile ? payload : "",
+            integrationName:
+              !isFile && payload !== "DEFAULT"
+                ? payload
+                : maybeIntegration?.name,
+            integrationPath: isFile ? payload : maybeIntegration?.path,
+            projectPath: maybeIntegration?.project,
           }),
         );
         // TODO: open in the integrations
@@ -99,8 +105,17 @@ export const ChatLinks: React.FC = () => {
   const handleLinkAction = (link: ChatLink) => {
     if (!("action" in link)) return;
 
+    if (link.action === "goto" && "goto" in link) {
+      handleGoTo(link.goto);
+      return;
+    }
+
     if (link.action === "patch-all") {
-      void applyPatches(messages);
+      void applyPatches(messages).then(() => {
+        if ("goto" in link) {
+          handleGoTo(link.goto);
+        }
+      });
       return;
     }
 
@@ -118,26 +133,22 @@ export const ChatLinks: React.FC = () => {
       return;
     }
 
-    if (link.action === "commit") {
-      // TODO: there should be an endpoint for this
-      void applyPatches(messages).then(() => {
-        if ("goto" in link && link.goto) {
-          handleGoTo(link.goto);
-        }
-      });
+    // if (link.action === "commit") {
+    //   // TODO: there should be an endpoint for this
+    //   void applyPatches(messages).then(() => {
+    //     if ("goto" in link && link.goto) {
+    //       handleGoTo(link.goto);
+    //     }
+    //   });
 
-      return;
-    }
+    //   return;
+    // }
 
     // eslint-disable-next-line no-console
     console.warn(`unknown action: ${JSON.stringify(link)}`);
   };
   const handleClick = (link: ChatLink) => {
-    if (!("action" in link) && "goto" in link) {
-      handleGoTo(link.goto);
-    } else {
-      handleLinkAction(link);
-    }
+    handleLinkAction(link);
   };
 
   const skipLinksRequest = useMemo(() => {
@@ -161,32 +172,46 @@ export const ChatLinks: React.FC = () => {
 
   // TODO: waiting, errors, maybe add a title
 
-  if (!linksResult.data || isStreaming || isWaiting || unCalledTools) {
+  if (isStreaming || isWaiting || unCalledTools) {
     return null;
   }
 
   const Wrapper = messages.length === 0 ? Box : Container;
-  return (
-    <Wrapper position="relative" mt="6">
-      <Heading as="h4" size="2" mb="2">
-        Available Actions:{" "}
-      </Heading>
 
-      <Flex gap="2" wrap="wrap" direction="column" align="start">
-        {linksResult.data.links.map((link, index) => {
-          const key = `chat-link-${index}`;
-          return <ChatLinkButton key={key} link={link} onClick={handleClick} />;
-        })}
-      </Flex>
-    </Wrapper>
-  );
+  if (linksResult.isLoading) {
+    return (
+      <Wrapper position="relative" mt="6">
+        <Button variant="surface" disabled>
+          <Spinner loading />
+          Checking for actions
+        </Button>
+      </Wrapper>
+    );
+  }
+
+  if (linksResult.data && linksResult.data.links.length > 0) {
+    return (
+      <Wrapper position="relative" mt="6">
+        <Flex gap="2" wrap="wrap" direction="column" align="start">
+          {linksResult.data.links.map((link, index) => {
+            const key = `chat-link-${index}`;
+            return (
+              <ChatLinkButton key={key} link={link} onClick={handleClick} />
+            );
+          })}
+        </Flex>
+      </Wrapper>
+    );
+  }
+
+  return null;
 };
 
 const ChatLinkButton: React.FC<{
   link: ChatLink;
   onClick: (link: ChatLink) => void;
 }> = ({ link, onClick }) => {
-  const title = maybeConcatActionAndGoToStrings(link);
+  const title = link.link_tooltip || maybeConcatActionAndGoToStrings(link);
   const handleClick = React.useCallback(() => onClick(link), [link, onClick]);
 
   return (
@@ -196,11 +221,13 @@ const ChatLinkButton: React.FC<{
       // variant="outline"
       // variant="soft"
       // variant="ghost"
+
       variant="surface"
       title={title}
       onClick={handleClick}
+      style={{ maxWidth: "100%" }}
     >
-      {link.text}
+      <TruncateRight>{link.text}</TruncateRight>
     </Button>
   );
 };
