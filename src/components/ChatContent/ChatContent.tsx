@@ -28,7 +28,7 @@ import { GroupedDiffs } from "./DiffContent";
 import { ScrollToBottomButton } from "./ScrollToBottomButton";
 import { currentTipOfTheDay } from "../../features/TipOfTheDay";
 import { popBackTo } from "../../features/Pages/pagesSlice";
-import { ChatLinks } from "../ChatLinks";
+// import { ChatLinks } from "../ChatLinks";
 
 const TipOfTheDay: React.FC = () => {
   const tip = useAppSelector(currentTipOfTheDay);
@@ -119,7 +119,7 @@ export const ChatContent: React.FC<ChatContentProps> = ({
   const isStreaming = useAppSelector(selectIsStreaming);
   const thread = useAppSelector(selectThread);
 
-  const isConfig = !!thread.integration?.project;
+  const isConfig = thread.mode === "CONFIGURE";
   const isWaiting = useAppSelector(selectIsWaiting);
 
   const {
@@ -168,8 +168,6 @@ export const ChatContent: React.FC<ChatContentProps> = ({
         {messages.length === 0 && <PlaceHolderText />}
         {renderMessages(messages, onRetryWrapper)}
 
-        <ChatLinks />
-
         <Container py="4">
           <Spinner spinning={isWaiting} />
         </Container>
@@ -178,10 +176,15 @@ export const ChatContent: React.FC<ChatContentProps> = ({
         <ScrollToBottomButton onClick={handleScrollButtonClick} />
       )}
 
-      <Flex gap="3" style={{ position: "absolute", bottom: 15 }}>
+      <Flex
+        wrap="wrap"
+        align="start"
+        gap="3"
+        style={{ position: "absolute", bottom: 15 }}
+      >
         {isStreaming && (
           <Button
-            ml="auto"
+            // ml="auto"
             color="red"
             title="stop streaming"
             onClick={onStopStreaming}
@@ -191,7 +194,7 @@ export const ChatContent: React.FC<ChatContentProps> = ({
         )}
         {isConfig && (
           <Button
-            ml="auto"
+            // ml="auto"
             color="gray"
             title="Return to configuration page"
             onClick={handleReturnToConfigurationClick}
@@ -199,6 +202,8 @@ export const ChatContent: React.FC<ChatContentProps> = ({
             Return
           </Button>
         )}
+
+        {/* <ChatLinks /> */}
       </Flex>
     </ScrollArea>
   );

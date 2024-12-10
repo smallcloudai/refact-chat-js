@@ -14,7 +14,7 @@ import {
   goodPrompts,
   goodUser,
   chatLinks,
-  noTools,
+  goodTools,
 } from "../../__fixtures__/msw";
 import { TourProvider } from "../../features/Tour";
 import { Flex } from "@radix-ui/themes";
@@ -24,7 +24,7 @@ const Template: React.FC<{
 }> = ({ thread }) => {
   const threadData = thread ?? {
     id: "test",
-    model: "test",
+    model: "gpt-4o", // or any model from STUB CAPS REQUEst
     messages: [],
   };
   const store = setUpStore({
@@ -35,7 +35,7 @@ const Template: React.FC<{
       streaming: false,
       prevent_send: false,
       waiting_for_response: false,
-      tool_use: "quick",
+      tool_use: "agent",
       send_immediately: false,
       error: null,
       cache: {},
@@ -58,8 +58,66 @@ const Template: React.FC<{
                 caps={{
                   error: null,
                   fetching: false,
-                  default_cap: "test-model",
-                  available_caps: {},
+                  default_cap: "gpt-4o-mini",
+                  available_caps: {
+                    "groq-llama-3.1-70b": {
+                      n_ctx: 32000,
+                      default_scratchpad: "",
+                      supports_scratchpads: {},
+                      similar_models: [
+                        "groq-llama-3.1-70b",
+                        "groq-llama-3.2-1b",
+                        "groq-l…",
+                      ],
+                      supports_tools: true,
+                    },
+                    "gpt-3.5-turbo": {
+                      n_ctx: 16000,
+                      default_scratchpad: "",
+                      supports_scratchpads: {},
+                      similar_models: [
+                        "gpt-3.5-turbo-1106",
+                        "gpt-3.5-turbo-0125",
+                        "gpt-4…",
+                      ],
+                      supports_tools: true,
+                    },
+                    "gpt-4o": {
+                      n_ctx: 32000,
+                      supports_scratchpads: {},
+                      default_scratchpad: "",
+                      similar_models: [],
+                      supports_tools: true,
+                    },
+                    "gpt-4o-mini": {
+                      n_ctx: 32000,
+                      supports_scratchpads: {},
+                      default_scratchpad: "",
+                      similar_models: [],
+                      supports_tools: true,
+                    },
+                    "claude-3-5-sonnet": {
+                      n_ctx: 32000,
+                      supports_scratchpads: {},
+                      default_scratchpad: "",
+                      similar_models: [],
+                      supports_tools: true,
+                    },
+                    "groq-llama-3.1-8b": {
+                      n_ctx: 32000,
+                      supports_scratchpads: {},
+                      default_scratchpad: "",
+                      similar_models: [],
+                      supports_tools: true,
+                    },
+                    "gpt-4-turbo": {
+                      n_ctx: 16000,
+                      supports_scratchpads: {},
+                      default_scratchpad: "",
+                      similar_models: [],
+                      supports_tools: true,
+                    },
+                  },
                 }}
                 maybeSendToSidebar={() => ({})}
               />
@@ -76,7 +134,14 @@ const meta = {
   component: Template,
   parameters: {
     msw: {
-      handlers: [goodCaps, goodPing, goodPrompts, goodUser, chatLinks, noTools],
+      handlers: [
+        goodCaps,
+        goodPing,
+        goodPrompts,
+        goodUser,
+        chatLinks,
+        goodTools,
+      ],
     },
   },
   argTypes: {},
