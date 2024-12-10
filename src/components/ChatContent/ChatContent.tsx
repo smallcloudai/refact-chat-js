@@ -181,7 +181,6 @@ export const ChatContent: React.FC<ChatContentProps> = ({
           position: "absolute",
           bottom: 0,
           maxWidth: "100%", // TODO: make space for the down button
-          zIndex: -1,
         }}
       >
         <ScrollArea scrollbars="horizontal">
