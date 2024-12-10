@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import type { FC } from "react";
 import type { SmartLink as SmartLinkType } from "../../services/refact";
 import { Button, DropdownMenu } from "@radix-ui/themes";
-import { useLinksFromLsp } from "../../hooks";
+import { useSmartLinks } from "../../hooks";
 
 export const SmartLink: FC<{
   smartlink: SmartLinkType;
@@ -19,7 +19,7 @@ export const SmartLink: FC<{
   isSmall = false,
   isDockerSmartlink = false,
 }) => {
-  const { handleGoTo, handleSmartLink } = useLinksFromLsp();
+  const { handleGoTo, handleSmartLink } = useSmartLinks();
 
   const { sl_goto, sl_chat } = smartlink;
 

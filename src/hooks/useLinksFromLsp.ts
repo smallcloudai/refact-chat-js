@@ -3,16 +3,13 @@ import {
   diffApi,
   isUserMessage,
   linksApi,
-  LspChatMessage,
   type ChatLink,
 } from "..//services/refact";
 import { useAppDispatch } from "./useAppDispatch";
 import { useAppSelector } from "./useAppSelector";
-import { useEventsBusForIDE } from "./useEventBusForIDE";
 import { useGetCapsQuery } from "./useGetCapsQuery";
 import { useSendChatRequest } from "./useSendChatRequest";
 import {
-  newIntegrationChat,
   selectChatId,
   selectIntegration,
   selectIsStreaming,
@@ -22,20 +19,12 @@ import {
   selectThreadMode,
   setIntegrationData,
 } from "../features/Chat";
-import {
-  popBackTo,
-  push,
-  selectCurrentPage,
-} from "../features/Pages/pagesSlice";
-import { isAbsolutePath } from "../utils";
-import { formatMessagesForChat } from "../features/Chat/Thread/utils";
-import { clearInformation } from "../features/Errors/informationSlice";
+import { useGoToLink } from "./useGoToLink";
 
 export function useLinksFromLsp() {
   const dispatch = useAppDispatch();
-  const { queryPathThenOpenFile } = useEventsBusForIDE();
+  const { handleGoTo } = useGoToLink();
   const { submit } = useSendChatRequest();
-  const currentPage = useAppSelector(selectCurrentPage);
 
   const [applyPatches, _applyPatchesResult] =
     diffApi.useApplyAllPatchesInMessagesMutation();
@@ -62,51 +51,6 @@ export function useLinksFromLsp() {
     if (maybeTools && maybeTools.length > 0) return true;
     return false;
   }, [messages]);
-
-  // Shared between smart links and chat links
-  const handleGoTo = useCallback(
-    (goto?: string) => {
-      if (!goto) return;
-      // TODO:  duplicated in smart links.
-      const [action, payload] = goto.split(":");
-
-      switch (action.toLowerCase()) {
-        case "editor": {
-          void queryPathThenOpenFile({ file_name: payload });
-          return;
-        }
-        case "settings": {
-          const isFile = isAbsolutePath(payload);
-          dispatch(
-            popBackTo({
-              name: "integrations page",
-              // projectPath: isFile ? payload : "",
-              integrationName:
-                !isFile && payload !== "DEFAULT"
-                  ? payload
-                  : maybeIntegration?.name,
-              integrationPath: isFile ? payload : maybeIntegration?.path,
-              projectPath: maybeIntegration?.project,
-            }),
-          );
-          // TODO: open in the integrations
-          return;
-        }
-        default: {
-          // eslint-disable-next-line no-console
-          console.log(`[DEBUG]: unexpected action, doing nothing`);
-          return;
-        }
-      }
-    },
-    [
-      dispatch,
-      maybeIntegration?.name,
-      maybeIntegration?.path,
-      maybeIntegration?.project,
-      queryPathThenOpenFile,
-    ],
-  );
 
   const handleLinkAction = useCallback(
     (link: ChatLink) => {
@@ -157,33 +101,7 @@ export function useLinksFromLsp() {
     [applyPatches, dispatch, handleGoTo, messages, submit],
   );
 
-  const handleSmartLink = useCallback(
-    (
-      sl_chat: LspChatMessage[],
-      integrationName: string,
-      integrationPath: string,
-      integrationProject: string,
-    ) => {
-      const messages = formatMessagesForChat(sl_chat);
-
-      dispatch(clearInformation());
-      dispatch(
-        newIntegrationChat({
-          integration: {
-            name: integrationName,
-            path: integrationPath,
-            project: integrationProject,
-          },
-          messages,
-        }),
-      );
-      dispatch(push({ name: "chat" }));
-    },
-    [dispatch],
-  );
-
   const skipLinksRequest = useMemo(() => {
-    if (currentPage?.name !== "chat") return true;
     const lastMessageIsUserMessage =
       messages.length > 0 && isUserMessage(messages[messages.length - 1]);
     if (!model) return true;
@@ -191,15 +109,7 @@ export function useLinksFromLsp() {
     return (
       isStreaming || isWaiting || unCalledTools || lastMessageIsUserMessage
     );
-  }, [
-    caps.data,
-    currentPage?.name,
-    isStreaming,
-    isWaiting,
-    messages,
-    model,
-    unCalledTools,
-  ]);
+  }, [caps.data, isStreaming, isWaiting, messages, model, unCalledTools]);
 
   const linksResult = linksApi.useGetLinksForChatQuery(
     {
@@ -215,8 +125,6 @@ export function useLinksFromLsp() {
   return {
     linksResult,
     handleLinkAction,
-    handleSmartLink,
-    handleGoTo,
     streaming: isWaiting || isStreaming || unCalledTools,
   };
 }
