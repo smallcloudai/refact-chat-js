@@ -63,6 +63,7 @@ export function useLinksFromLsp() {
     return false;
   }, [messages]);
 
+  // Shared between smart links and chat links
   const handleGoTo = useCallback(
     (goto?: string) => {
       if (!goto) return;
