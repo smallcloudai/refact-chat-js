@@ -2,7 +2,11 @@ import { http, HttpResponse, type HttpHandler } from "msw";
 import { STUB_CAPS_RESPONSE } from "./caps";
 import { SYSTEM_PROMPTS } from "./prompts";
 import { STUB_LINKS_FOR_CHAT_RESPONSE } from "./chat_links_response";
-import { CHAT_LINKS_URL } from "../services/refact/consts";
+import {
+  AT_TOOLS_AVAILABLE_URL,
+  CHAT_LINKS_URL,
+} from "../services/refact/consts";
+import { STUB_TOOL_RESPONSE } from "./tools_response";
 
 export const goodPing: HttpHandler = http.get(
   "http://127.0.0.1:8001/v1/ping",
@@ -70,5 +74,12 @@ export const chatLinks: HttpHandler = http.post(
   `http://127.0.0.1:8001${CHAT_LINKS_URL}`,
   () => {
     return HttpResponse.json(STUB_LINKS_FOR_CHAT_RESPONSE);
+  },
+);
+
+export const goodTools: HttpHandler = http.get(
+  `http://127.0.0.1:8001${AT_TOOLS_AVAILABLE_URL}`,
+  () => {
+    return HttpResponse.json(STUB_TOOL_RESPONSE);
   },
 );
