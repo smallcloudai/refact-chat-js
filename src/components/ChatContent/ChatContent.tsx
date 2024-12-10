@@ -9,7 +9,7 @@ import {
 import { UserInput } from "./UserInput";
 import { ScrollArea } from "../ScrollArea";
 import { Spinner } from "../Spinner";
-import { Flex, Text, Container, Link, Button } from "@radix-ui/themes";
+import { Flex, Text, Container, Link, Button, Box } from "@radix-ui/themes";
 import styles from "./ChatContent.module.css";
 import { ContextFiles } from "./ContextFiles";
 import { AssistantInput } from "./AssistantInput";
@@ -176,35 +176,41 @@ export const ChatContent: React.FC<ChatContentProps> = ({
         <ScrollToBottomButton onClick={handleScrollButtonClick} />
       )}
 
-      <Flex
-        align="start"
-        wrap="wrap"
-        gap="3"
-        style={{ position: "absolute", bottom: 15, flex: 1 }}
+      <Box
+        style={{
+          position: "absolute",
+          bottom: 0,
+          maxWidth: "100%", // TODO: make space for the down button
+          zIndex: -1,
+        }}
       >
-        {isStreaming && (
-          <Button
-            // ml="auto"
-            color="red"
-            title="stop streaming"
-            onClick={onStopStreaming}
-          >
-            Stop
-          </Button>
-        )}
-        {isConfig && (
-          <Button
-            // ml="auto"
-            color="gray"
-            title="Return to configuration page"
-            onClick={handleReturnToConfigurationClick}
-          >
-            Return
-          </Button>
-        )}
+        <ScrollArea scrollbars="horizontal">
+          <Flex align="start" gap="3" pb="4">
+            {isStreaming && (
+              <Button
+                // ml="auto"
+                color="red"
+                title="stop streaming"
+                onClick={onStopStreaming}
+              >
+                Stop
+              </Button>
+            )}
+            {isConfig && (
+              <Button
+                // ml="auto"
+                color="gray"
+                title="Return to configuration page"
+                onClick={handleReturnToConfigurationClick}
+              >
+                Return
+              </Button>
+            )}
 
-        <ChatLinks />
-      </Flex>
+            <ChatLinks />
+          </Flex>
+        </ScrollArea>
+      </Box>
     </ScrollArea>
   );
 };
