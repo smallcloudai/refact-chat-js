@@ -28,7 +28,7 @@ import { GroupedDiffs } from "./DiffContent";
 import { ScrollToBottomButton } from "./ScrollToBottomButton";
 import { currentTipOfTheDay } from "../../features/TipOfTheDay";
 import { popBackTo } from "../../features/Pages/pagesSlice";
-// import { ChatLinks } from "../ChatLinks";
+import { ChatLinks } from "../ChatLinks";
 
 const TipOfTheDay: React.FC = () => {
   const tip = useAppSelector(currentTipOfTheDay);
@@ -177,10 +177,10 @@ export const ChatContent: React.FC<ChatContentProps> = ({
       )}
 
       <Flex
-        wrap="wrap"
         align="start"
+        wrap="wrap"
         gap="3"
-        style={{ position: "absolute", bottom: 15 }}
+        style={{ position: "absolute", bottom: 15, flex: 1 }}
       >
         {isStreaming && (
           <Button
@@ -203,7 +203,7 @@ export const ChatContent: React.FC<ChatContentProps> = ({
           </Button>
         )}
 
-        {/* <ChatLinks /> */}
+        <ChatLinks />
       </Flex>
     </ScrollArea>
   );

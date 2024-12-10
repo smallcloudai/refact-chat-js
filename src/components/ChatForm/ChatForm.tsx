@@ -28,7 +28,6 @@ import { ToolConfirmation } from "./ToolConfirmation";
 import { getPauseReasonsWithPauseStatus } from "../../features/ToolConfirmation/confirmationSlice";
 import { AttachFileButton, FileList } from "../Dropzone";
 import { useAttachedImages } from "../../hooks/useAttachedImages";
-import { ChatLinks } from "../ChatLinks";
 
 export type ChatFormProps = {
   onSubmit: (str: string) => void;
@@ -299,7 +298,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
         </Form>
       </Flex>
       <FileList />
-      <ChatLinks />
       <ChatControls
         host={config.host}
         checkboxes={checkboxes}

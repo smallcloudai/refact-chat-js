@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Flex, Button } from "@radix-ui/themes";
+import { Button } from "@radix-ui/themes";
 import { linksApi, type ChatLink } from "../../services/refact/links";
 import { diffApi, isUserMessage } from "../../services/refact";
 import {
@@ -178,59 +178,20 @@ export const ChatLinks: React.FC = () => {
     return null;
   }
 
-  // const Wrapper = messages.length === 0 ? Box : Container;
-
-  // if (linksResult.isLoading || linksResult.isFetching) {
-  //   return (
-  //     // <Wrapper position="relative" mt="6">
-  //     <Button size="1" variant="surface" disabled>
-  //       <Spinner loading />
-  //       Checking for actions
-  //     </Button>
-  //     // </Wrapper>
-  //   );
-  // }
-
-  // if (linksResult.data && linksResult.data.links.length > 0) {
-  //   return (
-  //     <Wrapper position="relative" mt="6">
-  //       <Flex gap="2" wrap="wrap" direction="column" align="start">
-  //         {linksResult.data.links.map((link, index) => {
-  //           const key = `chat-link-${index}`;
-  //           return (
-  //             <ChatLinkButton key={key} link={link} onClick={handleClick} />
-  //           );
-  //         })}
-  //       </Flex>
-  //     </Wrapper>
-  //   );
-
-  // if (linksResult.data && linksResult.data.links.length > 0) {
-  //   return linksResult.data.links.map((link, index) => {
-  //     const key = `chat-link-${index}`;
-  //     return <ChatLinkButton key={key} link={link} onClick={handleClick} />;
-  //   });
-  // }
   if (linksResult.isLoading || linksResult.isFetching) {
     return (
-      <Flex>
-        <Button size="1" variant="surface" disabled>
-          <Spinner loading />
-          Checking for actions
-        </Button>
-      </Flex>
+      <Button variant="surface" disabled>
+        <Spinner loading />
+        Checking for actions
+      </Button>
     );
   }
 
   if (linksResult.data && linksResult.data.links.length > 0) {
-    return (
-      <Flex wrap="wrap" my="1" gap="2">
-        {linksResult.data.links.map((link, index) => {
-          const key = `chat-link-${index}`;
-          return <ChatLinkButton key={key} link={link} onClick={handleClick} />;
-        })}
-      </Flex>
-    );
+    return linksResult.data.links.map((link, index) => {
+      const key = `chat-link-${index}`;
+      return <ChatLinkButton key={key} link={link} onClick={handleClick} />;
+    });
   }
 
   return null;
@@ -255,7 +216,6 @@ const ChatLinkButton: React.FC<{
       title={title}
       onClick={handleClick}
       style={{ maxWidth: "100%" }}
-      size="1"
     >
       <TruncateRight>{link.text}</TruncateRight>
     </Button>
