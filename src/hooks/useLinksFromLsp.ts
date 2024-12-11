@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from "react";
 import {
   diffApi,
+  isCommitLink,
   isUserMessage,
   linksApi,
   type ChatLink,
@@ -28,6 +29,7 @@ export function useLinksFromLsp() {
 
   const [applyPatches, _applyPatchesResult] =
     diffApi.useApplyAllPatchesInMessagesMutation();
+  const [applyCommit, _applyCommitResult] = linksApi.useSendCommitMutation();
 
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
@@ -84,21 +86,17 @@ export function useLinksFromLsp() {
         return;
       }
 
-      // if (link.action === "commit") {
-      //   // TODO: there should be an endpoint for this
-      //   void applyPatches(messages).then(() => {
-      //     if ("goto" in link && link.goto) {
-      //       handleGoTo(link.goto);
-      //     }
-      //   });
+      if (isCommitLink(link)) {
+        // TODO: there should be an endpoint for this
+        void applyCommit(link.link_payload);
 
-      //   return;
-      // }
+        return;
+      }
 
       // eslint-disable-next-line no-console
       console.warn(`unknown action: ${JSON.stringify(link)}`);
     },
-    [applyPatches, dispatch, handleGoTo, messages, submit],
+    [applyCommit, applyPatches, dispatch, handleGoTo, messages, submit],
   );
 
   const skipLinksRequest = useMemo(() => {
