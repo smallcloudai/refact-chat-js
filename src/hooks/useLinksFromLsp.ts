@@ -22,6 +22,8 @@ import {
   setIntegrationData,
 } from "../features/Chat";
 import { useGoToLink } from "./useGoToLink";
+import { setError } from "../features/Errors/errorsSlice";
+import { setInformation } from "../features/Errors/informationSlice";
 
 export function useLinksFromLsp() {
   const dispatch = useAppDispatch();
@@ -89,8 +91,30 @@ export function useLinksFromLsp() {
       }
 
       if (isCommitLink(link)) {
-        // TODO: there should be an endpoint for this
-        void applyCommit(link.link_payload);
+        void applyCommit(link.link_payload)
+          .unwrap()
+          .then((res) => {
+            const commits = res.commits_applied;
+
+            if (commits.length > 0) {
+              const commitInfo = commits
+                .map((commit, index) => `${index + 1}: ${commit.project_name}`)
+                .join("\n");
+              const message = `Successfully committed: ${commits.length}\n${commitInfo}`;
+              dispatch(setInformation(message));
+            }
+
+            const errors = res.error_log
+              .map((err, index) => {
+                return `${index + 1}: ${err.project_name}\n${
+                  err.project_path
+                }\n${err.error_message}`;
+              })
+              .join("\n");
+            if (errors) {
+              dispatch(setError(`Commit errors: ${errors}`));
+            }
+          });
 
         return;
       }

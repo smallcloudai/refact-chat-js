@@ -126,6 +126,7 @@ export const linksApi = createApi({
             },
           };
         }
+
         return { data: response.data };
       },
     }),
@@ -155,6 +156,7 @@ export const linksApi = createApi({
             },
           };
         }
+
         return { data: response.data };
       },
     }),
