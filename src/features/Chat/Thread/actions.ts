@@ -26,7 +26,6 @@ import { formatMessagesForLsp, consumeStream } from "./utils";
 import { generateChatTitle, sendChat } from "../../../services/refact/chat";
 import { ToolCommand } from "../../../services/refact/tools";
 import { scanFoDuplicatesWith, takeFromEndWhile } from "../../../utils";
-import { sendTelemetryEvent } from "../../../utils/telemetryHelper";
 import { debugApp } from "../../../debugConfig";
 
 export const newChatAction = createAction("chatThread/new");
@@ -287,23 +286,10 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
       };
       return consumeStream(reader, thunkAPI.signal, onAbort, onChunk);
     })
-    .then((resp) => {
-      sendTelemetryEvent({
-        scope: `sendChat_${state.chat.thread.model}_${realMode}`,
-        success: true,
-        error_message: "",
-      });
-      return resp;
-    })
     .catch((err: Error) => {
       // console.log("Catch called");
       thunkAPI.dispatch(doneStreaming({ id: chatId }));
       thunkAPI.dispatch(chatError({ id: chatId, message: err.message }));
-      sendTelemetryEvent({
-        scope: `sendChat_${state.chat.thread.model}_${realMode}`,
-        success: false,
-        error_message: err.message,
-      });
       return thunkAPI.rejectWithValue(err.message);
     })
     .finally(() => {
