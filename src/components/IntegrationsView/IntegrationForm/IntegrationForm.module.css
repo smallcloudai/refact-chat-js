@@ -13,3 +13,38 @@
   max-width: 40px;
   object-fit: cover;
 }
+.advancedButton {
+  background-color: transparent;
+  text-decoration: underline;
+  border-radius: 0;
+  cursor: pointer;
+  overflow: hidden;
+  text-wrap: nowrap;
+}
+.applyButton {
+  min-width: 140px;
+  display: block;
+}
+
+@media (max-width: 538px) {
+  .applyButton {
+    width: 50%;
+  }
+}
+@media (max-width: 238px) {
+  .applyButton {
+    width: 100%;
+  }
+}
+@media (max-width: 368px) {
+  .switchInline {
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 10px;
+  }
+}
+
+.gridContainer {
+  grid-template-columns: repeat(1, 1fr);
+  gap: 10px;
+}

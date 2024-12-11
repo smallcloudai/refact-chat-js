@@ -132,7 +132,10 @@ export type Integration = {
   integr_name: string;
   integr_config_path: string;
   integr_schema: IntegrationSchema;
-  integr_values: Record<string, IntegrationPrimitive | Record<string, boolean>>;
+  integr_values: Record<
+    string,
+    IntegrationPrimitive | Record<string, boolean> | Record<string, unknown>
+  >;
   error_log: null | YamlError[];
 };
 
@@ -182,15 +185,20 @@ function isIntegration(json: unknown): json is Integration {
     return false;
   }
   const integrValues = json.integr_values as Record<string, unknown>;
-  if (
-    !Object.values(integrValues).every(
-      (value) =>
-        isPrimitive(value) ||
-        (typeof value === "object" &&
-          value !== null &&
-          Object.values(value).every(isPrimitive)),
-    )
-  ) {
+  debugIntegrations("integrValues:", integrValues); // Log the integrValues
+
+  function isValidNestedObject(value: unknown): boolean {
+    if (isPrimitive(value)) {
+      return true;
+    }
+    if (typeof value === "object" && value !== null) {
+      return Object.values(value).every(isValidNestedObject);
+    }
+    return false;
+  }
+
+  if (!Object.values(integrValues).every(isValidNestedObject)) {
+    debugIntegrations(`[DEBUG]: integr_values are not valid json`);
     return false;
   }
 
@@ -500,6 +508,22 @@ export type NotConfiguredIntegrationWithIconRecord = {
   when_isolated: boolean;
   // unparsed: unknown;
 };
+
+export type GroupedIntegrationWithIconRecord = {
+  project_path: string[];
+  integr_name: string;
+  integr_config_path: string[];
+  integr_config_exists: boolean;
+  on_your_laptop: boolean;
+  when_isolated: boolean;
+  // unparsed: unknown;
+};
+
+export function areIntegrationsNotConfigured(
+  json: GroupedIntegrationWithIconRecord,
+): json is NotConfiguredIntegrationWithIconRecord {
+  return !json.integr_config_exists;
+}
 
 export function isNotConfiguredIntegrationWithIconRecord(
   json: unknown,

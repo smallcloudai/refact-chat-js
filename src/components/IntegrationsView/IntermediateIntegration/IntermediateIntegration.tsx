@@ -9,13 +9,15 @@ import {
   Text,
 } from "@radix-ui/themes";
 import { iconMap } from "../icons/iconMap";
-import styles from "./IntegrationCmdline.module.css";
+import styles from "./IntermediateIntegration.module.css";
 import { toPascalCase } from "../../../utils/toPascalCase";
 import { formatProjectName } from "../../../utils/formatProjectName";
 import { CustomInputField } from "../CustomFieldsAndWidgets";
 import { Link } from "../../Link";
+import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrationDataByPathQuery";
 
 const validateSnakeCase = (value: string) => {
+  // TODO: include numbers 0-9
   const snakeCaseRegex = /^[a-z]+(_[a-z]+)*$/;
   return snakeCaseRegex.test(value);
 };
@@ -50,7 +52,7 @@ const renderIntegrationCmdlineField = ({
 
 const CMDLINE_TOOLS = ["cmdline", "service"];
 
-export const IntegrationCmdline: FC<IntegrationCmdlineProps> = ({
+export const IntermediateIntegration: FC<IntegrationCmdlineProps> = ({
   integration,
   handleSubmit,
 }) => {
@@ -59,6 +61,10 @@ export const IntegrationCmdline: FC<IntegrationCmdlineProps> = ({
   const isIntegrationAComamndLine = CMDLINE_TOOLS.includes(integrationType);
   const [commandName, setCommandName] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+  const { integration: relatedIntegration } = useGetIntegrationDataByPathQuery(
+    integration.integr_config_path[0],
+  );
 
   const handleCommandNameChange: ChangeEventHandler<HTMLInputElement> = (
     event,
@@ -83,10 +89,17 @@ export const IntegrationCmdline: FC<IntegrationCmdlineProps> = ({
             className={styles.integrationIcon}
           />
           {isIntegrationAComamndLine
-            ? "Command Line Tool"
+            ? `Command Line ${
+                integrationType.includes("cmdline") ? "Tool" : "Service"
+              }`
             : toPascalCase(integrationType)}
         </Flex>
       </Heading>
+      {relatedIntegration.data?.integr_schema.description && (
+        <Text size="2" color="gray" mb="2">
+          {relatedIntegration.data.integr_schema.description}
+        </Text>
+      )}
       <Text size="2" color="gray">
         Please, choose where you want to setup your integration
       </Text>
@@ -104,7 +117,9 @@ export const IntegrationCmdline: FC<IntegrationCmdlineProps> = ({
                   <Text as="label" size="2" key={path}>
                     {renderIntegrationCmdlineField({
                       path,
-                      label: !shouldPathBeFormatted ? "Global" : path,
+                      label: !shouldPathBeFormatted
+                        ? "Global (IDE level) configuration"
+                        : path,
                       shouldBeFormatted: shouldPathBeFormatted,
                     })}
                   </Text>
@@ -150,7 +165,7 @@ export const IntegrationCmdline: FC<IntegrationCmdlineProps> = ({
               }
               title={
                 !!errorMessage || !commandName
-                  ? "Please, fix all issues with the data"
+                  ? "Please, fill out all required fields first"
                   : "Continue setting up integration"
               }
             >

@@ -1,4 +1,4 @@
-import { Box, Flex, Heading, Text } from "@radix-ui/themes";
+import { Box, Flex, Heading, Text, Grid } from "@radix-ui/themes";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import type { FC, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -22,13 +22,16 @@ import {
 import { useAppDispatch, useAppSelector } from "../../hooks";
 import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
 import {
+  areIntegrationsNotConfigured,
   dockerApi,
+  GroupedIntegrationWithIconRecord,
   Integration,
   integrationsApi,
   IntegrationWithIconRecord,
   IntegrationWithIconResponse,
   isDetailMessage,
   isNotConfiguredIntegrationWithIconRecord,
+  isPrimitive,
   NotConfiguredIntegrationWithIconRecord,
 } from "../../services/refact";
 import { ErrorCallout } from "../Callout";
@@ -41,7 +44,8 @@ import { IntegrationsHeader } from "./IntegrationsHeader";
 import styles from "./IntegrationsView.module.css";
 import { iconMap } from "./icons/iconMap";
 import { LeftRightPadding } from "../../features/Integrations/Integrations";
-import { IntegrationCmdline } from "./IntegrationCmdline";
+import { IntermediateIntegration } from "./IntermediateIntegration";
+import { parseOrElse } from "../../utils";
 
 type IntegrationViewProps = {
   integrationsMap?: IntegrationWithIconResponse;
@@ -76,6 +80,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   const maybeIntegration = useMemo(() => {
     if (!currentThreadIntegration) return null;
     if (!integrationsMap) return null;
+    // TODO: check for extra flag in currentThreadIntegration to return different find() call from notConfiguredGrouped integrations if it's set to true
     return (
       integrationsMap.integrations.find(
         (integration) =>
@@ -92,6 +97,19 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
 
   const [currentNotConfiguredIntegration, setCurrentNotConfiguredIntegration] =
     useState<NotConfiguredIntegrationWithIconRecord | null>(null);
+
+  // TODO: uncomment when ready
+  // useEffect(() => {
+  //   if (maybeIntegration) {
+  //     if (maybeIntegration.shouldBeOpenedOnIntermediatePage) {
+  //       setNotConfiguredIntegration(maybeIntegration);
+  //       setCurrentIntegration(null);
+  //     } else {
+  //       setCurrentIntegration(maybeIntegration);
+  //       setNotConfiguredIntegration(null);
+  //     }
+  //   }
+  // }, [maybeIntegration]);
 
   useEffect(() => {
     if (maybeIntegration) {
@@ -166,47 +184,50 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     }
   }, [projectSpecificIntegrations]);
 
-  const nonConfiguredIntegrations = useMemo(() => {
+  const availableIntegrationsToConfigure = useMemo(() => {
     if (integrationsMap?.integrations) {
       const groupedIntegrations = integrationsMap.integrations.reduce<
-        Record<string, NotConfiguredIntegrationWithIconRecord>
+        Record<string, GroupedIntegrationWithIconRecord>
       >((acc, integration) => {
-        if (!integration.integr_config_exists) {
-          if (!(integration.integr_name in acc)) {
-            acc[integration.integr_name] = {
-              ...integration,
-              project_path: [integration.project_path],
-              integr_config_path: [integration.integr_config_path],
-              integr_config_exists: false,
-            };
-          } else {
-            if (
-              !acc[integration.integr_name].project_path.includes(
-                integration.project_path,
-              )
-            ) {
-              acc[integration.integr_name].project_path.push(
-                integration.project_path,
-              );
-            }
-            acc[integration.integr_name].integr_config_path.push(
-              integration.integr_config_path,
-            );
-          }
+        if (!(integration.integr_name in acc)) {
+          acc[integration.integr_name] = {
+            ...integration,
+            project_path: [integration.project_path],
+            integr_config_path: [integration.integr_config_path],
+          };
+        } else {
+          acc[integration.integr_name].project_path.push(
+            integration.project_path,
+          );
+          acc[integration.integr_name].integr_config_path.push(
+            integration.integr_config_path,
+          );
         }
         return acc;
       }, {});
 
-      return Object.values(groupedIntegrations);
+      const filteredIntegrations = Object.values(groupedIntegrations).filter(
+        areIntegrationsNotConfigured,
+      );
+
+      // Sort paths so that paths containing ".config" are first
+      Object.values(filteredIntegrations).forEach((integration) => {
+        integration.project_path.sort((a, _b) => (a === "" ? -1 : 1));
+        integration.integr_config_path.sort((a, _b) =>
+          a.includes(".config") ? -1 : 1,
+        );
+      });
+
+      return Object.values(filteredIntegrations);
     }
   }, [integrationsMap]);
 
   useEffect(() => {
     debugIntegrations(
-      `[DEBUG]: nonConfiguredIntegrations: `,
-      nonConfiguredIntegrations,
+      `[DEBUG]: availableIntegrationsToConfigure: `,
+      availableIntegrationsToConfigure,
     );
-  }, [nonConfiguredIntegrations]);
+  }, [availableIntegrationsToConfigure]);
 
   const handleSetCurrentIntegrationSchema = (
     schema: Integration["integr_schema"],
@@ -233,6 +254,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       setCurrentNotConfiguredIntegration(null);
       setIsDisabledIntegrationForm(true);
     }
+    setAvailabilityValues({});
     information && dispatch(clearInformation());
     globalError && dispatch(clearError());
     dispatch(integrationsApi.util.resetApiState());
@@ -276,6 +298,18 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             break;
           case "bool":
             acc[key] = rawFormValues[key] === "on" ? true : false;
+            break;
+          case "tool":
+            acc[key] = parseOrElse<Integration["integr_values"][number]>(
+              rawFormValues[key] as string,
+              {},
+            );
+            break;
+          case "output":
+            acc[key] = parseOrElse<Integration["integr_values"][number]>(
+              rawFormValues[key] as string,
+              {},
+            );
             break;
           default:
             acc[key] = rawFormValues[key] as string;
@@ -349,6 +383,18 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
           case "bool":
             acc[key] = rawFormValues[key] === "on" ? true : false;
             break;
+          case "tool":
+            acc[key] = parseOrElse<Integration["integr_values"][number]>(
+              rawFormValues[key] as string,
+              {},
+            );
+            break;
+          case "output":
+            acc[key] = parseOrElse<Integration["integr_values"][number]>(
+              rawFormValues[key] as string,
+              {},
+            );
+            break;
           default:
             acc[key] = rawFormValues[key] as string;
             break;
@@ -358,11 +404,26 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
 
       const eachFormValueIsNotChanged = Object.entries(formValues).every(
         ([fieldKey, fieldValue]) => {
-          return (
-            fieldKey in currentIntegrationValues &&
-            fieldValue === currentIntegrationValues[fieldKey]
-          );
+          if (isPrimitive(fieldValue)) {
+            return (
+              fieldKey in currentIntegrationValues &&
+              fieldValue === currentIntegrationValues[fieldKey]
+            );
+          }
+          // TODO: better comparison of objects?
+          if (typeof fieldValue === "object") {
+            return (
+              fieldKey in currentIntegrationValues &&
+              JSON.stringify(fieldValue) ===
+                JSON.stringify(currentIntegrationValues[fieldKey])
+            );
+          }
         },
+      );
+
+      debugIntegrations(
+        `[DEBUG]: eachFormValueIsNotChanged: `,
+        eachFormValueIsNotChanged,
       );
 
       const eachAvailabilityOptionIsNotChanged = Object.entries(
@@ -376,6 +437,17 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         }
         return false;
       });
+
+      debugIntegrations(`[DEBUG]: formValues: `, formValues);
+      debugIntegrations(
+        `[DEBUG]: currentIntegrationValues: `,
+        currentIntegrationValues,
+      );
+      debugIntegrations(
+        `[DEBUG]: eachAvailabilityOptionIsNotChanged: `,
+        eachAvailabilityOptionIsNotChanged,
+      );
+      debugIntegrations(`[DEBUG]: availabilityValues: `, availabilityValues);
       const maybeDisabled =
         eachFormValueIsNotChanged && eachAvailabilityOptionIsNotChanged;
       debugIntegrations(`[DEBUG CHANGE]: maybeDisabled: `, maybeDisabled);
@@ -407,11 +479,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       ) {
         // making integration-get call and setting the result as currentIntegration
         const commandName = rawFormValues.command_name;
-        const configPath =
-          rawFormValues.integr_config_path.split("_")[0] +
-          "_" +
-          commandName +
-          ".yaml";
+        const configPath = rawFormValues.integr_config_path.replace(
+          "TEMPLATE",
+          commandName,
+        );
 
         debugIntegrations(
           `[DEBUG]: config path for \`v1/integration-get\`: `,
@@ -585,7 +656,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             justify="between"
             height="100%"
           >
-            <IntegrationCmdline
+            <IntermediateIntegration
               handleSubmit={(event) =>
                 handleNotConfiguredIntegrationSubmit(event)
               }
@@ -735,9 +806,14 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                   Add new integration
                 </Flex>
               </Heading>
-              <Flex wrap="wrap" align="start" gap="3" width="100%">
-                {nonConfiguredIntegrations &&
-                  Object.entries(nonConfiguredIntegrations).map(
+              <Grid
+                align="stretch"
+                gap="3"
+                columns={{ initial: "2", xs: "3", sm: "4", md: "5" }}
+                width="100%"
+              >
+                {availableIntegrationsToConfigure &&
+                  Object.entries(availableIntegrationsToConfigure).map(
                     ([_projectPath, integration], index) => {
                       return (
                         <IntegrationCard
@@ -751,7 +827,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                       );
                     },
                   )}
-              </Flex>
+              </Grid>
             </Flex>
           </Flex>
         )}

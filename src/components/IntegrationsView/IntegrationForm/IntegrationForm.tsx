@@ -11,7 +11,7 @@ import type {
 
 import styles from "./IntegrationForm.module.css";
 import { Spinner } from "../../Spinner";
-import { Button, DataList, Flex, Heading } from "@radix-ui/themes";
+import { Button, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { IntegrationDocker } from "../IntegrationDocker";
 import { SmartLink } from "../../SmartLink";
 import { renderIntegrationFormField } from "../../../features/Integrations/renderIntegrationFormField";
@@ -19,6 +19,26 @@ import { IntegrationAvailability } from "./IntegrationAvailability";
 import { toPascalCase } from "../../../utils/toPascalCase";
 import { debugIntegrations } from "../../../debugConfig";
 import { iconMap } from "../icons/iconMap";
+
+// TODO: should be extracted in the future
+function jsonHasWhenIsolated(
+  json: unknown,
+): json is Record<string, boolean> & { when_isolated: boolean } {
+  return (
+    typeof json === "object" &&
+    json !== null &&
+    "when_isolated" in json &&
+    typeof json.when_isolated === "boolean"
+  );
+}
+
+function areAllFieldsBoolean(json: unknown): json is Record<string, boolean> {
+  return (
+    typeof json === "object" &&
+    json !== null &&
+    Object.values(json).every((value) => typeof value === "boolean")
+  );
+}
 
 type IntegrationFormProps = {
   integrationPath: string;
@@ -64,7 +84,8 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   useEffect(() => {
     if (
       integration.data?.integr_values.available &&
-      typeof integration.data.integr_values.available === "object"
+      typeof integration.data.integr_values.available === "object" &&
+      areAllFieldsBoolean(integration.data.integr_values.available)
     ) {
       Object.entries(integration.data.integr_values.available).forEach(
         ([key, value]) => {
@@ -121,58 +142,59 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
 
   return (
     <Flex width="100%" direction="column" gap="2">
+      {integration.data.integr_schema.description && (
+        <Text size="2" color="gray" mb="3">
+          {integration.data.integr_schema.description}
+        </Text>
+      )}
       <form
         onSubmit={handleSubmit}
         onChange={handleChange}
         id={`form-${integration.data.integr_name}`}
       >
         <Flex direction="column" gap="2">
-          <DataList.Root
-            mt="2"
-            mb="0"
-            size="1"
-            orientation={{
-              xs: "horizontal",
-              initial: "vertical",
-            }}
-          >
-            {integration.data.integr_values.available &&
-              Object.entries(integration.data.integr_values.available).map(
-                ([key, _]: [string, boolean]) => (
-                  <IntegrationAvailability
-                    key={key}
-                    fieldName={key}
-                    value={availabilityValues[key]}
-                    onChange={handleAvailabilityChange}
-                  />
-                ),
-              )}
-            {Object.keys(importantFields).map((fieldKey) => {
-              if (integration.data) {
-                return renderIntegrationFormField({
-                  fieldKey: fieldKey,
-                  values: integration.data.integr_values,
-                  field: integration.data.integr_schema.fields[fieldKey],
-                  integrationName: integration.data.integr_name,
-                  integrationPath: integration.data.integr_config_path,
-                  integrationProject: integration.data.project_path,
-                });
-              }
-            })}
-            {Object.keys(extraFields).map((fieldKey) => {
-              if (integration.data) {
-                return renderIntegrationFormField({
-                  fieldKey: fieldKey,
-                  values: integration.data.integr_values,
-                  field: integration.data.integr_schema.fields[fieldKey],
-                  integrationName: integration.data.integr_name,
-                  integrationPath: integration.data.integr_config_path,
-                  integrationProject: integration.data.project_path,
-                  isFieldVisible: areExtraFieldsRevealed,
-                });
-              }
-            })}
-          </DataList.Root>
+          <Grid mt="2" mb="0">
+            <Flex gap="4" mb="3" className={styles.switchInline}>
+              {integration.data.integr_values.available &&
+                Object.entries(integration.data.integr_values.available).map(
+                  ([key, _]: [string, boolean]) => (
+                    <IntegrationAvailability
+                      key={key}
+                      fieldName={key}
+                      value={availabilityValues[key]}
+                      onChange={handleAvailabilityChange}
+                    />
+                  ),
+                )}
+            </Flex>
+            <Grid gap="2" className={styles.gridContainer}>
+              {Object.keys(importantFields).map((fieldKey) => {
+                if (integration.data) {
+                  return renderIntegrationFormField({
+                    fieldKey: fieldKey,
+                    values: integration.data.integr_values,
+                    field: integration.data.integr_schema.fields[fieldKey],
+                    integrationName: integration.data.integr_name,
+                    integrationPath: integration.data.integr_config_path,
+                    integrationProject: integration.data.project_path,
+                  });
+                }
+              })}
+              {Object.keys(extraFields).map((fieldKey) => {
+                if (integration.data) {
+                  return renderIntegrationFormField({
+                    fieldKey: fieldKey,
+                    values: integration.data.integr_values,
+                    field: integration.data.integr_schema.fields[fieldKey],
+                    integrationName: integration.data.integr_name,
+                    integrationPath: integration.data.integr_config_path,
+                    integrationProject: integration.data.project_path,
+                    isFieldVisible: areExtraFieldsRevealed,
+                  });
+                }
+              })}
+            </Grid>
+          </Grid>
           {Object.values(extraFields).length > 0 && (
             <Button
               variant="soft"
@@ -180,12 +202,16 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
               color="gray"
               size="2"
               onClick={() => setAreExtraFieldsRevealed((prev) => !prev)}
-              mb="2"
+              mb="1"
+              mt="3"
+              className={styles.advancedButton}
             >
-              {areExtraFieldsRevealed ? "Hide" : "Show more"}
+              {areExtraFieldsRevealed
+                ? "Hide advanced configuration"
+                : "Show advanced configuration"}
             </Button>
           )}
-          <Flex justify="between" width="100%">
+          <Flex justify="end" width="100%">
             <Flex gap="4">
               <Button
                 color="green"
@@ -196,57 +222,64 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
                 className={classNames(
                   { [styles.disabledButton]: isApplying || isDisabled },
                   styles.button,
+                  styles.applyButton,
                 )}
                 disabled={isDisabled}
               >
                 {isApplying ? "Applying..." : "Apply"}
               </Button>
             </Flex>
-            {integration.data.integr_schema.smartlinks && (
-              <Flex align="center" gap="4">
-                {integration.data.integr_schema.smartlinks.map(
-                  (smartlink, index) => {
-                    return (
-                      <SmartLink
-                        key={`smartlink-${index}`}
-                        smartlink={smartlink}
-                        integrationName={integration.data?.integr_name ?? ""}
-                        integrationProject={
-                          integration.data?.project_path ?? ""
-                        }
-                        integrationPath={
-                          integration.data?.integr_config_path ?? ""
-                        }
-                      />
-                    );
-                  },
-                )}
-              </Flex>
-            )}
           </Flex>
         </Flex>
       </form>
-      {integration.data.integr_schema.docker && (
-        <Flex mt="6" direction="column" align="start" gap="5">
-          <Flex gap="2" align="center" justify="center" width="100%">
-            <img
-              src={iconMap.docker}
-              className={styles.DockerIcon}
-              alt={integration.data.integr_name}
-            />
-            <Heading as="h3" align="left">
-              {toPascalCase(integration.data.integr_name)} Containers
+      {integration.data.integr_schema.smartlinks &&
+        integration.data.integr_schema.smartlinks.length > 0 && (
+          <Flex width="100%" direction="column" gap="2" mt="4">
+            <Heading as="h4" size="3">
+              Ask AI to do it for you (experimental)
             </Heading>
+            <Flex align="center" gap="2" mt="2" wrap="wrap">
+              {integration.data.integr_schema.smartlinks.map(
+                (smartlink, index) => {
+                  return (
+                    <SmartLink
+                      key={`smartlink-${index}`}
+                      smartlink={smartlink}
+                      integrationName={integration.data?.integr_name ?? ""}
+                      integrationProject={integration.data?.project_path ?? ""}
+                      integrationPath={
+                        integration.data?.integr_config_path ?? ""
+                      }
+                    />
+                  );
+                },
+              )}
+            </Flex>
           </Flex>
-          <IntegrationDocker
-            dockerData={integration.data.integr_schema.docker}
-            integrationName={integration.data.integr_name}
-            integrationProject={integration.data.project_path}
-            integrationPath={integration.data.integr_config_path}
-            handleSwitchIntegration={handleSwitchIntegration}
-          />
-        </Flex>
-      )}
+        )}
+      {integration.data.integr_schema.docker &&
+        jsonHasWhenIsolated(integration.data.integr_values.available) &&
+        integration.data.integr_values.available.when_isolated && (
+          <Flex mt="6" direction="column" align="start" gap="5">
+            <Flex gap="2" align="center" justify="center" width="100%">
+              <img
+                src={iconMap.docker}
+                className={styles.DockerIcon}
+                alt={integration.data.integr_name}
+              />
+              <Heading as="h3" align="left">
+                {toPascalCase(integration.data.integr_name)} Containers
+              </Heading>
+            </Flex>
+            <IntegrationDocker
+              dockerData={integration.data.integr_schema.docker}
+              integrationName={integration.data.integr_name}
+              integrationProject={integration.data.project_path}
+              integrationPath={integration.data.integr_config_path}
+              handleSwitchIntegration={handleSwitchIntegration}
+            />
+          </Flex>
+        )}
     </Flex>
   );
 };
