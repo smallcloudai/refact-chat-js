@@ -79,7 +79,7 @@ export function useLinksFromLsp() {
           dispatch(
             setIntegrationData({
               name: payload,
-              shouldIntermediatePageShowUp: true,
+              shouldIntermediatePageShowUp: payload !== "DEFAULT",
             }),
           );
           setPendingIntegrationGoto(link.goto);
