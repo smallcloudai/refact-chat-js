@@ -24,11 +24,12 @@ export const agentUsageSlice = createSlice({
   },
 
   selectors: {
-    todaysItemsForUser: (state, user: string) => {
+    selectTodaysItemsForUser: (state) => {
       const now = Date.now();
-      return state.items.filter(
-        (item) => item.time + oneDay > now && item.user === user,
-      );
+      return state.items.filter((item) => item.time + oneDay > now);
     },
   },
 });
+
+export const { addAgentUsageItem } = agentUsageSlice.actions;
+export const { selectTodaysItemsForUser } = agentUsageSlice.selectors;
