@@ -63,5 +63,6 @@ export function useAgentUsage() {
     incrementIfLastMessageIsFromUser,
     usersUsage,
     shouldShow,
+    MAX_FREE_USAGE,
   };
 }
