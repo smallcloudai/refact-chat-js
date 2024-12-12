@@ -45,6 +45,7 @@ import { attachedImagesSlice } from "../features/AttachedImages";
 import { userSurveySlice } from "../features/UserSurvey/userSurveySlice";
 import { linksApi } from "../services/refact/links";
 import { integrationsSlice } from "../features/Integrations";
+import { agentUsageSlice } from "../features/AgentUsage/agentUsageSlice";
 
 const tipOfTheDayPersistConfig = {
   key: "totd",
@@ -90,12 +91,18 @@ const rootReducer = combineSlices(
   attachedImagesSlice,
   userSurveySlice,
   integrationsSlice,
+  agentUsageSlice,
 );
 
 const rootPersistConfig = {
   key: "root",
   storage: storage(),
-  whitelist: [historySlice.reducerPath, "tour", userSurveySlice.reducerPath],
+  whitelist: [
+    historySlice.reducerPath,
+    "tour",
+    userSurveySlice.reducerPath,
+    agentUsageSlice.reducerPath,
+  ],
   stateReconciler: mergeInitialState,
 };
 
