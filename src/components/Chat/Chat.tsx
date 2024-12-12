@@ -28,6 +28,7 @@ import { ThreadHistoryButton } from "../Buttons";
 import { push } from "../../features/Pages/pagesSlice";
 import { DropzoneProvider } from "../Dropzone";
 import { CodeChatModel, SystemPrompts } from "../../services/refact";
+import { AgentUsage } from "../../features/AgentUsage";
 
 export type ChatProps = {
   host: Config["host"];
@@ -125,6 +126,7 @@ export const Chat: React.FC<ChatProps> = ({
         justify="between"
         px="1"
       >
+        {!unCalledTools && <AgentUsage />}
         <ChatContent
           key={`chat-content-${chatId}`}
           onRetry={retryFromIndex}

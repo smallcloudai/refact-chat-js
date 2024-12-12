@@ -2,7 +2,7 @@ import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { setUpStore } from "../../app/store";
 import { Provider } from "react-redux";
-import { Theme } from "../Theme";
+import { Theme } from "../../components/Theme";
 import { AgentUsage } from "./AgentUsage";
 import { nonProUser } from "../../__fixtures__/msw";
 

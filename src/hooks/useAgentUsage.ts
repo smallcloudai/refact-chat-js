@@ -5,18 +5,24 @@ import {
 } from "../features/AgentUsage/agentUsageSlice";
 import { useGetUser } from "./useGetUser";
 import { useAppSelector } from "./useAppSelector";
-import { selectThreadToolUse } from "../features/Chat";
+import {
+  selectIsStreaming,
+  selectIsWaiting,
+  selectThreadToolUse,
+} from "../features/Chat";
 import { ChatMessages, isUserMessage } from "../events";
 import { useAppDispatch } from "./useAppDispatch";
 
-const MAX_FREE_USAGE = 1;
-const ONE_DAT_IN_MS = 1000 * 60 * 60 * 24;
+const MAX_FREE_USAGE = 20;
+const ONE_DAY_IN_MS = 1000 * 60 * 60 * 24;
 
 export function useAgentUsage() {
   const user = useGetUser();
   const toolUse = useAppSelector(selectThreadToolUse);
   const allAgentUsageItems = useAppSelector(selectAgentUsageItems);
   const dispatch = useAppDispatch();
+  const isStreaming = useAppSelector(selectIsStreaming);
+  const isWaiting = useAppSelector(selectIsWaiting);
 
   const usersUsage = useMemo(() => {
     if (!user.data?.account) return 0;
@@ -24,7 +30,7 @@ export function useAgentUsage() {
     // TODO: date.now() can change the result of memo
     const agentUsageForToday = allAgentUsageItems.filter(
       (item) =>
-        item.time + ONE_DAT_IN_MS > Date.now() &&
+        item.time + ONE_DAY_IN_MS > Date.now() &&
         item.user === user.data?.account,
     );
 
@@ -55,9 +61,12 @@ export function useAgentUsage() {
   );
 
   const shouldShow = useMemo(() => {
+    // TODO: maybe uncalled tools.
+    if (toolUse !== "agent") return false;
+    if (isStreaming || isWaiting) return false;
     if (user.data?.inference === "PRO") return false;
     return usersUsage >= MAX_FREE_USAGE;
-  }, [user.data?.inference, usersUsage]);
+  }, [isStreaming, isWaiting, toolUse, user.data?.inference, usersUsage]);
 
   return {
     incrementIfLastMessageIsFromUser,
