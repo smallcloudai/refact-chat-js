@@ -54,7 +54,7 @@ export function useAgentUsage() {
     [increment],
   );
 
-  const shouldStop = useMemo(() => {
+  const shouldShow = useMemo(() => {
     if (user.data?.inference === "PRO") return false;
     return usersUsage >= MAX_FREE_USAGE;
   }, [user.data?.inference, usersUsage]);
@@ -62,6 +62,6 @@ export function useAgentUsage() {
   return {
     incrementIfLastMessageIsFromUser,
     usersUsage,
-    shouldStop,
+    shouldShow,
   };
 }
