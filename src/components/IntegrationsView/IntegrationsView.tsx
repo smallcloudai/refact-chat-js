@@ -28,6 +28,7 @@ import {
   Integration,
   integrationsApi,
   IntegrationWithIconRecord,
+  IntegrationWithIconRecordAndAddress,
   IntegrationWithIconResponse,
   isDetailMessage,
   isNotConfiguredIntegrationWithIconRecord,
@@ -80,42 +81,90 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   const maybeIntegration = useMemo(() => {
     if (!currentThreadIntegration) return null;
     if (!integrationsMap) return null;
+    debugIntegrations(
+      `[DEBUG]: currentThreadIntegration: `,
+      currentThreadIntegration,
+    );
     // TODO: check for extra flag in currentThreadIntegration to return different find() call from notConfiguredGrouped integrations if it's set to true
-    return (
+    const integration =
       integrationsMap.integrations.find(
         (integration) =>
-          integration.integr_config_path ===
-          currentThreadIntegration.integrationPath,
-      ) ?? null
-    );
+          currentThreadIntegration.integrationName?.startsWith("cmdline")
+            ? integration.integr_name === "cmdline_TEMPLATE"
+            : integration.integr_name ===
+              currentThreadIntegration.integrationName,
+        // integration.integr_name === currentThreadIntegration.integrationName,
+      ) ?? null;
+    if (!integration) return null;
+
+    const integrationWithFlag = {
+      ...integration,
+      commandName:
+        currentThreadIntegration.integrationName?.startsWith("cmdline") ??
+        currentThreadIntegration.integrationName?.startsWith("service")
+          ? currentThreadIntegration.integrationName
+              .split("_")
+              .slice(1)
+              .join("_")
+          : undefined,
+      shouldIntermediatePageShowUp:
+        currentThreadIntegration.shouldIntermediatePageShowUp ?? false,
+    } as IntegrationWithIconRecordAndAddress;
+    return integrationWithFlag;
   }, [currentThreadIntegration, integrationsMap]);
 
   // TBD: what if they went home then came back to integrations?
 
   const [currentIntegration, setCurrentIntegration] =
-    useState<IntegrationWithIconRecord | null>(maybeIntegration);
+    useState<IntegrationWithIconRecord | null>(
+      maybeIntegration?.shouldIntermediatePageShowUp ? null : maybeIntegration,
+    );
 
   const [currentNotConfiguredIntegration, setCurrentNotConfiguredIntegration] =
     useState<NotConfiguredIntegrationWithIconRecord | null>(null);
 
   // TODO: uncomment when ready
-  // useEffect(() => {
-  //   if (maybeIntegration) {
-  //     if (maybeIntegration.shouldBeOpenedOnIntermediatePage) {
-  //       setNotConfiguredIntegration(maybeIntegration);
-  //       setCurrentIntegration(null);
-  //     } else {
-  //       setCurrentIntegration(maybeIntegration);
-  //       setNotConfiguredIntegration(null);
-  //     }
-  //   }
-  // }, [maybeIntegration]);
-
   useEffect(() => {
-    if (maybeIntegration) {
+    if (!maybeIntegration) return;
+
+    if (maybeIntegration.shouldIntermediatePageShowUp) {
+      setCurrentNotConfiguredIntegration(() => {
+        const similarIntegrations = integrationsMap?.integrations.filter(
+          (integr) => integr.integr_name === maybeIntegration.integr_name,
+        );
+        if (!similarIntegrations) return null;
+
+        const uniqueConfigPaths = Array.from(
+          new Set(
+            similarIntegrations.map((integr) => integr.integr_config_path),
+          ),
+        );
+        const uniqueProjectPaths = Array.from(
+          new Set(similarIntegrations.map((integr) => integr.project_path)),
+        );
+
+        uniqueProjectPaths.sort((a, _b) => (a === "" ? -1 : 1));
+        uniqueConfigPaths.sort((a, _b) => (a.includes(".config") ? -1 : 1));
+
+        const integrationToConfigure: NotConfiguredIntegrationWithIconRecord = {
+          ...maybeIntegration,
+          commandName: maybeIntegration.commandName
+            ? maybeIntegration.commandName
+            : undefined,
+          wasOpenedThroughChat: maybeIntegration.shouldIntermediatePageShowUp,
+          integr_config_path: uniqueConfigPaths,
+          project_path: uniqueProjectPaths,
+          integr_config_exists: false,
+        };
+
+        return integrationToConfigure;
+      });
+      setCurrentIntegration(null);
+    } else {
       setCurrentIntegration(maybeIntegration);
+      setCurrentNotConfiguredIntegration(null);
     }
-  }, [maybeIntegration]);
+  }, [maybeIntegration, integrationsMap?.integrations]);
 
   const [currentIntegrationSchema, setCurrentIntegrationSchema] = useState<
     Integration["integr_schema"] | null
@@ -581,6 +630,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     goBack && goBack();
     dispatch(clearError());
     setCurrentIntegration(null);
+    setCurrentNotConfiguredIntegration(null);
   };
 
   const handleIntegrationShowUp = (
@@ -639,6 +689,12 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
           <IntegrationsHeader
             leftRightPadding={leftRightPadding}
             handleFormReturn={handleFormReturn}
+            handleInstantReturn={goBackAndClearError}
+            instantBackReturnment={
+              currentNotConfiguredIntegration
+                ? currentNotConfiguredIntegration.wasOpenedThroughChat
+                : false
+            }
             integrationName={
               currentIntegration
                 ? currentIntegration.integr_name

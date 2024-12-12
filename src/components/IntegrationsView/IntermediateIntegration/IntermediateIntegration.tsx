@@ -1,4 +1,10 @@
-import { type FormEvent, type FC, useState, ChangeEventHandler } from "react";
+import {
+  type FormEvent,
+  type FC,
+  useState,
+  ChangeEventHandler,
+  useEffect,
+} from "react";
 import { NotConfiguredIntegrationWithIconRecord } from "../../../services/refact";
 import {
   Button,
@@ -15,6 +21,7 @@ import { formatProjectName } from "../../../utils/formatProjectName";
 import { CustomInputField } from "../CustomFieldsAndWidgets";
 import { Link } from "../../Link";
 import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrationDataByPathQuery";
+import { debugIntegrations } from "../../../debugConfig";
 
 const validateSnakeCase = (value: string) => {
   // TODO: include numbers 0-9
@@ -59,7 +66,11 @@ export const IntermediateIntegration: FC<IntegrationCmdlineProps> = ({
   const [integrationType, integrationTemplate] =
     integration.integr_name.split("_");
   const isIntegrationAComamndLine = CMDLINE_TOOLS.includes(integrationType);
-  const [commandName, setCommandName] = useState("");
+  const [commandName, setCommandName] = useState(
+    integrationType === "cmdline" || integrationType === "service"
+      ? integration.commandName
+      : "",
+  );
   const [errorMessage, setErrorMessage] = useState("");
 
   const { integration: relatedIntegration } = useGetIntegrationDataByPathQuery(
@@ -77,6 +88,10 @@ export const IntermediateIntegration: FC<IntegrationCmdlineProps> = ({
       setErrorMessage("");
     }
   };
+
+  useEffect(() => {
+    debugIntegrations(`[DEBUG]: integration (not configured): `, integration);
+  }, [integration]);
 
   return (
     <Flex direction="column" gap="4" width="100%">
@@ -101,7 +116,7 @@ export const IntermediateIntegration: FC<IntegrationCmdlineProps> = ({
         </Text>
       )}
       <Text size="2" color="gray">
-        Please, choose where you want to setup your integration
+        Choose where you want to configure your integration:
       </Text>
       <form onSubmit={handleSubmit} id={`form-${integration.integr_name}`}>
         <Flex gap="5" direction="column" width="100%">
@@ -118,7 +133,7 @@ export const IntermediateIntegration: FC<IntegrationCmdlineProps> = ({
                     {renderIntegrationCmdlineField({
                       path,
                       label: !shouldPathBeFormatted
-                        ? "Global (IDE level) configuration"
+                        ? "Global, available for all projects"
                         : path,
                       shouldBeFormatted: shouldPathBeFormatted,
                     })}
@@ -131,8 +146,7 @@ export const IntermediateIntegration: FC<IntegrationCmdlineProps> = ({
             {integrationTemplate && (
               <Flex direction="column" gap="2">
                 <Text size="2" color="gray">
-                  Please, write a name of your command in the text field below,
-                  make sure that it&apos;s written in{" "}
+                  Name for your new command, make sure that it&apos;s written in{" "}
                   <Link
                     href="https://en.wikipedia.org/wiki/Snake_case"
                     target="_blank"

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   diffApi,
   isCommitLink,
@@ -24,6 +24,7 @@ import {
 import { useGoToLink } from "./useGoToLink";
 import { setError } from "../features/Errors/errorsSlice";
 import { setInformation } from "../features/Errors/informationSlice";
+import { debugIntegrations } from "../debugConfig";
 
 export function useLinksFromLsp() {
   const dispatch = useAppDispatch();
@@ -58,19 +59,48 @@ export function useLinksFromLsp() {
     return false;
   }, [messages]);
 
+  // TODO: think of how to avoid batching and this useless state
+  const [pendingIntegrationGoto, setPendingIntegrationGoto] = useState<
+    string | null
+  >(null);
+
+  useEffect(() => {
+    if (
+      maybeIntegration?.shouldIntermediatePageShowUp !== undefined &&
+      pendingIntegrationGoto
+    ) {
+      handleGoTo({ goto: pendingIntegrationGoto });
+      setPendingIntegrationGoto(null);
+    }
+  }, [pendingIntegrationGoto, handleGoTo, maybeIntegration]);
+
   const handleLinkAction = useCallback(
     (link: ChatLink) => {
       if (!("action" in link)) return;
-
       if (link.action === "goto" && "goto" in link) {
-        handleGoTo(link.goto);
+        const [action, payload] = link.goto.split(":");
+        if (action.toLowerCase() === "settings") {
+          debugIntegrations(
+            `[DEBUG]: this goto is integrations one, dispatching integration data`,
+          );
+          dispatch(
+            setIntegrationData({
+              name: payload,
+              shouldIntermediatePageShowUp: payload !== "DEFAULT",
+            }),
+          );
+          setPendingIntegrationGoto(link.goto);
+        }
+        handleGoTo({
+          goto: link.goto,
+        });
         return;
       }
 
       if (link.action === "patch-all") {
         void applyPatches(messages).then(() => {
           if ("goto" in link) {
-            handleGoTo(link.goto);
+            handleGoTo({ goto: link.goto });
           }
         });
         return;
