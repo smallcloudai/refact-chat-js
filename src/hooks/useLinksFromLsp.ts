@@ -21,6 +21,7 @@ import {
   setIntegrationData,
 } from "../features/Chat";
 import { useGoToLink } from "./useGoToLink";
+import { telemetryApi } from "../services/refact/telemetry";
 
 export function useLinksFromLsp() {
   const dispatch = useAppDispatch();
@@ -29,6 +30,9 @@ export function useLinksFromLsp() {
 
   const [applyPatches, _applyPatchesResult] =
     diffApi.useApplyAllPatchesInMessagesMutation();
+
+  const [sendTelemetryEvent] =
+    telemetryApi.useLazySendTelemetryChatEventQuery();
 
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
@@ -57,6 +61,11 @@ export function useLinksFromLsp() {
   const handleLinkAction = useCallback(
     (link: ChatLink) => {
       if (!("action" in link)) return;
+      void sendTelemetryEvent({
+        scope: `handleLinkAction/${link.action}`,
+        success: true,
+        error_message: "",
+      });
 
       if (link.action === "goto" && "goto" in link) {
         handleGoTo(link.goto);
@@ -100,7 +109,7 @@ export function useLinksFromLsp() {
       // eslint-disable-next-line no-console
       console.warn(`unknown action: ${JSON.stringify(link)}`);
     },
-    [applyPatches, dispatch, handleGoTo, messages, submit],
+    [applyPatches, dispatch, handleGoTo, messages, submit, sendTelemetryEvent],
   );
 
   const skipLinksRequest = useMemo(() => {
