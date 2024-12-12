@@ -73,10 +73,12 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
       dispatch(push({ name: "statistics page" }));
     } else if (to === "restart tour") {
       dispatch(restart());
-      dispatch(popBackTo("initial setup"));
+      dispatch(popBackTo({ name: "initial setup" }));
       dispatch(push({ name: "welcome" }));
+    } else if (to === "integrations") {
+      dispatch(push({ name: "integrations page" }));
     } else if (to === "chat") {
-      dispatch(popBackTo("history"));
+      dispatch(popBackTo({ name: "history" }));
       dispatch(push({ name: "chat" }));
     }
   };
@@ -90,14 +92,14 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
   const goToTab = useCallback(
     (tab: Tab) => {
       if (tab.type === "dashboard") {
-        dispatch(popBackTo("history"));
+        dispatch(popBackTo({ name: "history" }));
         dispatch(newChatAction());
       } else {
         const chat = history.find((chat) => chat.id === tab.id);
         if (chat != undefined) {
           dispatch(restoreChat(chat));
         }
-        dispatch(popBackTo("history"));
+        dispatch(popBackTo({ name: "history" }));
         dispatch(push({ name: "chat" }));
       }
     },
@@ -143,6 +145,7 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
             active={isDashboardTab(activeTab)}
             ref={(x) => refs.setBack(x)}
             onClick={() => goToTab({ type: "dashboard" })}
+            style={{ cursor: "pointer" }}
           >
             {windowWidth < 400 || shouldCollapse ? <HomeIcon /> : "Home"}
           </TabNav.Link>
@@ -156,7 +159,7 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
                 active={isActive}
                 key={chat.id}
                 onClick={() => goToTab({ type: "chat", id: chat.id })}
-                style={{ minWidth: 0, maxWidth: "140px" }}
+                style={{ minWidth: 0, maxWidth: "140px", cursor: "pointer" }}
                 ref={isActive ? setFocus : undefined}
                 title={chat.title}
               >

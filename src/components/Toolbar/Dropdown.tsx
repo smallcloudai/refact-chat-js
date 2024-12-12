@@ -11,7 +11,7 @@ import {
 import { useOpenUrl } from "../../hooks/useOpenUrl";
 import { DropdownMenu, Flex, IconButton } from "@radix-ui/themes";
 import { HamburgerMenuIcon, DiscordLogoIcon } from "@radix-ui/react-icons";
-import { Coin } from "../../images";
+//import { Coin } from "../../images";
 
 export type DropdownNavigationOptions =
   | "fim"
@@ -20,6 +20,7 @@ export type DropdownNavigationOptions =
   | "hot keys"
   | "restart tour"
   | "cloud login"
+  | "integrations"
   | "";
 
 type DropdownProps = {
@@ -84,13 +85,15 @@ export const Dropdown: React.FC<DropdownProps> = ({
           </DropdownMenu.Item>
         )}
 
+        {/* 
+        Hide coins (until coins logic is reworked)
         {user.data && (
           <DropdownMenu.Label>
             <Flex align="center" gap="1">
               <Coin /> {user.data.metering_balance} coins
             </Flex>
           </DropdownMenu.Label>
-        )}
+        )} */}
         {user.data && (
           <DropdownMenu.Label>
             <Flex align="center" gap="1">
@@ -98,20 +101,6 @@ export const Dropdown: React.FC<DropdownProps> = ({
             </Flex>
           </DropdownMenu.Label>
         )}
-
-        <DropdownMenu.Item onSelect={() => handleNavigation("stats")}>
-          Your Stats
-        </DropdownMenu.Item>
-
-        <DropdownMenu.Item
-          onSelect={(event) => {
-            event.preventDefault();
-            logout();
-            handleNavigation("cloud login");
-          }}
-        >
-          Logout
-        </DropdownMenu.Item>
 
         <DropdownMenu.Item
           onSelect={(event) => {
@@ -125,26 +114,19 @@ export const Dropdown: React.FC<DropdownProps> = ({
           </Flex>
         </DropdownMenu.Item>
 
-        <DropdownMenu.Item
-          onSelect={(event) => {
-            event.preventDefault();
-            openUrl(bugUrl);
-          }}
-        >
-          Report a bug...
-        </DropdownMenu.Item>
-
         <DropdownMenu.Separator />
 
-        <DropdownMenu.Item onSelect={() => handleNavigation("restart tour")}>
-          Restart tour
+        <DropdownMenu.Item onSelect={() => handleNavigation("integrations")}>
+          Setup Agent Integrations
         </DropdownMenu.Item>
 
-        <DropdownMenu.Item onSelect={() => handleNavigation("fim")}>
-          Fill-in-the-middle Context
+        <DropdownMenu.Item onSelect={() => handleNavigation("hot keys")}>
+          IDE Hotkeys Settings
         </DropdownMenu.Item>
 
-        <DropdownMenu.Separator />
+        <DropdownMenu.Item onSelect={() => handleNavigation("settings")}>
+          IDE Settings
+        </DropdownMenu.Item>
 
         <DropdownMenu.Item
           onSelect={() => {
@@ -172,12 +154,37 @@ export const Dropdown: React.FC<DropdownProps> = ({
           </DropdownMenu.Item>
         )}
 
-        <DropdownMenu.Item onSelect={() => handleNavigation("hot keys")}>
-          Hot Keys...
+        <DropdownMenu.Separator />
+
+        <DropdownMenu.Item onSelect={() => handleNavigation("restart tour")}>
+          Restart tour
         </DropdownMenu.Item>
 
-        <DropdownMenu.Item onSelect={() => handleNavigation("settings")}>
-          Settings...
+        <DropdownMenu.Item
+          onSelect={(event) => {
+            event.preventDefault();
+            openUrl(bugUrl);
+          }}
+        >
+          Report a bug
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Item onSelect={() => handleNavigation("fim")}>
+          Fill-in-the-middle Context
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Item onSelect={() => handleNavigation("stats")}>
+          Your Stats
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Item
+          onSelect={(event) => {
+            event.preventDefault();
+            logout();
+            handleNavigation("cloud login");
+          }}
+        >
+          Logout
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
