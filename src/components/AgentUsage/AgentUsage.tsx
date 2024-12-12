@@ -1,44 +1,52 @@
-import React from "react";
+import React, { useCallback } from "react";
 
-import { useAgentUsage, useGetUser } from "../../hooks";
-import { Dialog, Text, Link } from "@radix-ui/themes";
+import { useAgentUsage, useAppDispatch, useGetUser } from "../../hooks";
+import { Dialog, Link, Button, Flex } from "@radix-ui/themes";
+import { setToolUse } from "../../features/Chat";
 
 export const AgentUsage: React.FC = () => {
+  const dispatch = useAppDispatch();
   const userRequest = useGetUser();
   const { usersUsage: _, shouldShow, MAX_FREE_USAGE } = useAgentUsage();
+  const handleClose = useCallback(() => {
+    void userRequest
+      .refetch()
+      .unwrap()
+      .then((user) => {
+        if (user.inference !== "PRO") {
+          dispatch(setToolUse("explore"));
+        }
+      })
+      .catch(() => {
+        return;
+      });
+  }, [dispatch, userRequest]);
+
   if (!userRequest.data) return null;
   if (!shouldShow) return null; // stop the agent
 
-  // wait until done streaming before notifying them they have reached the limit.
-
-  //   return (
-  //     <div>
-  //       <h1>Agent Usage {usersUsage}</h1>
-  //       <p>Agent Usage</p>
-  //       <p>Agent Usage</p>
-  //       <p>Agent Usage</p>
-  //       <p>Agent Usage</p>
-  //     </div>
-  //   );
   return (
-    <Dialog.Root defaultOpen={shouldShow}>
+    <Dialog.Root defaultOpen={shouldShow} onOpenChange={handleClose}>
       <Dialog.Content>
         <Dialog.Title>Daily Free Tier Agent Usage Limit Exceeded</Dialog.Title>
         <Dialog.Description>
-          <Text>
-            Refact allows you to use agents for {MAX_FREE_USAGE} tokens per day.
-          </Text>
-          <Text>
-            To continue using agents today, you will need to{" "}
-            <Link target="_blank" href="https://refact.smallcloud.ai/">
-              Upgrade to our pro plan
-            </Link>
-          </Text>
+          Refact allows you to use agents for {MAX_FREE_USAGE} chat requests per
+          day.
+        </Dialog.Description>
+        <Dialog.Description>
+          To continue using agents today, you will need to{" "}
+          <Link target="_blank" href="https://refact.smallcloud.ai/">
+            Upgrade to our pro plan
+          </Link>
         </Dialog.Description>
 
-        <Dialog.Close>
-          <div>Close</div>
-        </Dialog.Close>
+        <Flex gap="3" mt="4" justify="end">
+          <Dialog.Close>
+            <Button variant="soft" color="gray">
+              Close
+            </Button>
+          </Dialog.Close>
+        </Flex>
       </Dialog.Content>
     </Dialog.Root>
   );
