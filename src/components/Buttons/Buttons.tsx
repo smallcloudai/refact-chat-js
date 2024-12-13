@@ -69,10 +69,11 @@ export const LinkButton: React.FC<
   ButtonProps & {
     href?: string;
     target?: HTMLFormElement["target"];
+    onClick?: () => void;
   }
-> = ({ href, target, ...rest }) => {
+> = ({ href, target, onClick, ...rest }) => {
   return (
-    <form action={href} target={target}>
+    <form action={href} target={target} onSubmit={onClick}>
       <Button type="submit" {...rest}>
         Upgrade to our pro plan
       </Button>
