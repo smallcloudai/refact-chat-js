@@ -8,6 +8,7 @@ import {
   useSendChatRequest,
   useGetPromptsQuery,
   useAutoSend,
+  useGetCapsQuery,
 } from "../../hooks";
 import type { Config } from "../../features/Config/configSlice";
 import {
@@ -15,19 +16,17 @@ import {
   getSelectedChatModel,
   selectIsStreaming,
   selectIsWaiting,
-  setChatModel,
   selectPreventSend,
   selectChatId,
   selectMessages,
   getSelectedToolUse,
   getSelectedSystemPrompt,
   setSystemPrompt,
-  ToolUse,
 } from "../../features/Chat/Thread";
 import { ThreadHistoryButton } from "../Buttons";
 import { push } from "../../features/Pages/pagesSlice";
 import { DropzoneProvider } from "../Dropzone";
-import { CodeChatModel, SystemPrompts } from "../../services/refact";
+import { SystemPrompts } from "../../services/refact";
 import { AgentUsage } from "../../features/AgentUsage";
 
 export type ChatProps = {
@@ -36,26 +35,18 @@ export type ChatProps = {
   backFromChat: () => void;
   style?: React.CSSProperties;
   unCalledTools: boolean;
-  // TODO: remove this
-  caps: {
-    error: string | null;
-    fetching: boolean;
-    default_cap: string;
-    available_caps: Record<string, CodeChatModel>;
-  };
-
   maybeSendToSidebar: ChatFormProps["onClose"];
 };
 
 export const Chat: React.FC<ChatProps> = ({
   style,
   unCalledTools,
-  caps,
   maybeSendToSidebar,
 }) => {
   const [isViewingRawJSON, setIsViewingRawJSON] = useState(false);
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
+  const caps = useGetCapsQuery();
 
   const chatId = useAppSelector(selectChatId);
   const { submit, abort, retryFromIndex, confirmToolUsage } =
@@ -72,13 +63,6 @@ export const Chat: React.FC<ChatProps> = ({
   const [isDebugChatHistoryVisible, setIsDebugChatHistoryVisible] =
     useState(false);
 
-  const onSetChatModel = useCallback(
-    (value: string) => {
-      const model = caps.default_cap === value ? "" : value;
-      dispatch(setChatModel(model));
-    },
-    [caps.default_cap, dispatch],
-  );
   const preventSend = useAppSelector(selectPreventSend);
   const onEnableSend = () => dispatch(enableSend({ id: chatId }));
 
@@ -112,17 +96,6 @@ export const Chat: React.FC<ChatProps> = ({
   }, [isWaiting, isStreaming, focusTextarea]);
 
   useAutoSend();
-
-  // TODO: ideally this could be set when the chat is created.
-  useEffect(() => {
-    if (
-      chatToolUse === "agent" &&
-      !modelSupportsAgent(chatModel, caps.available_caps)
-    ) {
-      const modelToUse = modelForMode(chatModel, caps, chatToolUse);
-      onSetChatModel(modelToUse);
-    }
-  }, [caps, chatModel, chatToolUse, onSetChatModel]);
 
   return (
     <DropzoneProvider asChild>
@@ -170,7 +143,10 @@ export const Chat: React.FC<ChatProps> = ({
           {messages.length > 0 && (
             <Flex align="center" justify="between" width="100%">
               <Flex align="center" gap="1">
-                <Text size="1">model: {chatModel || caps.default_cap} </Text> •{" "}
+                <Text size="1">
+                  model: {chatModel || caps.data?.code_chat_default_model}{" "}
+                </Text>{" "}
+                •{" "}
                 <Text
                   size="1"
                   onClick={() => setIsDebugChatHistoryVisible((prev) => !prev)}
@@ -194,32 +170,3 @@ export const Chat: React.FC<ChatProps> = ({
     </DropzoneProvider>
   );
 };
-
-// TODO: move this to caps
-const AGENT_ALLOW_LIST = ["gpt-4o", "claude-3-5-sonnet"];
-function modelForMode(
-  model: string,
-  caps: ChatProps["caps"],
-  toolUse?: ToolUse,
-) {
-  if (toolUse !== "agent") return model;
-  // check if paid then they can use any
-
-  if (AGENT_ALLOW_LIST.includes(model)) return model;
-
-  const available = Object.keys(caps.available_caps);
-
-  const hasModels = AGENT_ALLOW_LIST.find((agent) => available.includes(agent));
-  if (hasModels) return hasModels;
-
-  return model || caps.default_cap;
-}
-
-function modelSupportsAgent(
-  model: string,
-  caps: Record<string, CodeChatModel>,
-) {
-  // return AGENT_ALLOW_LIST.includes(model);
-  if (!(model in caps)) return false;
-  return caps[model].supports_agent;
-}

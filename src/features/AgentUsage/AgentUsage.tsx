@@ -44,7 +44,13 @@ export const AgentUsage: React.FC = () => {
         </Flex>
 
         <Flex gap="3" mt="8" justify="end">
-          <LinkButton href="https://refact.smallcloud.ai/" target="_blank">
+          <LinkButton
+            href="https://refact.smallcloud.ai/"
+            target="_blank"
+            onClick={() => {
+              // TODO: poll for upgrade then close
+            }}
+          >
             Upgrade now
           </LinkButton>
 

@@ -1,14 +1,14 @@
 import { useCallback, useMemo } from "react";
-import { selectThreadToolUse } from "../../features/Chat/Thread/selectors";
+import { selectThreadToolUse } from "../features/Chat/Thread/selectors";
 import {
   useAppSelector,
   useGetCapsQuery,
   useGetUser,
   useAgentUsage,
   useAppDispatch,
-} from "../../hooks";
+} from ".";
 
-import { getSelectedChatModel, setChatModel } from "../../features/Chat";
+import { getSelectedChatModel, setChatModel } from "../features/Chat";
 
 // TODO: some shared logic for changing the tool use mode.
 const PAID_AGENT_LIST = ["gpt-4o", "claude-3-5-sonnet"];
@@ -27,14 +27,15 @@ export function useCapsForToolUse() {
   const currentModel = selectedModel || defaultCap;
 
   const setCapModel = useCallback(
-    (model: string) => {
+    (value: string) => {
+      const model = caps.data?.code_chat_default_model === value ? "" : value;
       const action = setChatModel(model);
       dispatch(action);
     },
-    [dispatch],
+    [caps.data?.code_chat_default_model, dispatch],
   );
 
-  // TODO: cause a loop, handle changing the model on an old chat, this works with a new one, but isn't mounted on an existing chat.
+  // TODO: causes a loop, handle changing the model on an old chat, this works with a new one, but isn't mounted on an existing chat.
   //   useEffect(() => {
   //     if (
   //       user.data?.inference !== "PRO" &&

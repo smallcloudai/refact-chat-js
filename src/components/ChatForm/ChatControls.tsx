@@ -11,9 +11,12 @@ import { QuestionMarkCircledIcon } from "@radix-ui/react-icons";
 import { useTourRefs } from "../../features/Tour";
 import { ToolUseSwitch } from "./ToolUseSwitch";
 import { ToolUse, selectToolUse, setToolUse } from "../../features/Chat/Thread";
-import { useCanUseTools } from "../../hooks/useCanUseTools";
-import { useAppSelector, useAppDispatch } from "../../hooks";
-import { useCapsForToolUse } from "./useCapsForMode";
+import {
+  useAppSelector,
+  useAppDispatch,
+  useCapsForToolUse,
+  useCanUseTools,
+} from "../../hooks";
 
 const CapsSelect: React.FC = () => {
   const refs = useTourRefs();
