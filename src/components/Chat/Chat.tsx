@@ -9,6 +9,7 @@ import {
   useGetPromptsQuery,
   useAutoSend,
   useGetCapsQuery,
+  useCapsForToolUse,
 } from "../../hooks";
 import type { Config } from "../../features/Config/configSlice";
 import {
@@ -55,6 +56,7 @@ export const Chat: React.FC<ChatProps> = ({
   const chatToolUse = useAppSelector(getSelectedToolUse);
   const dispatch = useAppDispatch();
   const messages = useAppSelector(selectMessages);
+  const capsForToolUse = useCapsForToolUse();
 
   const promptsRequest = useGetPromptsQuery();
   const selectedSystemPrompt = useAppSelector(getSelectedSystemPrompt);
@@ -94,6 +96,12 @@ export const Chat: React.FC<ChatProps> = ({
       focusTextarea();
     }
   }, [isWaiting, isStreaming, focusTextarea]);
+
+  useEffect(() => {
+    if (!capsForToolUse.usableModels.includes(chatModel)) {
+      capsForToolUse.setCapModel("");
+    }
+  }, [capsForToolUse, chatModel]);
 
   useAutoSend();
 
