@@ -13,7 +13,7 @@ import {
 import { ChatMessages, isUserMessage } from "../events";
 import { useAppDispatch } from "./useAppDispatch";
 
-const MAX_FREE_USAGE = 20;
+const MAX_FREE_USAGE = 1;
 const ONE_DAY_IN_MS = 1000 * 60 * 60 * 24;
 
 export function useAgentUsage() {
@@ -60,18 +60,23 @@ export function useAgentUsage() {
     [increment],
   );
 
+  const aboveUsageLimit = useMemo(() => {
+    return usersUsage >= MAX_FREE_USAGE;
+  }, [usersUsage]);
+
   const shouldShow = useMemo(() => {
     // TODO: maybe uncalled tools.
     if (toolUse !== "agent") return false;
     if (isStreaming || isWaiting) return false;
     if (user.data?.inference === "PRO") return false;
-    return usersUsage >= MAX_FREE_USAGE;
-  }, [isStreaming, isWaiting, toolUse, user.data?.inference, usersUsage]);
+    return aboveUsageLimit;
+  }, [aboveUsageLimit, isStreaming, isWaiting, toolUse, user.data?.inference]);
 
   return {
     incrementIfLastMessageIsFromUser,
     usersUsage,
     shouldShow,
     MAX_FREE_USAGE,
+    aboveUsageLimit,
   };
 }

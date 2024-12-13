@@ -36,8 +36,14 @@ export type ChatProps = {
   backFromChat: () => void;
   style?: React.CSSProperties;
   unCalledTools: boolean;
-  // TODO: update this
-  caps: ChatFormProps["caps"];
+  // TODO: remove this
+  caps: {
+    error: string | null;
+    fetching: boolean;
+    default_cap: string;
+    available_caps: Record<string, CodeChatModel>;
+  };
+
   maybeSendToSidebar: ChatFormProps["onClose"];
 };
 
@@ -109,7 +115,10 @@ export const Chat: React.FC<ChatProps> = ({
 
   // TODO: ideally this could be set when the chat is created.
   useEffect(() => {
-    if (chatToolUse === "agent" && !modelSupportsAgent(chatModel)) {
+    if (
+      chatToolUse === "agent" &&
+      !modelSupportsAgent(chatModel, caps.available_caps)
+    ) {
       const modelToUse = modelForMode(chatModel, caps, chatToolUse);
       onSetChatModel(modelToUse);
     }
@@ -149,12 +158,6 @@ export const Chat: React.FC<ChatProps> = ({
           isStreaming={isStreaming}
           showControls={messages.length === 0 && !isStreaming}
           onSubmit={handleSummit}
-          model={chatModel}
-          onSetChatModel={onSetChatModel}
-          caps={{
-            ...caps,
-            available_caps: capOptionsForMode(caps.available_caps, chatToolUse),
-          }}
           onClose={maybeSendToSidebar}
           prompts={promptsRequest.data ?? {}}
           onSetSystemPrompt={onSetSelectedSystemPrompt}
@@ -192,13 +195,15 @@ export const Chat: React.FC<ChatProps> = ({
   );
 };
 
+// TODO: move this to caps
 const AGENT_ALLOW_LIST = ["gpt-4o", "claude-3-5-sonnet"];
 function modelForMode(
   model: string,
-  caps: ChatFormProps["caps"],
+  caps: ChatProps["caps"],
   toolUse?: ToolUse,
 ) {
   if (toolUse !== "agent") return model;
+  // check if paid then they can use any
 
   if (AGENT_ALLOW_LIST.includes(model)) return model;
 
@@ -210,20 +215,11 @@ function modelForMode(
   return model || caps.default_cap;
 }
 
-function modelSupportsAgent(model: string) {
-  return AGENT_ALLOW_LIST.includes(model);
-}
-
-function capOptionsForMode(
+function modelSupportsAgent(
+  model: string,
   caps: Record<string, CodeChatModel>,
-  toolUse?: string,
 ) {
-  if (toolUse !== "agent") return caps;
-  const agentEntries = Object.entries(caps).filter(([key]) =>
-    AGENT_ALLOW_LIST.includes(key),
-  );
-
-  if (agentEntries.length === 0) return caps;
-
-  return Object.fromEntries(agentEntries);
+  // return AGENT_ALLOW_LIST.includes(model);
+  if (!(model in caps)) return false;
+  return caps[model].supports_agent;
 }

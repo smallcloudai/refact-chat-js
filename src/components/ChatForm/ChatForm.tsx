@@ -9,7 +9,7 @@ import { Form } from "./Form";
 import { useOnPressedEnter, useIsOnline, useConfig } from "../../hooks";
 import { ErrorCallout, Callout } from "../Callout";
 import { ComboBox } from "../ComboBox";
-import { CodeChatModel, SystemPrompts } from "../../services/refact";
+import { SystemPrompts } from "../../services/refact";
 import { FilesPreview } from "./FilesPreview";
 import { ChatControls } from "./ChatControls";
 import { addCheckboxValuesToInput } from "./utils";
@@ -33,14 +33,6 @@ export type ChatFormProps = {
   onSubmit: (str: string) => void;
   onClose?: () => void;
   className?: string;
-  caps: {
-    error: string | null;
-    fetching: boolean;
-    default_cap: string;
-    available_caps: Record<string, CodeChatModel>;
-  };
-  model: string;
-  onSetChatModel: (model: string) => void;
   isStreaming: boolean;
 
   showControls: boolean;
@@ -55,9 +47,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   onSubmit,
   onClose,
   className,
-  caps,
-  model,
-  onSetChatModel,
   isStreaming,
   showControls,
   prompts,
@@ -303,11 +292,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
         checkboxes={checkboxes}
         showControls={showControls}
         onCheckedChange={onToggleCheckbox}
-        selectProps={{
-          value: model || caps.default_cap,
-          onChange: onSetChatModel,
-          options: Object.keys(caps.available_caps),
-        }}
         promptsProps={{
           value: selectedSystemPrompt,
           prompts: prompts,
