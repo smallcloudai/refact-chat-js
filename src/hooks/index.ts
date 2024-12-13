@@ -26,3 +26,4 @@ export * from "./useLinksFromLsp";
 export * from "./useGoToLink";
 export * from "./useSmartLinks";
 export * from "./useAgentUsage";
+export * from "./useOpenUrl";

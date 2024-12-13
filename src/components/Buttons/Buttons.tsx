@@ -64,3 +64,18 @@ export const RightButtonGroup: React.FC<React.PropsWithChildren & FlexProps> = (
     />
   );
 };
+
+export const LinkButton: React.FC<
+  ButtonProps & {
+    href?: string;
+    target?: HTMLFormElement["target"];
+  }
+> = ({ href, target, ...rest }) => {
+  return (
+    <form action={href} target={target}>
+      <Button type="submit" {...rest}>
+        Upgrade to our pro plan
+      </Button>
+    </form>
+  );
+};
