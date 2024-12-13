@@ -17,20 +17,11 @@ import { SmartLink } from "../../SmartLink";
 import { renderIntegrationFormField } from "../../../features/Integrations/renderIntegrationFormField";
 import { IntegrationAvailability } from "./IntegrationAvailability";
 import { toPascalCase } from "../../../utils/toPascalCase";
-import { debugIntegrations } from "../../../debugConfig";
 import { iconMap } from "../icons/iconMap";
-
-// TODO: should be extracted in the future
-function jsonHasWhenIsolated(
-  json: unknown,
-): json is Record<string, boolean> & { when_isolated: boolean } {
-  return (
-    typeof json === "object" &&
-    json !== null &&
-    "when_isolated" in json &&
-    typeof json.when_isolated === "boolean"
-  );
-}
+import { IntegrationDeletePopover } from "../IntegrationDeletePopover";
+import { debugIntegrations } from "../../../debugConfig";
+import { selectThemeMode } from "../../../features/Config/configSlice";
+import { useAppSelector } from "../../../hooks";
 
 function areAllFieldsBoolean(json: unknown): json is Record<string, boolean> {
   return (
@@ -44,8 +35,10 @@ type IntegrationFormProps = {
   integrationPath: string;
   isApplying: boolean;
   isDisabled: boolean;
+  isDeletingIntegration: boolean;
   availabilityValues: Record<string, boolean>;
   handleSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  handleDeleteIntegration: (path: string, name: string) => void;
   handleChange: (event: FormEvent<HTMLFormElement>) => void;
   onSchema: (schema: Integration["integr_schema"]) => void;
   onValues: (values: Integration["integr_values"]) => void;
@@ -62,8 +55,10 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   integrationPath,
   isApplying,
   isDisabled,
+  isDeletingIntegration,
   availabilityValues,
   handleSubmit,
+  handleDeleteIntegration,
   handleChange,
   onSchema,
   onValues,
@@ -73,6 +68,11 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   const [areExtraFieldsRevealed, setAreExtraFieldsRevealed] = useState(false);
 
   const { integration } = useGetIntegrationDataByPathQuery(integrationPath);
+
+  const theme = useAppSelector(selectThemeMode);
+  const icons = iconMap(
+    theme ? (theme === "inherit" ? "light" : theme) : "light",
+  );
 
   const handleAvailabilityChange = useCallback(
     (fieldName: string, value: boolean) => {
@@ -213,6 +213,13 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
           )}
           <Flex justify="end" width="100%">
             <Flex gap="4">
+              <IntegrationDeletePopover
+                integrationName={integration.data.integr_name}
+                integrationConfigPath={integration.data.integr_config_path}
+                isApplying={isApplying}
+                isDeletingIntegration={isDeletingIntegration}
+                handleDeleteIntegration={handleDeleteIntegration}
+              />
               <Button
                 color="green"
                 variant="solid"
@@ -257,29 +264,27 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
             </Flex>
           </Flex>
         )}
-      {integration.data.integr_schema.docker &&
-        jsonHasWhenIsolated(integration.data.integr_values.available) &&
-        integration.data.integr_values.available.when_isolated && (
-          <Flex mt="6" direction="column" align="start" gap="5">
-            <Flex gap="2" align="center" justify="center" width="100%">
-              <img
-                src={iconMap.docker}
-                className={styles.DockerIcon}
-                alt={integration.data.integr_name}
-              />
-              <Heading as="h3" align="left">
-                {toPascalCase(integration.data.integr_name)} Containers
-              </Heading>
-            </Flex>
-            <IntegrationDocker
-              dockerData={integration.data.integr_schema.docker}
-              integrationName={integration.data.integr_name}
-              integrationProject={integration.data.project_path}
-              integrationPath={integration.data.integr_config_path}
-              handleSwitchIntegration={handleSwitchIntegration}
+      {integration.data.integr_schema.docker && (
+        <Flex mt="6" direction="column" align="start" gap="5">
+          <Flex gap="2" align="center" justify="center" width="100%">
+            <img
+              src={icons.docker}
+              className={styles.DockerIcon}
+              alt={integration.data.integr_name}
             />
+            <Heading as="h3" align="left">
+              {toPascalCase(integration.data.integr_name)} Containers
+            </Heading>
           </Flex>
-        )}
+          <IntegrationDocker
+            dockerData={integration.data.integr_schema.docker}
+            integrationName={integration.data.integr_name}
+            integrationProject={integration.data.project_path}
+            integrationPath={integration.data.integr_config_path}
+            handleSwitchIntegration={handleSwitchIntegration}
+          />
+        </Flex>
+      )}
     </Flex>
   );
 };

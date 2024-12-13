@@ -258,6 +258,7 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
   const onlyDeterministicMessages = checkForToolLoop(messages);
 
   const messagesForLsp = formatMessagesForLsp(messages);
+  const realMode = mode ?? thread?.mode;
 
   return sendChat({
     messages: messagesForLsp,
@@ -270,13 +271,12 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
     port: state.config.lspPort,
     onlyDeterministicMessages,
     integration: thread?.integration,
-    mode: mode ?? thread?.mode,
+    mode: realMode,
   })
     .then((response) => {
       if (!response.ok) {
         return Promise.reject(new Error(response.statusText));
       }
-
       const reader = response.body?.getReader();
       if (!reader) return;
       const onAbort = () => thunkAPI.dispatch(setPreventSend({ id: chatId }));

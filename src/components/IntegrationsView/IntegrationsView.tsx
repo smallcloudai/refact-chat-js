@@ -28,6 +28,7 @@ import {
   Integration,
   integrationsApi,
   IntegrationWithIconRecord,
+  IntegrationWithIconRecordAndAddress,
   IntegrationWithIconResponse,
   isDetailMessage,
   isNotConfiguredIntegrationWithIconRecord,
@@ -46,6 +47,9 @@ import { iconMap } from "./icons/iconMap";
 import { LeftRightPadding } from "../../features/Integrations/Integrations";
 import { IntermediateIntegration } from "./IntermediateIntegration";
 import { parseOrElse } from "../../utils";
+import { useDeleteIntegrationByPath } from "../../hooks/useDeleteIntegrationByPath";
+import { toPascalCase } from "../../utils/toPascalCase";
+import { selectThemeMode } from "../../features/Config/configSlice";
 
 type IntegrationViewProps = {
   integrationsMap?: IntegrationWithIconResponse;
@@ -77,45 +81,95 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     return currentPage;
   }, [currentPage]);
 
+  const { deleteIntegrationTrigger } = useDeleteIntegrationByPath();
+
   const maybeIntegration = useMemo(() => {
     if (!currentThreadIntegration) return null;
     if (!integrationsMap) return null;
+    debugIntegrations(
+      `[DEBUG]: currentThreadIntegration: `,
+      currentThreadIntegration,
+    );
     // TODO: check for extra flag in currentThreadIntegration to return different find() call from notConfiguredGrouped integrations if it's set to true
-    return (
+    const integration =
       integrationsMap.integrations.find(
         (integration) =>
-          integration.integr_config_path ===
-          currentThreadIntegration.integrationPath,
-      ) ?? null
-    );
+          currentThreadIntegration.integrationName?.startsWith("cmdline")
+            ? integration.integr_name === "cmdline_TEMPLATE"
+            : integration.integr_name ===
+              currentThreadIntegration.integrationName,
+        // integration.integr_name === currentThreadIntegration.integrationName,
+      ) ?? null;
+    if (!integration) return null;
+
+    const integrationWithFlag = {
+      ...integration,
+      commandName:
+        currentThreadIntegration.integrationName?.startsWith("cmdline") ??
+        currentThreadIntegration.integrationName?.startsWith("service")
+          ? currentThreadIntegration.integrationName
+              .split("_")
+              .slice(1)
+              .join("_")
+          : undefined,
+      shouldIntermediatePageShowUp:
+        currentThreadIntegration.shouldIntermediatePageShowUp ?? false,
+    } as IntegrationWithIconRecordAndAddress;
+    return integrationWithFlag;
   }, [currentThreadIntegration, integrationsMap]);
 
   // TBD: what if they went home then came back to integrations?
 
   const [currentIntegration, setCurrentIntegration] =
-    useState<IntegrationWithIconRecord | null>(maybeIntegration);
+    useState<IntegrationWithIconRecord | null>(
+      maybeIntegration?.shouldIntermediatePageShowUp ? null : maybeIntegration,
+    );
 
   const [currentNotConfiguredIntegration, setCurrentNotConfiguredIntegration] =
     useState<NotConfiguredIntegrationWithIconRecord | null>(null);
 
   // TODO: uncomment when ready
-  // useEffect(() => {
-  //   if (maybeIntegration) {
-  //     if (maybeIntegration.shouldBeOpenedOnIntermediatePage) {
-  //       setNotConfiguredIntegration(maybeIntegration);
-  //       setCurrentIntegration(null);
-  //     } else {
-  //       setCurrentIntegration(maybeIntegration);
-  //       setNotConfiguredIntegration(null);
-  //     }
-  //   }
-  // }, [maybeIntegration]);
-
   useEffect(() => {
-    if (maybeIntegration) {
+    if (!maybeIntegration) return;
+
+    if (maybeIntegration.shouldIntermediatePageShowUp) {
+      setCurrentNotConfiguredIntegration(() => {
+        const similarIntegrations = integrationsMap?.integrations.filter(
+          (integr) => integr.integr_name === maybeIntegration.integr_name,
+        );
+        if (!similarIntegrations) return null;
+
+        const uniqueConfigPaths = Array.from(
+          new Set(
+            similarIntegrations.map((integr) => integr.integr_config_path),
+          ),
+        );
+        const uniqueProjectPaths = Array.from(
+          new Set(similarIntegrations.map((integr) => integr.project_path)),
+        );
+
+        uniqueProjectPaths.sort((a, _b) => (a === "" ? -1 : 1));
+        uniqueConfigPaths.sort((a, _b) => (a.includes(".config") ? -1 : 1));
+
+        const integrationToConfigure: NotConfiguredIntegrationWithIconRecord = {
+          ...maybeIntegration,
+          commandName: maybeIntegration.commandName
+            ? maybeIntegration.commandName
+            : undefined,
+          wasOpenedThroughChat: maybeIntegration.shouldIntermediatePageShowUp,
+          integr_config_path: uniqueConfigPaths,
+          project_path: uniqueProjectPaths,
+          integr_config_exists: false,
+        };
+
+        return integrationToConfigure;
+      });
+      setCurrentIntegration(null);
+    } else {
       setCurrentIntegration(maybeIntegration);
+      setCurrentNotConfiguredIntegration(null);
     }
-  }, [maybeIntegration]);
+  }, [maybeIntegration, integrationsMap?.integrations]);
 
   const [currentIntegrationSchema, setCurrentIntegrationSchema] = useState<
     Integration["integr_schema"] | null
@@ -126,6 +180,9 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   >(null);
 
   const [isApplyingIntegrationForm, setIsApplyingIntegrationForm] =
+    useState<boolean>(false);
+
+  const [isDeletingIntegration, setIsDeletingIntegration] =
     useState<boolean>(false);
 
   const [isDisabledIntegrationForm, setIsDisabledIntegrationForm] =
@@ -356,6 +413,32 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     ],
   );
 
+  const handleDeleteIntegration = useCallback(
+    async (configurationPath: string, integrationName: string) => {
+      // if (!currentIntegration) return;
+      setIsDeletingIntegration(true);
+      const response = await deleteIntegrationTrigger(configurationPath);
+      debugIntegrations("[DEBUG]: response: ", response);
+      if (response.error) {
+        debugIntegrations(`[DEBUG]: delete error: `, response.error);
+        return;
+      }
+      dispatch(
+        setInformation(
+          `${toPascalCase(
+            integrationName,
+          )} integration's configuration was deleted successfully!`,
+        ),
+      );
+      const timeoutId = setTimeout(() => {
+        setIsDeletingIntegration(false);
+        handleFormReturn();
+        clearTimeout(timeoutId);
+      }, 1200);
+    },
+    [dispatch, deleteIntegrationTrigger, handleFormReturn],
+  );
+
   const handleIntegrationFormChange = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       if (!currentIntegration) return;
@@ -552,6 +635,11 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     [currentIntegration, integrationsMap],
   );
 
+  const theme = useAppSelector(selectThemeMode);
+  const icons = iconMap(
+    theme ? (theme === "inherit" ? "light" : theme) : "light",
+  );
+
   const integrationLogo = useMemo(() => {
     if (!currentIntegration && !currentNotConfiguredIntegration) {
       return "https://placehold.jp/150x150.png";
@@ -563,15 +651,15 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
           ? currentNotConfiguredIntegration.integr_name.split("_")[0]
           : "https://placehold.jp/150x150.png",
     )
-      ? iconMap.cmdline
-      : iconMap[
+      ? icons.cmdline
+      : icons[
           currentIntegration
             ? currentIntegration.integr_name
             : currentNotConfiguredIntegration
               ? currentNotConfiguredIntegration.integr_name
               : ""
         ];
-  }, [currentIntegration, currentNotConfiguredIntegration]);
+  }, [currentIntegration, currentNotConfiguredIntegration, icons]);
 
   if (isLoading) {
     return <Spinner spinning />;
@@ -581,6 +669,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     goBack && goBack();
     dispatch(clearError());
     setCurrentIntegration(null);
+    setCurrentNotConfiguredIntegration(null);
   };
 
   const handleIntegrationShowUp = (
@@ -639,6 +728,12 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
           <IntegrationsHeader
             leftRightPadding={leftRightPadding}
             handleFormReturn={handleFormReturn}
+            handleInstantReturn={goBackAndClearError}
+            instantBackReturnment={
+              currentNotConfiguredIntegration
+                ? currentNotConfiguredIntegration.wasOpenedThroughChat
+                : false
+            }
             integrationName={
               currentIntegration
                 ? currentIntegration.integr_name
@@ -674,8 +769,12 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             <IntegrationForm
               // TODO: on smart link click or pass the name down
               handleSubmit={(event) => void handleSubmit(event)}
+              handleDeleteIntegration={(path: string, name: string) =>
+                void handleDeleteIntegration(path, name)
+              }
               integrationPath={currentIntegration.integr_config_path}
               isApplying={isApplyingIntegrationForm}
+              isDeletingIntegration={isDeletingIntegration}
               isDisabled={isDisabledIntegrationForm}
               onSchema={handleSetCurrentIntegrationSchema}
               onValues={handleSetCurrentIntegrationValues}
@@ -686,7 +785,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             />
             {information && (
               <InformationCallout
-                timeout={3000}
+                timeout={isDeletingIntegration ? 1000 : 3000}
                 mx="0"
                 onClick={() => dispatch(clearInformation())}
                 className={styles.popup}

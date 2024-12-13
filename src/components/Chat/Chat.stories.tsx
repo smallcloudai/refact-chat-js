@@ -65,7 +65,7 @@ const Template: React.FC<{
   );
 };
 
-const meta = {
+const meta: Meta<typeof Template> = {
   title: "Chat",
   component: Template,
   parameters: {
@@ -81,7 +81,7 @@ const meta = {
     },
   },
   argTypes: {},
-} satisfies Meta<typeof Template>;
+};
 
 export default meta;
 

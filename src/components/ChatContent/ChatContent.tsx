@@ -29,6 +29,7 @@ import { ScrollToBottomButton } from "./ScrollToBottomButton";
 import { currentTipOfTheDay } from "../../features/TipOfTheDay";
 import { popBackTo } from "../../features/Pages/pagesSlice";
 import { ChatLinks } from "../ChatLinks";
+import { telemetryApi } from "../../services/refact/telemetry";
 
 const TipOfTheDay: React.FC = () => {
   const tip = useAppSelector(currentTipOfTheDay);
@@ -120,6 +121,8 @@ export const ChatContent: React.FC<ChatContentProps> = ({
   const thread = useAppSelector(selectThread);
   const isConfig = thread.mode === "CONFIGURE";
   const isWaiting = useAppSelector(selectIsWaiting);
+  const [sendTelemetryEvent] =
+    telemetryApi.useLazySendTelemetryChatEventQuery();
 
   const {
     handleScroll,
@@ -153,6 +156,15 @@ export const ChatContent: React.FC<ChatContentProps> = ({
     thread.integration?.name,
     thread.integration?.path,
   ]);
+
+  const handleManualStopStreamingClick = useCallback(() => {
+    onStopStreaming();
+    void sendTelemetryEvent({
+      scope: `stopStreaming`,
+      success: true,
+      error_message: "",
+    });
+  }, [onStopStreaming, sendTelemetryEvent]);
 
   return (
     <ScrollArea
@@ -189,7 +201,7 @@ export const ChatContent: React.FC<ChatContentProps> = ({
                 // ml="auto"
                 color="red"
                 title="stop streaming"
-                onClick={onStopStreaming}
+                onClick={handleManualStopStreamingClick}
               >
                 Stop
               </Button>

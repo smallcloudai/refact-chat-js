@@ -1,6 +1,7 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   diffApi,
+  isCommitLink,
   isUserMessage,
   linksApi,
   type ChatLink,
@@ -17,10 +18,13 @@ import {
   selectMessages,
   selectModel,
   selectThreadMode,
-  selectThreadToolUse,
   setIntegrationData,
 } from "../features/Chat";
 import { useGoToLink } from "./useGoToLink";
+import { setError } from "../features/Errors/errorsSlice";
+import { setInformation } from "../features/Errors/informationSlice";
+import { debugIntegrations } from "../debugConfig";
+import { telemetryApi } from "../services/refact/telemetry";
 
 export function useLinksFromLsp() {
   const dispatch = useAppDispatch();
@@ -29,6 +33,10 @@ export function useLinksFromLsp() {
 
   const [applyPatches, _applyPatchesResult] =
     diffApi.useApplyAllPatchesInMessagesMutation();
+  const [applyCommit, _applyCommitResult] = linksApi.useSendCommitMutation();
+
+  const [sendTelemetryEvent] =
+    telemetryApi.useLazySendTelemetryChatEventQuery();
 
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
@@ -36,7 +44,6 @@ export function useLinksFromLsp() {
   const chatId = useAppSelector(selectChatId);
   const maybeIntegration = useAppSelector(selectIntegration);
   const threadMode = useAppSelector(selectThreadMode);
-  const toolUse = useAppSelector(selectThreadToolUse);
 
   // TODO: add the model
   const caps = useGetCapsQuery();
@@ -54,19 +61,54 @@ export function useLinksFromLsp() {
     return false;
   }, [messages]);
 
+  // TODO: think of how to avoid batching and this useless state
+  const [pendingIntegrationGoto, setPendingIntegrationGoto] = useState<
+    string | null
+  >(null);
+
+  useEffect(() => {
+    if (
+      maybeIntegration?.shouldIntermediatePageShowUp !== undefined &&
+      pendingIntegrationGoto
+    ) {
+      handleGoTo({ goto: pendingIntegrationGoto });
+      setPendingIntegrationGoto(null);
+    }
+  }, [pendingIntegrationGoto, handleGoTo, maybeIntegration]);
+
   const handleLinkAction = useCallback(
     (link: ChatLink) => {
       if (!("action" in link)) return;
+      void sendTelemetryEvent({
+        scope: `handleLinkAction/${link.action}`,
+        success: true,
+        error_message: "",
+      });
 
       if (link.action === "goto" && "goto" in link) {
-        handleGoTo(link.goto);
+        const [action, payload] = link.goto.split(":");
+        if (action.toLowerCase() === "settings") {
+          debugIntegrations(
+            `[DEBUG]: this goto is integrations one, dispatching integration data`,
+          );
+          dispatch(
+            setIntegrationData({
+              name: payload,
+              shouldIntermediatePageShowUp: payload !== "DEFAULT",
+            }),
+          );
+          setPendingIntegrationGoto(link.goto);
+        }
+        handleGoTo({
+          goto: link.goto,
+        });
         return;
       }
 
       if (link.action === "patch-all") {
         void applyPatches(messages).then(() => {
           if ("goto" in link) {
-            handleGoTo(link.goto);
+            handleGoTo({ goto: link.goto });
           }
         });
         return;
@@ -86,21 +128,47 @@ export function useLinksFromLsp() {
         return;
       }
 
-      // if (link.action === "commit") {
-      //   // TODO: there should be an endpoint for this
-      //   void applyPatches(messages).then(() => {
-      //     if ("goto" in link && link.goto) {
-      //       handleGoTo(link.goto);
-      //     }
-      //   });
+      if (isCommitLink(link)) {
+        void applyCommit(link.link_payload)
+          .unwrap()
+          .then((res) => {
+            const commits = res.commits_applied;
 
-      //   return;
-      // }
+            if (commits.length > 0) {
+              const commitInfo = commits
+                .map((commit, index) => `${index + 1}: ${commit.project_name}`)
+                .join("\n");
+              const message = `Successfully committed: ${commits.length}\n${commitInfo}`;
+              dispatch(setInformation(message));
+            }
+
+            const errors = res.error_log
+              .map((err, index) => {
+                return `${index + 1}: ${err.project_name}\n${
+                  err.project_path
+                }\n${err.error_message}`;
+              })
+              .join("\n");
+            if (errors) {
+              dispatch(setError(`Commit errors: ${errors}`));
+            }
+          });
+
+        return;
+      }
 
       // eslint-disable-next-line no-console
       console.warn(`unknown action: ${JSON.stringify(link)}`);
     },
-    [applyPatches, dispatch, handleGoTo, messages, submit],
+    [
+      applyCommit,
+      applyPatches,
+      dispatch,
+      handleGoTo,
+      messages,
+      submit,
+      sendTelemetryEvent,
+    ],
   );
 
   const skipLinksRequest = useMemo(() => {
@@ -108,19 +176,10 @@ export function useLinksFromLsp() {
       messages.length > 0 && isUserMessage(messages[messages.length - 1]);
     if (!model) return true;
     if (!caps.data) return true;
-    if (toolUse !== "agent") return true;
     return (
       isStreaming || isWaiting || unCalledTools || lastMessageIsUserMessage
     );
-  }, [
-    caps.data,
-    isStreaming,
-    isWaiting,
-    messages,
-    model,
-    toolUse,
-    unCalledTools,
-  ]);
+  }, [caps.data, isStreaming, isWaiting, messages, model, unCalledTools]);
 
   const linksResult = linksApi.useGetLinksForChatQuery(
     {
