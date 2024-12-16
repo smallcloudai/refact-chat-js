@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { selectThreadToolUse } from "../features/Chat/Thread/selectors";
 import {
   useAppSelector,
@@ -21,7 +21,6 @@ export function useCapsForToolUse() {
   const dispatch = useAppDispatch();
 
   const defaultCap = caps.data?.code_chat_default_model ?? "";
-
   const selectedModel = useAppSelector(getSelectedChatModel);
 
   const currentModel = selectedModel || defaultCap;
@@ -56,6 +55,22 @@ export function useCapsForToolUse() {
       return { value: model, disabled: true, textValue: `${model} Pro` };
     });
   }, [user.data?.inference, usableModels, usage.aboveUsageLimit]);
+
+  useEffect(() => {
+    if (
+      usableModelsForPlan.length > 0 &&
+      usableModelsForPlan.some((elem) => typeof elem === "string") &&
+      !usableModelsForPlan.includes(currentModel)
+    ) {
+      const models = usableModelsForPlan.filter(
+        (elem) => typeof elem === "string",
+      );
+      const toChange =
+        models.find((elem) => currentModel.startsWith(elem)) ??
+        (models[0] || "");
+      setCapModel(toChange);
+    }
+  }, [currentModel, setCapModel, usableModels, usableModelsForPlan]);
 
   return {
     usableModels,

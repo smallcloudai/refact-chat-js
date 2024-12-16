@@ -40,7 +40,7 @@ export const AgentUsage: React.FC = () => {
         <Flex gap="3" justify="end">
           <LinkButton
             size="2"
-            color="green"
+            variant="outline"
             href="https://refact.smallcloud.ai/pro"
             target="_blank"
             onClick={startPollingForUser}

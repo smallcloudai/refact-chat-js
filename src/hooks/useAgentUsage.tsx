@@ -100,9 +100,9 @@ export function useAgentUsage() {
     if (toolUse !== "agent") return false;
     if (isStreaming || isWaiting) return false;
     if (user.data?.inference === "PRO") return false;
-    // return aboveUsageLimit;
+    if (MAX_FREE_USAGE - usersUsage > 5) return false;
     return true;
-  }, [isStreaming, isWaiting, toolUse, user.data?.inference]);
+  }, [isStreaming, isWaiting, toolUse, user.data?.inference, usersUsage]);
 
   const disableInput = useMemo(() => {
     return shouldShow && aboveUsageLimit;

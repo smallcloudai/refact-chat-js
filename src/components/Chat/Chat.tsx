@@ -14,7 +14,6 @@ import {
 import type { Config } from "../../features/Config/configSlice";
 import {
   enableSend,
-  getSelectedChatModel,
   selectIsStreaming,
   selectIsWaiting,
   selectPreventSend,
@@ -52,7 +51,7 @@ export const Chat: React.FC<ChatProps> = ({
   const chatId = useAppSelector(selectChatId);
   const { submit, abort, retryFromIndex, confirmToolUsage } =
     useSendChatRequest();
-  const chatModel = useAppSelector(getSelectedChatModel);
+
   const chatToolUse = useAppSelector(getSelectedToolUse);
   const dispatch = useAppDispatch();
   const messages = useAppSelector(selectMessages);
@@ -96,12 +95,6 @@ export const Chat: React.FC<ChatProps> = ({
       focusTextarea();
     }
   }, [isWaiting, isStreaming, focusTextarea]);
-
-  useEffect(() => {
-    if (!capsForToolUse.usableModels.includes(chatModel)) {
-      capsForToolUse.setCapModel("");
-    }
-  }, [capsForToolUse, chatModel]);
 
   useAutoSend();
 
@@ -153,7 +146,9 @@ export const Chat: React.FC<ChatProps> = ({
             <Flex align="center" justify="between" width="100%">
               <Flex align="center" gap="1">
                 <Text size="1">
-                  model: {chatModel || caps.data?.code_chat_default_model}{" "}
+                  model:{" "}
+                  {capsForToolUse.currentModel ||
+                    caps.data?.code_chat_default_model}{" "}
                 </Text>{" "}
                 •{" "}
                 <Text
