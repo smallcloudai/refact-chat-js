@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Select } from ".";
 import { Theme, Container } from "@radix-ui/themes";
 
-const meta = {
+const meta: Meta<typeof Select> = {
   title: "Select",
   component: Select,
   decorators: [
@@ -14,7 +14,7 @@ const meta = {
       </Theme>
     ),
   ],
-} satisfies Meta<typeof Select>;
+};
 
 export default meta;
 
