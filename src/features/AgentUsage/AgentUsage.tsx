@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback } from "react";
 
 import { useAgentUsage, useAppDispatch, useGetUser } from "../../hooks";
 import { Dialog, Button, Flex, Separator } from "@radix-ui/themes";
@@ -9,7 +9,13 @@ export const AgentUsage: React.FC = () => {
   const dispatch = useAppDispatch();
   const userRequest = useGetUser();
 
-  const { usersUsage: _, shouldShow, MAX_FREE_USAGE } = useAgentUsage();
+  const {
+    usersUsage: _,
+    shouldShow,
+    MAX_FREE_USAGE,
+    startPollingForUser,
+    pollingForUser,
+  } = useAgentUsage();
   const handleClose = useCallback(() => {
     void userRequest
       .refetch()
@@ -23,31 +29,6 @@ export const AgentUsage: React.FC = () => {
         return;
       });
   }, [dispatch, userRequest]);
-
-  const [polling, setPolling] = useState<boolean>(false);
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout | undefined = undefined;
-    if (
-      polling &&
-      !userRequest.isFetching &&
-      !userRequest.isLoading &&
-      userRequest.data?.inference !== "PRO"
-    ) {
-      timer = setTimeout(() => {
-        void userRequest.refetch();
-      }, 5000);
-    }
-
-    if (polling && userRequest.data?.inference === "PRO") {
-      clearTimeout(timer);
-      // TODO: maybe add an animation or thanks ?
-    }
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [polling, userRequest]);
 
   if (!userRequest.data) return null;
   if (!shouldShow) return null; // stop the agent
@@ -72,9 +53,9 @@ export const AgentUsage: React.FC = () => {
           <LinkButton
             href="https://refact.smallcloud.ai/pro"
             target="_blank"
-            loading={polling}
+            loading={pollingForUser}
             color="green"
-            onClick={() => setPolling(true)}
+            onClick={startPollingForUser}
           >
             Upgrade now
           </LinkButton>

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import {
   addAgentUsageItem,
   selectAgentUsageItems,
@@ -12,8 +12,9 @@ import {
 } from "../features/Chat";
 import { ChatMessages, isUserMessage } from "../events";
 import { useAppDispatch } from "./useAppDispatch";
+import { Text, Link } from "@radix-ui/themes";
 
-const MAX_FREE_USAGE = 20;
+const MAX_FREE_USAGE = 1;
 const ONE_DAY_IN_MS = 1000 * 60 * 60 * 24;
 
 export function useAgentUsage() {
@@ -64,6 +65,37 @@ export function useAgentUsage() {
     return usersUsage >= MAX_FREE_USAGE;
   }, [usersUsage]);
 
+  const [pollingForUser, setPollingForUser] = useState<boolean>(false);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout | undefined = undefined;
+    if (
+      pollingForUser &&
+      !user.isFetching &&
+      !user.isLoading &&
+      user.data?.inference !== "PRO"
+    ) {
+      timer = setTimeout(() => {
+        void user.refetch();
+      }, 5000);
+    }
+
+    if (pollingForUser && user.data?.inference === "PRO") {
+      clearTimeout(timer);
+      setPollingForUser(false);
+      // TODO: maybe add an animation or thanks ?
+    }
+
+    return () => {
+      setPollingForUser(false);
+      clearTimeout(timer);
+    };
+  }, [pollingForUser, user]);
+
+  const startPollingForUser = useCallback(() => {
+    setPollingForUser(true);
+  }, []);
+
   const shouldShow = useMemo(() => {
     // TODO: maybe uncalled tools.
     if (toolUse !== "agent") return false;
@@ -72,11 +104,66 @@ export function useAgentUsage() {
     return aboveUsageLimit;
   }, [aboveUsageLimit, isStreaming, isWaiting, toolUse, user.data?.inference]);
 
+  const usageMessage = useMemo(() => {
+    if (user.isFetching || user.isLoading) return null;
+    if (!user.data || user.data.inference === "PRO") return null;
+    if (toolUse !== "agent") return null;
+    if (usersUsage >= MAX_FREE_USAGE) {
+      // TODO: should be null, because the popup will open.
+      return (
+        <Text>
+          You have reached your usage limit of {MAX_FREE_USAGE} messages a day.
+          You can use agent again tomorrow, or{" "}
+          <Link
+            href="https://refact.smallcloud.ai/pro"
+            target="_blank"
+            onClick={startPollingForUser}
+          >
+            upgrade to PRO
+          </Link>
+        </Text>
+      );
+    }
+
+    if (usersUsage >= MAX_FREE_USAGE - 5) {
+      return (
+        <Text>
+          You have left only {MAX_FREE_USAGE - 5} messages left today. To remove
+          the limit{" "}
+          <Link
+            href="https://refact.smallcloud.ai/pro"
+            target="_blank"
+            onClick={startPollingForUser}
+          >
+            upgrade to PRO
+          </Link>
+        </Text>
+      );
+    }
+
+    return (
+      <Text>
+        You have {MAX_FREE_USAGE - usersUsage} agent messages left on our FREE
+        plan
+      </Text>
+    );
+  }, [
+    startPollingForUser,
+    toolUse,
+    user.data,
+    user.isFetching,
+    user.isLoading,
+    usersUsage,
+  ]);
+
   return {
     incrementIfLastMessageIsFromUser,
     usersUsage,
     shouldShow,
     MAX_FREE_USAGE,
     aboveUsageLimit,
+    usageMessage,
+    startPollingForUser,
+    pollingForUser,
   };
 }

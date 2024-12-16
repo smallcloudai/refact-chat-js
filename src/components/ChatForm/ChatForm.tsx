@@ -287,6 +287,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
         </Form>
       </Flex>
       <FileList />
+
       <ChatControls
         host={config.host}
         checkboxes={checkboxes}
