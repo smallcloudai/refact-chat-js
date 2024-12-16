@@ -73,6 +73,7 @@ export const AgentUsage: React.FC = () => {
             href="https://refact.smallcloud.ai/"
             target="_blank"
             loading={polling}
+            color="green"
             onClick={() => setPolling(true)}
           >
             Upgrade now
