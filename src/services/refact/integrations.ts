@@ -2,10 +2,13 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { RootState } from "../../app/store";
 import { isLspChatMessage, LspChatMessage } from "./chat";
 import {
+  INTEGRATION_DELETE_URL,
   INTEGRATION_GET_URL,
   INTEGRATION_SAVE_URL,
   INTEGRATIONS_URL,
 } from "./consts";
+import { debugIntegrations } from "../../debugConfig";
+import { isDetailMessage } from "./commands";
 
 // TODO: Cache invalidation logic.
 export const integrationsApi = createApi({
@@ -113,6 +116,40 @@ export const integrationsApi = createApi({
         return response;
       },
     }),
+    deleteIntegration: builder.query<unknown, string>({
+      providesTags: (_result, _error, arg) => [
+        { type: "INTEGRATION", id: arg },
+      ],
+      async queryFn(arg, api, extraOptions, baseQuery) {
+        const state = api.getState() as RootState;
+        const port = state.config.lspPort;
+        const url = `http://127.0.0.1:${port}${INTEGRATION_DELETE_URL}?integration_path=${arg}`;
+
+        const response = await baseQuery({
+          ...extraOptions,
+          url,
+          method: "DELETE",
+        });
+
+        if (response.error) {
+          return { error: response.error };
+        }
+
+        if (isDetailMessage(response.data)) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: `Failed to delete integration by path: ${arg}. Details: ${response.data.detail}`,
+              data: response.data,
+            },
+          };
+        }
+
+        return {
+          data: response.data,
+        };
+      },
+    }),
   }),
 });
 
@@ -131,7 +168,10 @@ export type Integration = {
   integr_name: string;
   integr_config_path: string;
   integr_schema: IntegrationSchema;
-  integr_values: Record<string, IntegrationPrimitive | Record<string, boolean>>;
+  integr_values: Record<
+    string,
+    IntegrationPrimitive | Record<string, boolean> | Record<string, unknown>
+  >;
   error_log: null | YamlError[];
 };
 
@@ -181,15 +221,20 @@ function isIntegration(json: unknown): json is Integration {
     return false;
   }
   const integrValues = json.integr_values as Record<string, unknown>;
-  if (
-    !Object.values(integrValues).every(
-      (value) =>
-        isPrimitive(value) ||
-        (typeof value === "object" &&
-          value !== null &&
-          Object.values(value).every(isPrimitive)),
-    )
-  ) {
+  debugIntegrations("integrValues:", integrValues); // Log the integrValues
+
+  function isValidNestedObject(value: unknown): boolean {
+    if (isPrimitive(value)) {
+      return true;
+    }
+    if (typeof value === "object" && value !== null) {
+      return Object.values(value).every(isValidNestedObject);
+    }
+    return false;
+  }
+
+  if (!Object.values(integrValues).every(isValidNestedObject)) {
+    debugIntegrations(`[DEBUG]: integr_values are not valid json`);
     return false;
   }
 
@@ -234,7 +279,7 @@ type IntegrationSchema = {
   description?: string;
   fields: Record<string, IntegrationField<NonNullable<IntegrationPrimitive>>>;
   available: Record<string, boolean>;
-  smartlinks: SmartLink[];
+  smartlinks?: SmartLink[];
   docker?: SchemaDocker;
 };
 
@@ -289,89 +334,129 @@ function isSchemaDockerContainer(json: unknown): json is SchemaDockerContainer {
 }
 
 function isIntegrationSchema(json: unknown): json is IntegrationSchema {
+  debugIntegrations("isIntegrationSchema called with:", json);
+
   if (!json) {
+    debugIntegrations("isIntegrationSchema: json is falsy");
     return false;
   }
   if (typeof json !== "object") {
+    debugIntegrations("isIntegrationSchema: json is not an object");
     return false;
   }
 
   if ("description" in json && typeof json.description !== "string") {
+    debugIntegrations("isIntegrationSchema: description is not a string");
     return false;
   }
 
   if (!("fields" in json)) {
+    debugIntegrations("isIntegrationSchema: fields is missing");
     return false;
   }
   if (!json.fields) {
+    debugIntegrations("isIntegrationSchema: fields is falsy");
     return false;
   }
   if (!(typeof json.fields === "object")) {
+    debugIntegrations("isIntegrationSchema: fields is not an object");
     return false;
   }
   if (!Object.values(json.fields).every(isIntegrationField)) {
+    debugIntegrations("isIntegrationSchema: fields contains invalid values");
     return false;
   }
   if (!("available" in json)) {
+    debugIntegrations("isIntegrationSchema: available is missing");
     return false;
   }
   if (!json.available) {
+    debugIntegrations("isIntegrationSchema: available is falsy");
     return false;
   }
   if (!(typeof json.available === "object")) {
+    debugIntegrations("isIntegrationSchema: available is not an object");
     return false;
   }
   if (!Object.values(json.available).every((d) => typeof d === "boolean")) {
+    debugIntegrations("isIntegrationSchema: available contains invalid values");
     return false;
   }
-  if (!("smartlinks" in json)) {
-    return false;
-  }
-  if (!json.smartlinks) {
-    return false;
-  }
-  if (!Array.isArray(json.smartlinks)) {
-    return false;
-  }
-  if (!json.smartlinks.every(isSmartLink)) {
-    return false;
+  if ("smartlinks" in json) {
+    if (!json.smartlinks) {
+      debugIntegrations("isIntegrationSchema: smartlinks is falsy");
+      return false;
+    }
+    if (!Array.isArray(json.smartlinks)) {
+      debugIntegrations("isIntegrationSchema: smartlinks is not an array");
+      return false;
+    }
+    if (!json.smartlinks.every(isSmartLink)) {
+      debugIntegrations(
+        "isIntegrationSchema: smartlinks contains invalid values",
+      );
+      return false;
+    }
   }
   if ("docker" in json) {
     if (!json.docker) {
+      debugIntegrations("isIntegrationSchema: docker is falsy");
       return false;
     }
     if (!(typeof json.docker === "object")) {
+      debugIntegrations("isIntegrationSchema: docker is not an object");
       return false;
     }
     if (!isDockerFilter(json.docker)) {
+      debugIntegrations("isIntegrationSchema: docker is invalid");
       return false;
     }
     if (!("new_container_default" in json.docker)) {
+      debugIntegrations(
+        "isIntegrationSchema: new_container_default is missing",
+      );
       return false;
     }
     if (!isSchemaDockerContainer(json.docker.new_container_default)) {
+      debugIntegrations(
+        "isIntegrationSchema: new_container_default is invalid",
+      );
       return false;
     }
     if (!("smartlinks" in json.docker)) {
+      debugIntegrations("isIntegrationSchema: docker.smartlinks is missing");
       return false;
     }
     if (!Array.isArray(json.docker.smartlinks)) {
+      debugIntegrations(
+        "isIntegrationSchema: docker.smartlinks is not an array",
+      );
       return false;
     }
     if (!json.docker.smartlinks.every(isSmartLink)) {
+      debugIntegrations(
+        "isIntegrationSchema: docker.smartlinks contains invalid values",
+      );
       return false;
     }
 
     if ("smartlinks_for_each_container" in json.docker) {
       if (!Array.isArray(json.docker.smartlinks_for_each_container)) {
+        debugIntegrations(
+          "isIntegrationSchema: docker.smartlinks_for_each_container is not an array",
+        );
         return false;
       }
 
       if (!json.docker.smartlinks_for_each_container.every(isSmartLink)) {
+        debugIntegrations(
+          "isIntegrationSchema: docker.smartlinks_for_each_container contains invalid values",
+        );
         return false;
       }
     }
   }
+  debugIntegrations("isIntegrationSchema: json is a valid IntegrationSchema");
   return true;
 }
 
@@ -449,6 +534,63 @@ export type IntegrationWithIconRecord = {
   when_isolated: boolean;
   // unparsed: unknown;
 };
+
+export type IntegrationWithIconRecordAndAddress = IntegrationWithIconRecord & {
+  shouldIntermediatePageShowUp?: boolean;
+  commandName?: string;
+};
+
+export type NotConfiguredIntegrationWithIconRecord = {
+  project_path: string[];
+  integr_name: string;
+  integr_config_path: string[];
+  integr_config_exists: false;
+  on_your_laptop: boolean;
+  when_isolated: boolean;
+  commandName?: string;
+  wasOpenedThroughChat?: boolean; // to manage buttons, we need to address rather intermediate page was opened through chat or not
+  // unparsed: unknown;
+};
+
+export type GroupedIntegrationWithIconRecord = {
+  project_path: string[];
+  integr_name: string;
+  integr_config_path: string[];
+  integr_config_exists: boolean;
+  on_your_laptop: boolean;
+  when_isolated: boolean;
+  // unparsed: unknown;
+};
+
+export function areIntegrationsNotConfigured(
+  json: GroupedIntegrationWithIconRecord,
+): json is NotConfiguredIntegrationWithIconRecord {
+  return !json.integr_config_exists;
+}
+
+export function isNotConfiguredIntegrationWithIconRecord(
+  json: unknown,
+): json is NotConfiguredIntegrationWithIconRecord {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  if (!("project_path" in json)) return false;
+  if (!Array.isArray(json.project_path)) return false;
+  if (!json.project_path.every((item) => typeof item === "string"))
+    return false;
+  if (!("integr_name" in json)) return false;
+  if (typeof json.integr_name !== "string") return false;
+  if (!("integr_config_path" in json)) return false;
+  if (!Array.isArray(json.integr_config_path)) return false;
+  if (!json.integr_config_path.every((item) => typeof item === "string"))
+    return false;
+  if (!("integr_config_exists" in json)) return false;
+  if (json.integr_config_exists !== false) return false;
+  if (!("on_your_laptop" in json)) return false;
+  if (typeof json.on_your_laptop !== "boolean") return false;
+  if (!("when_isolated" in json)) return false;
+  if (typeof json.when_isolated !== "boolean") return false;
+  return true;
+}
 
 function isInterIntegrationWithIconRecord(
   json: unknown,

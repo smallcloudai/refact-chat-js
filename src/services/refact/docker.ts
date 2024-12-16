@@ -247,6 +247,8 @@ type DockerPorts = NonNullable<unknown>;
 // TODO: make type guards better
 type DockerContainersResponse = {
   containers: DockerContainer[];
+  has_connection_to_docker_daemon: boolean;
+  docker_error?: string;
 };
 
 function isDockerContainersResponse(
@@ -260,7 +262,21 @@ function isDockerContainersResponse(
     return false;
   }
   const containers = (json as DockerContainersResponse).containers;
-  return containers.every(isDockerContainer);
+  if (!containers.every(isDockerContainer)) {
+    return false;
+  }
+
+  if (
+    "has_connection_to_docker_daemon" in json &&
+    typeof json.has_connection_to_docker_daemon !== "boolean"
+  ) {
+    return false;
+  }
+
+  if ("docker_error" in json && typeof json.docker_error !== "string") {
+    return false;
+  }
+  return true;
 }
 
 function isDockerContainer(json: unknown): json is DockerContainer {
@@ -300,4 +316,15 @@ function isDockerLabels(json: unknown): json is DockerLabels {
 function isDockerPorts(json: unknown): json is DockerPorts {
   // Since DockerPorts is defined as NonNullable<unknown>, we don't have specific structure to validate. Just checking, that it's not null | undefined
   return json !== null && json !== undefined;
+}
+
+export function jsonHasWhenIsolated(
+  json: unknown,
+): json is Record<string, boolean> & { when_isolated: boolean } {
+  return (
+    typeof json === "object" &&
+    json !== null &&
+    "when_isolated" in json &&
+    typeof json.when_isolated === "boolean"
+  );
 }

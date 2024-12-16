@@ -4,12 +4,15 @@ import type { FC } from "react";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import styles from "./IntegrationsHeader.module.css";
 import { LeftRightPadding } from "../../features/Integrations/Integrations";
+import { toPascalCase } from "../../utils/toPascalCase";
 
 type IntegrationsHeaderProps = {
   handleFormReturn: () => void;
   integrationName: string;
   leftRightPadding: LeftRightPadding;
   icon: string;
+  instantBackReturnment?: boolean;
+  handleInstantReturn?: () => void;
 };
 
 export const IntegrationsHeader: FC<IntegrationsHeaderProps> = ({
@@ -17,38 +20,53 @@ export const IntegrationsHeader: FC<IntegrationsHeaderProps> = ({
   integrationName,
   leftRightPadding,
   icon,
+  instantBackReturnment = false,
+  handleInstantReturn,
 }) => {
   const { width } = useWindowDimensions();
+
+  const handleButtonClick = () => {
+    if (instantBackReturnment && handleInstantReturn) {
+      handleInstantReturn();
+    } else {
+      handleFormReturn();
+    }
+  };
 
   return (
     <Flex className={styles.IntegrationsHeader} px={leftRightPadding}>
       <Flex align="center" justify="between" width="100%" px={leftRightPadding}>
         <Flex
           gap={{
-            initial: "4",
-            xs: "6",
+            initial: "3",
+            xs: "4",
           }}
           align="center"
         >
           {width > 500 ? (
-            <Button size="1" variant="surface" onClick={handleFormReturn}>
+            <Button size="1" variant="surface" onClick={handleButtonClick}>
               <ArrowLeftIcon width="16" height="16" />
-              Configurations
+              {instantBackReturnment ? "Back to chat" : "Configurations"}
             </Button>
           ) : (
-            <IconButton size="2" variant="surface" onClick={handleFormReturn}>
+            <IconButton size="2" variant="surface" onClick={handleButtonClick}>
               <ArrowLeftIcon width="16" height="16" />
             </IconButton>
           )}
-          <Heading as="h5" size="5">
-            Setup {integrationName}
+          <img
+            src={icon}
+            className={styles.IntegrationsHeaderIcon}
+            alt={integrationName}
+          />
+          <Heading as="h5" size="3">
+            Setup{" "}
+            {integrationName.includes("TEMPLATE")
+              ? integrationName.startsWith("cmdline")
+                ? "Command Line Tool"
+                : "Command Line Service"
+              : toPascalCase(integrationName)}
           </Heading>
         </Flex>
-        <img
-          src={icon}
-          className={styles.IntegrationsHeaderIcon}
-          alt={integrationName}
-        />
       </Flex>
     </Flex>
   );

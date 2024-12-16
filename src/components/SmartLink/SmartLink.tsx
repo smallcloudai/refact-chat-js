@@ -1,62 +1,9 @@
 import { useCallback } from "react";
 import type { FC } from "react";
-import type {
-  LspChatMessage,
-  SmartLink as SmartLinkType,
-} from "../../services/refact";
-import {
-  type OpenFilePayload,
-  useAppDispatch,
-  useEventsBusForIDE,
-} from "../../hooks";
-import { formatMessagesForChat } from "../../features/Chat/Thread/utils";
-import { clearInformation } from "../../features/Errors/informationSlice";
-import { newIntegrationChat } from "../../features/Chat";
-import { push } from "../../features/Pages/pagesSlice";
+import type { SmartLink as SmartLinkType } from "../../services/refact";
 import { Button, DropdownMenu } from "@radix-ui/themes";
-import { AppDispatch } from "../../app/store";
-
-const handleGotoAction = (
-  sl_goto: string,
-  queryPathThenOpenFile: (file: OpenFilePayload) => Promise<void>,
-) => {
-  const [action, payload] = sl_goto.split(":");
-  switch (action.toLowerCase()) {
-    // TODO: could be possible to share it between Marc's implementation
-    case "editor":
-      void queryPathThenOpenFile({ file_name: payload });
-      break;
-    case "setting":
-      // Handling SETTING smartlink action
-      break;
-    default:
-      // For unexpected actions
-      break;
-  }
-};
-
-const handleChatAction = (
-  sl_chat: LspChatMessage[],
-  dispatch: AppDispatch,
-  integrationName: string,
-  integrationPath: string,
-  integrationProject: string,
-) => {
-  const messages = formatMessagesForChat(sl_chat);
-
-  dispatch(clearInformation());
-  dispatch(
-    newIntegrationChat({
-      integration: {
-        name: integrationName,
-        path: integrationPath,
-        project: integrationProject,
-      },
-      messages,
-    }),
-  );
-  dispatch(push({ name: "chat" }));
-};
+import { useSmartLinks } from "../../hooks";
+import styles from "./SmartLink.module.css";
 
 export const SmartLink: FC<{
   smartlink: SmartLinkType;
@@ -73,21 +20,18 @@ export const SmartLink: FC<{
   isSmall = false,
   isDockerSmartlink = false,
 }) => {
-  const dispatch = useAppDispatch();
-
-  const { queryPathThenOpenFile } = useEventsBusForIDE();
+  const { handleGoTo, handleSmartLink } = useSmartLinks();
 
   const { sl_goto, sl_chat } = smartlink;
 
   const handleClick = useCallback(() => {
     if (sl_goto) {
-      handleGotoAction(sl_goto, queryPathThenOpenFile);
+      handleGoTo({ goto: sl_goto });
       return;
     }
     if (sl_chat) {
-      handleChatAction(
+      handleSmartLink(
         sl_chat,
-        dispatch,
         integrationName,
         integrationPath,
         integrationProject,
@@ -96,10 +40,10 @@ export const SmartLink: FC<{
   }, [
     sl_goto,
     sl_chat,
-    dispatch,
+    handleGoTo,
+    handleSmartLink,
     integrationName,
     integrationPath,
-    queryPathThenOpenFile,
     integrationProject,
   ]);
 
@@ -114,7 +58,7 @@ export const SmartLink: FC<{
       onClick={handleClick}
       title={title ? title.join("\n") : ""}
     >
-      {smartlink.sl_label} 🪄
+      ✨ {smartlink.sl_label}
     </DropdownMenu.Item>
   ) : (
     <Button
@@ -124,9 +68,10 @@ export const SmartLink: FC<{
       color="gray"
       type="button"
       variant="outline"
+      className={styles.magicButton}
     >
+      {smartlink.sl_chat ? "✨ " : ""}
       {smartlink.sl_label}
-      {smartlink.sl_chat ? " 🪄" : ""}
     </Button>
   );
 

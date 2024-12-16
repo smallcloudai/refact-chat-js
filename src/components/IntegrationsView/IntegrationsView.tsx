@@ -1,4 +1,4 @@
-import { Box, Flex, Heading, Text } from "@radix-ui/themes";
+import { Box, Flex, Heading, Text, Grid } from "@radix-ui/themes";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import type { FC, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -22,12 +22,18 @@ import {
 import { useAppDispatch, useAppSelector } from "../../hooks";
 import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
 import {
+  areIntegrationsNotConfigured,
   dockerApi,
+  GroupedIntegrationWithIconRecord,
   Integration,
   integrationsApi,
   IntegrationWithIconRecord,
+  IntegrationWithIconRecordAndAddress,
   IntegrationWithIconResponse,
   isDetailMessage,
+  isNotConfiguredIntegrationWithIconRecord,
+  isPrimitive,
+  NotConfiguredIntegrationWithIconRecord,
 } from "../../services/refact";
 import { ErrorCallout } from "../Callout";
 import { InformationCallout } from "../Callout/Callout";
@@ -39,6 +45,11 @@ import { IntegrationsHeader } from "./IntegrationsHeader";
 import styles from "./IntegrationsView.module.css";
 import { iconMap } from "./icons/iconMap";
 import { LeftRightPadding } from "../../features/Integrations/Integrations";
+import { IntermediateIntegration } from "./IntermediateIntegration";
+import { parseOrElse } from "../../utils";
+import { useDeleteIntegrationByPath } from "../../hooks/useDeleteIntegrationByPath";
+import { toPascalCase } from "../../utils/toPascalCase";
+import { selectThemeMode } from "../../features/Config/configSlice";
 
 type IntegrationViewProps = {
   integrationsMap?: IntegrationWithIconResponse;
@@ -70,28 +81,95 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     return currentPage;
   }, [currentPage]);
 
+  const { deleteIntegrationTrigger } = useDeleteIntegrationByPath();
+
   const maybeIntegration = useMemo(() => {
     if (!currentThreadIntegration) return null;
     if (!integrationsMap) return null;
-    return (
+    debugIntegrations(
+      `[DEBUG]: currentThreadIntegration: `,
+      currentThreadIntegration,
+    );
+    // TODO: check for extra flag in currentThreadIntegration to return different find() call from notConfiguredGrouped integrations if it's set to true
+    const integration =
       integrationsMap.integrations.find(
         (integration) =>
-          integration.integr_config_path ===
-          currentThreadIntegration.integrationPath,
-      ) ?? null
-    );
+          currentThreadIntegration.integrationName?.startsWith("cmdline")
+            ? integration.integr_name === "cmdline_TEMPLATE"
+            : integration.integr_name ===
+              currentThreadIntegration.integrationName,
+        // integration.integr_name === currentThreadIntegration.integrationName,
+      ) ?? null;
+    if (!integration) return null;
+
+    const integrationWithFlag = {
+      ...integration,
+      commandName:
+        currentThreadIntegration.integrationName?.startsWith("cmdline") ??
+        currentThreadIntegration.integrationName?.startsWith("service")
+          ? currentThreadIntegration.integrationName
+              .split("_")
+              .slice(1)
+              .join("_")
+          : undefined,
+      shouldIntermediatePageShowUp:
+        currentThreadIntegration.shouldIntermediatePageShowUp ?? false,
+    } as IntegrationWithIconRecordAndAddress;
+    return integrationWithFlag;
   }, [currentThreadIntegration, integrationsMap]);
 
   // TBD: what if they went home then came back to integrations?
 
   const [currentIntegration, setCurrentIntegration] =
-    useState<IntegrationWithIconRecord | null>(maybeIntegration);
+    useState<IntegrationWithIconRecord | null>(
+      maybeIntegration?.shouldIntermediatePageShowUp ? null : maybeIntegration,
+    );
 
+  const [currentNotConfiguredIntegration, setCurrentNotConfiguredIntegration] =
+    useState<NotConfiguredIntegrationWithIconRecord | null>(null);
+
+  // TODO: uncomment when ready
   useEffect(() => {
-    if (maybeIntegration) {
+    if (!maybeIntegration) return;
+
+    if (maybeIntegration.shouldIntermediatePageShowUp) {
+      setCurrentNotConfiguredIntegration(() => {
+        const similarIntegrations = integrationsMap?.integrations.filter(
+          (integr) => integr.integr_name === maybeIntegration.integr_name,
+        );
+        if (!similarIntegrations) return null;
+
+        const uniqueConfigPaths = Array.from(
+          new Set(
+            similarIntegrations.map((integr) => integr.integr_config_path),
+          ),
+        );
+        const uniqueProjectPaths = Array.from(
+          new Set(similarIntegrations.map((integr) => integr.project_path)),
+        );
+
+        uniqueProjectPaths.sort((a, _b) => (a === "" ? -1 : 1));
+        uniqueConfigPaths.sort((a, _b) => (a.includes(".config") ? -1 : 1));
+
+        const integrationToConfigure: NotConfiguredIntegrationWithIconRecord = {
+          ...maybeIntegration,
+          commandName: maybeIntegration.commandName
+            ? maybeIntegration.commandName
+            : undefined,
+          wasOpenedThroughChat: maybeIntegration.shouldIntermediatePageShowUp,
+          integr_config_path: uniqueConfigPaths,
+          project_path: uniqueProjectPaths,
+          integr_config_exists: false,
+        };
+
+        return integrationToConfigure;
+      });
+      setCurrentIntegration(null);
+    } else {
       setCurrentIntegration(maybeIntegration);
+      setCurrentNotConfiguredIntegration(null);
     }
-  }, [maybeIntegration]);
+  }, [maybeIntegration, integrationsMap?.integrations]);
 
   const [currentIntegrationSchema, setCurrentIntegrationSchema] = useState<
     Integration["integr_schema"] | null
@@ -102,6 +180,9 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   >(null);
 
   const [isApplyingIntegrationForm, setIsApplyingIntegrationForm] =
+    useState<boolean>(false);
+
+  const [isDeletingIntegration, setIsDeletingIntegration] =
     useState<boolean>(false);
 
   const [isDisabledIntegrationForm, setIsDisabledIntegrationForm] =
@@ -116,17 +197,22 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   }, [integrationsMap]);
 
   useEffect(() => {
-    if (currentIntegration) {
+    if (currentIntegration ?? currentNotConfiguredIntegration) {
       handleIfInnerIntegrationWasSet(true);
     } else {
       handleIfInnerIntegrationWasSet(false);
     }
-  }, [currentIntegration, handleIfInnerIntegrationWasSet]);
+  }, [
+    currentIntegration,
+    currentNotConfiguredIntegration,
+    handleIfInnerIntegrationWasSet,
+  ]);
 
   const globalIntegrations = useMemo(() => {
     if (integrationsMap?.integrations) {
       return integrationsMap.integrations.filter(
-        (integration) => integration.project_path === "",
+        (integration) =>
+          integration.project_path === "" && integration.integr_config_exists,
       );
     }
   }, [integrationsMap]);
@@ -155,21 +241,50 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     }
   }, [projectSpecificIntegrations]);
 
-  const nonConfiguredIntegrations = useMemo(() => {
+  const availableIntegrationsToConfigure = useMemo(() => {
     if (integrationsMap?.integrations) {
-      return integrationsMap.integrations.reduce<
-        Record<string, IntegrationWithIconResponse["integrations"]>
+      const groupedIntegrations = integrationsMap.integrations.reduce<
+        Record<string, GroupedIntegrationWithIconRecord>
       >((acc, integration) => {
-        if (!integration.integr_config_exists) {
-          if (!(integration.project_path in acc)) {
-            acc[integration.project_path] = [];
-          }
-          acc[integration.project_path].push(integration);
+        if (!(integration.integr_name in acc)) {
+          acc[integration.integr_name] = {
+            ...integration,
+            project_path: [integration.project_path],
+            integr_config_path: [integration.integr_config_path],
+          };
+        } else {
+          acc[integration.integr_name].project_path.push(
+            integration.project_path,
+          );
+          acc[integration.integr_name].integr_config_path.push(
+            integration.integr_config_path,
+          );
         }
         return acc;
       }, {});
+
+      const filteredIntegrations = Object.values(groupedIntegrations).filter(
+        areIntegrationsNotConfigured,
+      );
+
+      // Sort paths so that paths containing ".config" are first
+      Object.values(filteredIntegrations).forEach((integration) => {
+        integration.project_path.sort((a, _b) => (a === "" ? -1 : 1));
+        integration.integr_config_path.sort((a, _b) =>
+          a.includes(".config") ? -1 : 1,
+        );
+      });
+
+      return Object.values(filteredIntegrations);
     }
   }, [integrationsMap]);
+
+  useEffect(() => {
+    debugIntegrations(
+      `[DEBUG]: availableIntegrationsToConfigure: `,
+      availableIntegrationsToConfigure,
+    );
+  }, [availableIntegrationsToConfigure]);
 
   const handleSetCurrentIntegrationSchema = (
     schema: Integration["integr_schema"],
@@ -192,6 +307,11 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       setCurrentIntegration(null);
       setIsDisabledIntegrationForm(true);
     }
+    if (currentNotConfiguredIntegration) {
+      setCurrentNotConfiguredIntegration(null);
+      setIsDisabledIntegrationForm(true);
+    }
+    setAvailabilityValues({});
     information && dispatch(clearInformation());
     globalError && dispatch(clearError());
     dispatch(integrationsApi.util.resetApiState());
@@ -199,7 +319,13 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     // TODO: can cause a loop where integration pages goes back to form
     dispatch(pop());
     dispatch(popBackTo({ name: "integrations page" }));
-  }, [dispatch, globalError, information, currentIntegration]);
+  }, [
+    dispatch,
+    globalError,
+    information,
+    currentIntegration,
+    currentNotConfiguredIntegration,
+  ]);
 
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -229,6 +355,18 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             break;
           case "bool":
             acc[key] = rawFormValues[key] === "on" ? true : false;
+            break;
+          case "tool":
+            acc[key] = parseOrElse<Integration["integr_values"][number]>(
+              rawFormValues[key] as string,
+              {},
+            );
+            break;
+          case "output":
+            acc[key] = parseOrElse<Integration["integr_values"][number]>(
+              rawFormValues[key] as string,
+              {},
+            );
             break;
           default:
             acc[key] = rawFormValues[key] as string;
@@ -275,6 +413,32 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     ],
   );
 
+  const handleDeleteIntegration = useCallback(
+    async (configurationPath: string, integrationName: string) => {
+      // if (!currentIntegration) return;
+      setIsDeletingIntegration(true);
+      const response = await deleteIntegrationTrigger(configurationPath);
+      debugIntegrations("[DEBUG]: response: ", response);
+      if (response.error) {
+        debugIntegrations(`[DEBUG]: delete error: `, response.error);
+        return;
+      }
+      dispatch(
+        setInformation(
+          `${toPascalCase(
+            integrationName,
+          )} integration's configuration was deleted successfully!`,
+        ),
+      );
+      const timeoutId = setTimeout(() => {
+        setIsDeletingIntegration(false);
+        handleFormReturn();
+        clearTimeout(timeoutId);
+      }, 1200);
+    },
+    [dispatch, deleteIntegrationTrigger, handleFormReturn],
+  );
+
   const handleIntegrationFormChange = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       if (!currentIntegration) return;
@@ -302,6 +466,18 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
           case "bool":
             acc[key] = rawFormValues[key] === "on" ? true : false;
             break;
+          case "tool":
+            acc[key] = parseOrElse<Integration["integr_values"][number]>(
+              rawFormValues[key] as string,
+              {},
+            );
+            break;
+          case "output":
+            acc[key] = parseOrElse<Integration["integr_values"][number]>(
+              rawFormValues[key] as string,
+              {},
+            );
+            break;
           default:
             acc[key] = rawFormValues[key] as string;
             break;
@@ -311,11 +487,26 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
 
       const eachFormValueIsNotChanged = Object.entries(formValues).every(
         ([fieldKey, fieldValue]) => {
-          return (
-            fieldKey in currentIntegrationValues &&
-            fieldValue === currentIntegrationValues[fieldKey]
-          );
+          if (isPrimitive(fieldValue)) {
+            return (
+              fieldKey in currentIntegrationValues &&
+              fieldValue === currentIntegrationValues[fieldKey]
+            );
+          }
+          // TODO: better comparison of objects?
+          if (typeof fieldValue === "object") {
+            return (
+              fieldKey in currentIntegrationValues &&
+              JSON.stringify(fieldValue) ===
+                JSON.stringify(currentIntegrationValues[fieldKey])
+            );
+          }
         },
+      );
+
+      debugIntegrations(
+        `[DEBUG]: eachFormValueIsNotChanged: `,
+        eachFormValueIsNotChanged,
       );
 
       const eachAvailabilityOptionIsNotChanged = Object.entries(
@@ -329,6 +520,17 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         }
         return false;
       });
+
+      debugIntegrations(`[DEBUG]: formValues: `, formValues);
+      debugIntegrations(
+        `[DEBUG]: currentIntegrationValues: `,
+        currentIntegrationValues,
+      );
+      debugIntegrations(
+        `[DEBUG]: eachAvailabilityOptionIsNotChanged: `,
+        eachAvailabilityOptionIsNotChanged,
+      );
+      debugIntegrations(`[DEBUG]: availabilityValues: `, availabilityValues);
       const maybeDisabled =
         eachFormValueIsNotChanged && eachAvailabilityOptionIsNotChanged;
       debugIntegrations(`[DEBUG CHANGE]: maybeDisabled: `, maybeDisabled);
@@ -343,14 +545,121 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     ],
   );
 
+  const handleNotConfiguredIntegrationSubmit = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      if (!integrationsMap) return;
+      if (!currentNotConfiguredIntegration) return;
+      event.preventDefault();
+      debugIntegrations(`[DEBUG]: event: `, event);
+      const formData = new FormData(event.currentTarget);
+      const rawFormValues = Object.fromEntries(formData.entries());
+      debugIntegrations(`[DEBUG]: rawFormValues: `, rawFormValues);
+      if (
+        "integr_config_path" in rawFormValues &&
+        typeof rawFormValues.integr_config_path === "string" &&
+        "command_name" in rawFormValues &&
+        typeof rawFormValues.command_name === "string"
+      ) {
+        // making integration-get call and setting the result as currentIntegration
+        const commandName = rawFormValues.command_name;
+        const configPath = rawFormValues.integr_config_path.replace(
+          "TEMPLATE",
+          commandName,
+        );
+
+        debugIntegrations(
+          `[DEBUG]: config path for \`v1/integration-get\`: `,
+          configPath,
+        );
+
+        const customIntegration: IntegrationWithIconRecord = {
+          when_isolated: false,
+          on_your_laptop: false,
+          integr_name: `cmdline_${commandName}`,
+          integr_config_path: configPath,
+          project_path: rawFormValues.integr_config_path
+            .toString()
+            .includes(".config")
+            ? ""
+            : rawFormValues.integr_config_path.toString(),
+          integr_config_exists: false,
+        };
+
+        setCurrentIntegration(customIntegration);
+        setCurrentNotConfiguredIntegration(null);
+        return;
+      } else if ("integr_config_path" in rawFormValues) {
+        // getting config path, opening integration
+        const foundIntegration = integrationsMap.integrations.find(
+          (integration) =>
+            integration.integr_config_path === rawFormValues.integr_config_path,
+        );
+        if (!foundIntegration) {
+          debugIntegrations(`[DEBUG]: integration was not found, error!`);
+          return;
+        }
+        setCurrentIntegration(foundIntegration);
+        setCurrentNotConfiguredIntegration(null);
+      } else {
+        debugIntegrations(
+          `[DEBUG]: Unexpected error occured. It's mostly a bug`,
+        );
+      }
+    },
+    [currentNotConfiguredIntegration, integrationsMap],
+  );
+
+  const handleNavigateToIntegrationSetup = useCallback(
+    (integrationName: string, integrationConfigPath: string) => {
+      if (!integrationsMap) return;
+      if (!currentIntegration) return;
+      debugIntegrations(
+        `[DEBUG]: integrationConfigPath: `,
+        integrationConfigPath,
+      );
+      // TODO: this should be probably made not in hardcoded style, user needs to choose which docker he wants to setup
+      const maybeIntegration = integrationsMap.integrations.find(
+        (integration) =>
+          integration.integr_name === integrationName &&
+          integration.project_path === "",
+      );
+      if (!maybeIntegration) {
+        debugIntegrations(
+          `[DEBUG]: desired integration was not found in the list of all available ones :/`,
+        );
+        return;
+      }
+      setIsDisabledIntegrationForm(true);
+      setCurrentIntegration(maybeIntegration);
+    },
+    [currentIntegration, integrationsMap],
+  );
+
+  const theme = useAppSelector(selectThemeMode);
+  const icons = iconMap(
+    theme ? (theme === "inherit" ? "light" : theme) : "light",
+  );
+
   const integrationLogo = useMemo(() => {
-    if (!currentIntegration) return "https://placehold.jp/150x150.png";
+    if (!currentIntegration && !currentNotConfiguredIntegration) {
+      return "https://placehold.jp/150x150.png";
+    }
     return INTEGRATIONS_WITH_TERMINAL_ICON.includes(
-      currentIntegration.integr_name.split("_")[0],
+      currentIntegration
+        ? currentIntegration.integr_name.split("_")[0]
+        : currentNotConfiguredIntegration
+          ? currentNotConfiguredIntegration.integr_name.split("_")[0]
+          : "https://placehold.jp/150x150.png",
     )
-      ? iconMap.cmdline
-      : iconMap[currentIntegration.integr_name];
-  }, [currentIntegration]);
+      ? icons.cmdline
+      : icons[
+          currentIntegration
+            ? currentIntegration.integr_name
+            : currentNotConfiguredIntegration
+              ? currentNotConfiguredIntegration.integr_name
+              : ""
+        ];
+  }, [currentIntegration, currentNotConfiguredIntegration, icons]);
 
   if (isLoading) {
     return <Spinner spinning />;
@@ -360,16 +669,23 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     goBack && goBack();
     dispatch(clearError());
     setCurrentIntegration(null);
+    setCurrentNotConfiguredIntegration(null);
   };
 
   const handleIntegrationShowUp = (
-    integration: IntegrationWithIconResponse["integrations"][number],
+    integration:
+      | IntegrationWithIconRecord
+      | NotConfiguredIntegrationWithIconRecord,
   ) => {
+    if (isNotConfiguredIntegrationWithIconRecord(integration)) {
+      handleNotSetupIntegrationShowUp(integration);
+      return;
+    }
     debugIntegrations(`[DEBUG]: open form: `, integration);
     setCurrentIntegration(integration);
   };
   const handleNotSetupIntegrationShowUp = (
-    integration: IntegrationWithIconResponse["integrations"][number],
+    integration: NotConfiguredIntegrationWithIconRecord,
   ) => {
     if (!integrationsMap) return;
 
@@ -378,38 +694,8 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       integration,
     );
 
-    const maybeConfiguredGlobalIntegration = integrationsMap.integrations.find(
-      (integr) =>
-        integr.integr_name === integration.integr_name &&
-        integr.project_path === "" &&
-        integr.integr_config_exists,
-    );
-    const maybeConfiguredLocalIntegration = integrationsMap.integrations.find(
-      (integr) =>
-        integr.integr_name === integration.integr_name &&
-        integr.project_path === integration.project_path &&
-        integr.integr_config_exists,
-    );
-
-    if (!maybeConfiguredGlobalIntegration && !maybeConfiguredLocalIntegration) {
-      debugIntegrations(
-        `[DEBUG]: no locally neither globally configured ${integration.integr_name} were found. asking to choose to configure local or global configuration`,
-      );
-      return;
-    }
-    if (maybeConfiguredGlobalIntegration) {
-      debugIntegrations(
-        `[DEBUG]: found globally configured ${maybeConfiguredGlobalIntegration.integr_name} integration! should configure local configuration`,
-      );
-    }
-
-    if (maybeConfiguredLocalIntegration) {
-      debugIntegrations(
-        `[DEBUG]: found locally configured ${maybeConfiguredLocalIntegration.integr_name} integration! should configure global configuration`,
-      );
-    }
-
-    setCurrentIntegration(integration);
+    setCurrentNotConfiguredIntegration(integration);
+    // setCurrentIntegration(integration);
   };
 
   if (!integrationsMap) {
@@ -438,13 +724,40 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
           height: "100%",
         }}
       >
-        {currentIntegration && (
+        {(currentIntegration ?? currentNotConfiguredIntegration) && (
           <IntegrationsHeader
             leftRightPadding={leftRightPadding}
             handleFormReturn={handleFormReturn}
-            integrationName={currentIntegration.integr_name}
+            handleInstantReturn={goBackAndClearError}
+            instantBackReturnment={
+              currentNotConfiguredIntegration
+                ? currentNotConfiguredIntegration.wasOpenedThroughChat
+                : false
+            }
+            integrationName={
+              currentIntegration
+                ? currentIntegration.integr_name
+                : currentNotConfiguredIntegration
+                  ? currentNotConfiguredIntegration.integr_name
+                  : ""
+            }
             icon={integrationLogo}
           />
+        )}
+        {currentNotConfiguredIntegration && (
+          <Flex
+            direction="column"
+            align="start"
+            justify="between"
+            height="100%"
+          >
+            <IntermediateIntegration
+              handleSubmit={(event) =>
+                handleNotConfiguredIntegrationSubmit(event)
+              }
+              integration={currentNotConfiguredIntegration}
+            />
+          </Flex>
         )}
         {currentIntegration && (
           <Flex
@@ -456,18 +769,23 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             <IntegrationForm
               // TODO: on smart link click or pass the name down
               handleSubmit={(event) => void handleSubmit(event)}
+              handleDeleteIntegration={(path: string, name: string) =>
+                void handleDeleteIntegration(path, name)
+              }
               integrationPath={currentIntegration.integr_config_path}
               isApplying={isApplyingIntegrationForm}
+              isDeletingIntegration={isDeletingIntegration}
               isDisabled={isDisabledIntegrationForm}
               onSchema={handleSetCurrentIntegrationSchema}
               onValues={handleSetCurrentIntegrationValues}
               handleChange={handleIntegrationFormChange}
               availabilityValues={availabilityValues}
               setAvailabilityValues={setAvailabilityValues}
+              handleSwitchIntegration={handleNavigateToIntegrationSetup}
             />
             {information && (
               <InformationCallout
-                timeout={3000}
+                timeout={isDeletingIntegration ? 1000 : 3000}
                 mx="0"
                 onClick={() => dispatch(clearInformation())}
                 className={styles.popup}
@@ -487,7 +805,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             )}
           </Flex>
         )}
-        {!currentIntegration && (
+        {!currentIntegration && !currentNotConfiguredIntegration && (
           <Flex direction="column" width="100%" gap="4">
             <Text my="2">
               Integrations allow Refact.ai Agent to interact with other services
@@ -581,38 +899,35 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                   );
                 },
               )}
-
-            {nonConfiguredIntegrations &&
-              Object.entries(nonConfiguredIntegrations).map(
-                ([_projectPath, integrations], index) => {
-                  return (
-                    <Flex
-                      key={`project-group-${index}`}
-                      direction="column"
-                      gap="4"
-                      align="start"
-                    >
-                      <Heading as="h4" size="3">
-                        <Flex align="start" gap="3" justify="center">
-                          Add new integration
-                        </Flex>
-                      </Heading>
-                      <Flex wrap="wrap" align="start" gap="3" width="100%">
-                        {integrations.map((integration, subIndex) => (
-                          <IntegrationCard
-                            isInline
-                            key={`project-${index}-${subIndex}-${integration.integr_config_path}`}
-                            integration={integration}
-                            handleIntegrationShowUp={
-                              handleNotSetupIntegrationShowUp
-                            }
-                          />
-                        ))}
-                      </Flex>
-                    </Flex>
-                  );
-                },
-              )}
+            <Flex direction="column" gap="4" align="start">
+              <Heading as="h4" size="3">
+                <Flex align="start" gap="3" justify="center">
+                  Add new integration
+                </Flex>
+              </Heading>
+              <Grid
+                align="stretch"
+                gap="3"
+                columns={{ initial: "2", xs: "3", sm: "4", md: "5" }}
+                width="100%"
+              >
+                {availableIntegrationsToConfigure &&
+                  Object.entries(availableIntegrationsToConfigure).map(
+                    ([_projectPath, integration], index) => {
+                      return (
+                        <IntegrationCard
+                          isNotConfigured
+                          key={`project-${index}-${JSON.stringify(
+                            integration.integr_config_path,
+                          )}`}
+                          integration={integration}
+                          handleIntegrationShowUp={handleIntegrationShowUp}
+                        />
+                      );
+                    },
+                  )}
+              </Grid>
+            </Flex>
           </Flex>
         )}
       </Flex>

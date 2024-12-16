@@ -41,6 +41,8 @@ import { ErrorCallout, DiffWarningCallout } from "../Callout";
 import { TruncateLeft } from "../Text";
 import { extractFilePathFromPin } from "../../utils";
 
+import { telemetryApi } from "../../services/refact/telemetry";
+
 export type MarkdownProps = Pick<
   React.ComponentProps<typeof ReactMarkdown>,
   "children" | "allowedElements" | "unwrapDisallowed"
@@ -63,6 +65,8 @@ const PinMessages: React.FC<{
     handlePaste,
     canPaste,
   } = usePatchActions();
+  const [sendTelemetryEvent] =
+    telemetryApi.useLazySendTelemetryChatEventQuery();
 
   const getMarkdown = useCallback(() => {
     return (
@@ -76,7 +80,13 @@ const PinMessages: React.FC<{
     if (markdown) {
       handlePaste(markdown);
     }
-  }, [getMarkdown, handlePaste]);
+
+    void sendTelemetryEvent({
+      scope: `replaceSelection`,
+      success: true,
+      error_message: "",
+    });
+  }, [getMarkdown, handlePaste, sendTelemetryEvent]);
 
   const handleAutoApply = useCallback(
     (

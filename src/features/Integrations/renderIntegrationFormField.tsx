@@ -9,14 +9,16 @@ import type {
   IntegrationField,
   IntegrationPrimitive,
 } from "../../services/refact";
-import { DataList, Flex } from "@radix-ui/themes";
+import styles from "./renderIntegrationFormField.module.css";
+import { Flex } from "@radix-ui/themes";
 import { toPascalCase } from "../../utils/toPascalCase";
 import { SmartLink } from "../../components/SmartLink";
+import { Markdown } from "../../components/Markdown";
 
-type FieldType = "string" | "bool" | "int";
+type FieldType = "string" | "bool" | "int" | "tool" | "output";
 
 const isFieldType = (value: string): value is FieldType => {
-  return ["string", "bool", "int"].includes(value);
+  return ["string", "bool", "int", "tool", "output"].includes(value);
 };
 
 const getDefaultValue = ({
@@ -28,7 +30,7 @@ const getDefaultValue = ({
   fieldKey: string;
   values: Integration["integr_values"];
   field: IntegrationField<NonNullable<IntegrationPrimitive>>;
-  f_type: "bool" | "int" | "string";
+  f_type: FieldType;
 }) => {
   if (fieldKey in values) {
     return values[fieldKey]?.toString(); // Use the value from 'values' if present
@@ -40,6 +42,16 @@ const getDefaultValue = ({
 
   if (f_type === "bool") {
     return Boolean(field.f_default);
+  }
+
+  if (f_type === "tool") {
+    // TODO: special logic for this type
+    return JSON.stringify(field.f_default);
+  }
+
+  if (f_type === "output") {
+    // TODO: special logic for this type
+    return JSON.stringify(field.f_default);
   }
 
   return field.f_default?.toString(); // Otherwise, use the default value from the schema
@@ -75,48 +87,66 @@ export const renderIntegrationFormField = ({
   const maybeSmartlinks = field.smartlinks;
 
   return (
-    <DataList.Item
+    <Flex
+      direction="column"
       key={fieldKey}
       style={{
         width: "100%",
         opacity: isFieldVisible ? 1 : 0,
-        transform: isFieldVisible ? "translateY(0px)" : "translateY(-10px)",
         height: isFieldVisible ? "auto" : 0,
         visibility: isFieldVisible ? "visible" : "hidden",
-        transition: "opacity 0.3s ease-in-out, tranform 0.3s ease-in-out",
+        position: isFieldVisible ? "inherit" : "absolute",
+        transition: "opacity 0.3s ease-in-out",
       }}
+      className={styles.flexField}
     >
-      <DataList.Label>
+      <Flex direction="column" width="100%" mb="2" className={styles.flexLabel}>
         <CustomLabel
           htmlFor={fieldKey}
           label={field.f_label ? field.f_label : toPascalCase(fieldKey)}
           mt="2"
         />
-      </DataList.Label>
-      <DataList.Value
-        style={{
-          width: "100%",
-        }}
-      >
-        <Flex direction="column" gap="2" align="start" width={"100%"}>
-          {f_type !== "bool" && (
+      </Flex>
+      <Flex direction="column" gap="2" align="start" width="100%">
+        {f_type !== "bool" && f_type !== "output" && f_type !== "tool" && (
+          <CustomInputField
+            {...commonProps}
+            type={f_type === "int" ? "number" : "text"}
+            size={f_size}
+            defaultValue={commonProps.defaultValue?.toString()}
+          />
+        )}
+        {f_type === "bool" && (
+          <CustomBoolField
+            {...commonProps}
+            defaultValue={Boolean(
+              field.f_default ? field.f_default : values[fieldKey],
+            )}
+          />
+        )}
+        {(f_type === "output" || f_type === "tool") && (
+          <>
+            <Markdown>
+              {"```json\n" +
+                JSON.stringify(values[fieldKey], null, 2) +
+                "\n```"}
+            </Markdown>
             <CustomInputField
-              {...commonProps}
-              type={f_type === "int" ? "number" : "text"}
-              size={f_size}
-              defaultValue={commonProps.defaultValue?.toString()}
+              type="text"
+              size="multiline"
+              defaultValue={JSON.stringify(values[fieldKey])}
+              name={fieldKey}
             />
-          )}
-          {f_type === "bool" && (
-            <CustomBoolField
-              {...commonProps}
-              defaultValue={Boolean(commonProps.defaultValue)}
-            />
-          )}
-          {field.f_desc && (
-            <CustomDescriptionField>{field.f_desc}</CustomDescriptionField>
-          )}
-          {maybeSmartlinks && (
+          </>
+        )}
+        {field.f_desc && (
+          <CustomDescriptionField>{field.f_desc}</CustomDescriptionField>
+        )}
+        {/* TODO: implement EDITOR goto, and remove this condition */}
+        {maybeSmartlinks &&
+          !maybeSmartlinks.every(
+            (smartlink) => smartlink.sl_goto?.startsWith("EDITOR"),
+          ) && (
             <Flex align="center">
               {maybeSmartlinks.map((smartlink, index) => (
                 <SmartLink
@@ -130,8 +160,7 @@ export const renderIntegrationFormField = ({
               ))}
             </Flex>
           )}
-        </Flex>
-      </DataList.Value>
-    </DataList.Item>
+      </Flex>
+    </Flex>
   );
 };

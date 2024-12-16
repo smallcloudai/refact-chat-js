@@ -1,8 +1,6 @@
-import React, { useCallback, useRef, useMemo } from "react";
+import React, { useCallback, useRef } from "react";
 import {
   ChatMessages,
-  diffApi,
-  isAssistantMessage,
   isChatContextFileMessage,
   isDiffMessage,
   isToolMessage,
@@ -11,7 +9,7 @@ import {
 import { UserInput } from "./UserInput";
 import { ScrollArea } from "../ScrollArea";
 import { Spinner } from "../Spinner";
-import { Flex, Text, Container, Link, Button } from "@radix-ui/themes";
+import { Flex, Text, Container, Link, Button, Box } from "@radix-ui/themes";
 import styles from "./ChatContent.module.css";
 import { ContextFiles } from "./ContextFiles";
 import { AssistantInput } from "./AssistantInput";
@@ -31,6 +29,7 @@ import { ScrollToBottomButton } from "./ScrollToBottomButton";
 import { currentTipOfTheDay } from "../../features/TipOfTheDay";
 import { popBackTo } from "../../features/Pages/pagesSlice";
 import { ChatLinks } from "../ChatLinks";
+import { telemetryApi } from "../../services/refact/telemetry";
 
 const TipOfTheDay: React.FC = () => {
   const tip = useAppSelector(currentTipOfTheDay);
@@ -120,22 +119,10 @@ export const ChatContent: React.FC<ChatContentProps> = ({
   const messages = useAppSelector(selectMessages);
   const isStreaming = useAppSelector(selectIsStreaming);
   const thread = useAppSelector(selectThread);
-  const isConfig = !!thread.integration;
+  const isConfig = thread.mode === "CONFIGURE";
   const isWaiting = useAppSelector(selectIsWaiting);
-  const [applyAll, applyAllResult] =
-    diffApi.useApplyAllPatchesInMessagesMutation();
-
-  const hasPins = useMemo(
-    () =>
-      messages.some((message) => {
-        if (!isAssistantMessage(message)) return false;
-        if (!message.content) return false;
-        return message.content
-          .split("\n")
-          .some((line) => line.startsWith("📍"));
-      }),
-    [messages],
-  );
+  const [sendTelemetryEvent] =
+    telemetryApi.useLazySendTelemetryChatEventQuery();
 
   const {
     handleScroll,
@@ -170,12 +157,14 @@ export const ChatContent: React.FC<ChatContentProps> = ({
     thread.integration?.path,
   ]);
 
-  const handleSaveAndReturn = useCallback(async () => {
-    const result = await applyAll(messages);
-    if (!result.error) {
-      handleReturnToConfigurationClick();
-    }
-  }, [applyAll, handleReturnToConfigurationClick, messages]);
+  const handleManualStopStreamingClick = useCallback(() => {
+    onStopStreaming();
+    void sendTelemetryEvent({
+      scope: `stopStreaming`,
+      success: true,
+      error_message: "",
+    });
+  }, [onStopStreaming, sendTelemetryEvent]);
 
   return (
     <ScrollArea
@@ -190,8 +179,6 @@ export const ChatContent: React.FC<ChatContentProps> = ({
         {messages.length === 0 && <PlaceHolderText />}
         {renderMessages(messages, onRetryWrapper)}
 
-        <ChatLinks />
-
         <Container py="4">
           <Spinner spinning={isWaiting} />
         </Container>
@@ -200,42 +187,40 @@ export const ChatContent: React.FC<ChatContentProps> = ({
         <ScrollToBottomButton onClick={handleScrollButtonClick} />
       )}
 
-      <Flex gap="3" style={{ position: "absolute", bottom: 15 }}>
-        {isStreaming && (
-          <Button
-            ml="auto"
-            color="red"
-            title="stop streaming"
-            onClick={onStopStreaming}
-          >
-            Stop
-          </Button>
-        )}
-        {isConfig && (
-          <Button
-            ml="auto"
-            color="gray"
-            title="Return to configuration page"
-            onClick={handleReturnToConfigurationClick}
-          >
-            Return
-          </Button>
-        )}
+      <Box
+        style={{
+          position: "absolute",
+          bottom: 0,
+          maxWidth: "100%", // TODO: make space for the down button
+        }}
+      >
+        <ScrollArea scrollbars="horizontal">
+          <Flex align="start" gap="3" pb="4">
+            {isStreaming && (
+              <Button
+                // ml="auto"
+                color="red"
+                title="stop streaming"
+                onClick={handleManualStopStreamingClick}
+              >
+                Stop
+              </Button>
+            )}
+            {isConfig && (
+              <Button
+                // ml="auto"
+                color="gray"
+                title="Return to configuration page"
+                onClick={handleReturnToConfigurationClick}
+              >
+                Return
+              </Button>
+            )}
 
-        {isConfig && hasPins && (
-          <Button
-            ml="auto"
-            color="green"
-            title="Save and return"
-            disabled={isStreaming || applyAllResult.isLoading}
-            onClick={() => {
-              void handleSaveAndReturn();
-            }}
-          >
-            Save
-          </Button>
-        )}
-      </Flex>
+            <ChatLinks />
+          </Flex>
+        </ScrollArea>
+      </Box>
     </ScrollArea>
   );
 };

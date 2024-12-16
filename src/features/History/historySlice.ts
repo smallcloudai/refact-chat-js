@@ -77,21 +77,30 @@ export const historySlice = createSlice({
           : getFirstUserContentFromChat(action.payload.messages),
         createdAt: action.payload.createdAt ?? now,
         updatedAt: now,
+        integration: null,
         isTitleGenerated: action.payload.isTitleGenerated,
       };
 
-      state[chat.id] = chat;
+      const messageMap = {
+        ...state,
+      };
+      messageMap[chat.id] = chat;
 
-      if (Object.entries(state).length >= 100) {
-        const sortedByLastUpdated = Object.values(state).sort((a, b) =>
-          b.updatedAt.localeCompare(a.updatedAt),
-        );
-        const newHistory = sortedByLastUpdated.slice(0, 100);
-        state = newHistory.reduce(
-          (acc, chat) => ({ ...acc, [chat.id]: chat }),
-          {},
-        );
+      const messages = Object.values(messageMap);
+      if (messages.length <= 100) {
+        return messageMap;
       }
+
+      const sortedByLastUpdated = messages
+        .slice(0)
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+
+      const newHistory = sortedByLastUpdated.slice(0, 100);
+      const nextState = newHistory.reduce(
+        (acc, chat) => ({ ...acc, [chat.id]: chat }),
+        {},
+      );
+      return nextState;
     },
 
     setTitleGenerationCompletionForChat: (

@@ -3,18 +3,24 @@ import { toPascalCase } from "../../utils/toPascalCase";
 import styles from "./IntegrationCard.module.css";
 import {
   IntegrationWithIconRecord,
-  IntegrationWithIconResponse,
+  NotConfiguredIntegrationWithIconRecord,
 } from "../../services/refact";
 import { FC } from "react";
 import classNames from "classnames";
 import { iconMap } from "./icons/iconMap";
+import { useAppSelector } from "../../hooks";
+import { selectThemeMode } from "../../features/Config/configSlice";
 
 type IntegrationCardProps = {
-  integration: IntegrationWithIconRecord;
+  integration:
+    | IntegrationWithIconRecord
+    | NotConfiguredIntegrationWithIconRecord;
   handleIntegrationShowUp: (
-    integration: IntegrationWithIconResponse["integrations"][number],
+    integration:
+      | IntegrationWithIconRecord
+      | NotConfiguredIntegrationWithIconRecord,
   ) => void;
-  isInline?: boolean;
+  isNotConfigured?: boolean;
 };
 
 const INTEGRATIONS_WITH_TERMINAL_ICON = ["cmdline", "service"];
@@ -22,22 +28,31 @@ const INTEGRATIONS_WITH_TERMINAL_ICON = ["cmdline", "service"];
 export const IntegrationCard: FC<IntegrationCardProps> = ({
   integration,
   handleIntegrationShowUp,
-  isInline = false,
+  isNotConfigured = false,
 }) => {
+  const theme = useAppSelector(selectThemeMode);
+  const icons = iconMap(
+    theme ? (theme === "inherit" ? "light" : theme) : "light",
+  );
+
   const integrationLogo = INTEGRATIONS_WITH_TERMINAL_ICON.includes(
     integration.integr_name.split("_")[0],
   )
-    ? iconMap.cmdline
-    : iconMap[integration.integr_name];
+    ? icons.cmdline
+    : icons[integration.integr_name];
 
   return (
     <Card
       className={classNames(styles.integrationCard, {
-        [styles.integrationCardInline]: isInline,
+        [styles.integrationCardInline]: isNotConfigured,
       })}
       onClick={() => handleIntegrationShowUp(integration)}
     >
-      <Flex gap="4" direction={isInline ? "column" : "row"} align={"center"}>
+      <Flex
+        gap="4"
+        direction={isNotConfigured ? "column" : "row"}
+        align={"center"}
+      >
         <img
           src={integrationLogo}
           className={styles.integrationIcon}
@@ -46,18 +61,21 @@ export const IntegrationCard: FC<IntegrationCardProps> = ({
         <Flex
           align="center"
           justify="between"
-          gap={isInline ? "0" : "2"}
-          width={isInline ? "auto" : "100%"}
+          gap={isNotConfigured ? "0" : "2"}
+          width={isNotConfigured ? "auto" : "100%"}
         >
-          <Text size="3" weight="medium">
-            {/* {toPascalCase(
-              integration.integr_name.startsWith("cmdline")
-                ? integration.integr_name.split("_")[0]
-                : integration.integr_name,
-            )} */}
-            {toPascalCase(integration.integr_name)}
+          <Text
+            size="3"
+            weight="medium"
+            align={isNotConfigured ? "center" : "left"}
+          >
+            {integration.integr_name.includes("TEMPLATE")
+              ? integration.integr_name.startsWith("cmdline")
+                ? "Command-line Tool"
+                : "Command-line Service"
+              : toPascalCase(integration.integr_name)}
           </Text>
-          {!isInline && (
+          {!isNotConfigured && (
             <Badge
               color={
                 integration.on_your_laptop || integration.when_isolated
