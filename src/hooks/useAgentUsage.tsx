@@ -41,7 +41,7 @@ export function useAgentUsage() {
     if (
       user.data &&
       user.data.retcode === "OK" &&
-      user.data.inference !== "PRO" &&
+      user.data.inference === "FREE" &&
       toolUse === "agent"
     ) {
       dispatch(addAgentUsageItem({ user: user.data.account }));
@@ -72,14 +72,15 @@ export function useAgentUsage() {
       pollingForUser &&
       !user.isFetching &&
       !user.isLoading &&
-      user.data?.inference !== "PRO"
+      user.data &&
+      user.data.inference === "FREE"
     ) {
       timer = setTimeout(() => {
         void user.refetch();
       }, 5000);
     }
 
-    if (pollingForUser && user.data?.inference === "PRO") {
+    if (pollingForUser && user.data && user.data.inference !== "FREE") {
       clearTimeout(timer);
       setPollingForUser(false);
       // TODO: maybe add an animation or thanks ?
@@ -99,7 +100,7 @@ export function useAgentUsage() {
     // TODO: maybe uncalled tools.
     if (toolUse !== "agent") return false;
     if (isStreaming || isWaiting) return false;
-    if (user.data?.inference === "PRO") return false;
+    if (user.data?.inference !== "FREE") return false;
     if (MAX_FREE_USAGE - usersUsage > 5) return false;
     return true;
   }, [isStreaming, isWaiting, toolUse, user.data?.inference, usersUsage]);
