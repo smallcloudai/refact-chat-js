@@ -31,7 +31,7 @@ function areAllFieldsBoolean(json: unknown): json is Record<string, boolean> {
   );
 }
 
-type IntegrationFormProps = {
+export type IntegrationFormProps = {
   integrationPath: string;
   isApplying: boolean;
   isDisabled: boolean;
