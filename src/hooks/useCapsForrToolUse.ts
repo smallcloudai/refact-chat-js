@@ -62,8 +62,8 @@ export function useCapsForToolUse() {
       usableModelsForPlan.some((elem) => typeof elem === "string") &&
       !usableModelsForPlan.includes(currentModel)
     ) {
-      const models = usableModelsForPlan.filter(
-        (elem) => typeof elem === "string",
+      const models: string[] = usableModelsForPlan.filter(
+        (elem): elem is string => typeof elem === "string",
       );
       const toChange =
         models.find((elem) => currentModel.startsWith(elem)) ??
