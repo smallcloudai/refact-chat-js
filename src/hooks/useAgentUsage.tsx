@@ -13,7 +13,7 @@ import {
 import { ChatMessages, isUserMessage } from "../events";
 import { useAppDispatch } from "./useAppDispatch";
 
-const MAX_FREE_USAGE = 1;
+const MAX_FREE_USAGE = 20;
 const ONE_DAY_IN_MS = 1000 * 60 * 60 * 24;
 
 export function useAgentUsage() {
