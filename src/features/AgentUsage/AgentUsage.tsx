@@ -1,72 +1,54 @@
-import React, { useCallback } from "react";
+import React, { useMemo } from "react";
 
-import { useAgentUsage, useAppDispatch, useGetUser } from "../../hooks";
-import { Dialog, Button, Flex, Separator } from "@radix-ui/themes";
-import { setToolUse } from "../../features/Chat";
+import { useAgentUsage, useGetUser } from "../../hooks";
+import { Flex, Card, Text } from "@radix-ui/themes";
 import { LinkButton } from "../../components/Buttons";
 
 export const AgentUsage: React.FC = () => {
-  const dispatch = useAppDispatch();
   const userRequest = useGetUser();
 
-  const {
-    usersUsage: _,
-    shouldShow,
-    MAX_FREE_USAGE,
-    startPollingForUser,
-    pollingForUser,
-  } = useAgentUsage();
-  const handleClose = useCallback(() => {
-    void userRequest
-      .refetch()
-      .unwrap()
-      .then((user) => {
-        if (user.inference !== "PRO") {
-          dispatch(setToolUse("explore"));
-        }
-      })
-      .catch(() => {
-        return;
-      });
-  }, [dispatch, userRequest]);
+  const { usersUsage, shouldShow, MAX_FREE_USAGE, startPollingForUser } =
+    useAgentUsage();
+
+  const usageMessage = useMemo(() => {
+    if (usersUsage >= MAX_FREE_USAGE) {
+      return `You have reached your usage limit of ${MAX_FREE_USAGE} messages a day.
+          You can use agent again tomorrow, or upgrade to PRO.`;
+    }
+
+    if (usersUsage >= MAX_FREE_USAGE - 5) {
+      return `You have left only ${
+        MAX_FREE_USAGE - 5
+      } messages left today. To remove
+          the limit upgrade to PRO.`;
+    }
+
+    return `You have ${
+      MAX_FREE_USAGE - usersUsage
+    } agent messages left on our FREE
+        plan.`;
+  }, [MAX_FREE_USAGE, usersUsage]);
 
   if (!userRequest.data) return null;
-  if (!shouldShow) return null; // stop the agent
+  if (!shouldShow) return null;
 
   return (
-    <Dialog.Root defaultOpen={shouldShow} onOpenChange={handleClose}>
-      <Dialog.Content>
-        <Dialog.Title>Daily Free Tier Agent Usage Limit Exceeded</Dialog.Title>
-        <Separator orientation="horizontal" size="4" mb="4" />
-        <Flex gap="4" direction="column">
-          <Dialog.Description>
-            Refact allows you to use agents for {MAX_FREE_USAGE} chat requests
-            per day.
-          </Dialog.Description>
-          <Dialog.Description>
-            To continue using agents today, you will need to upgrade to our pro
-            plan to continue using agentic models.
-          </Dialog.Description>
-        </Flex>
+    <Card size="1">
+      <Flex gap="4" direction="column">
+        <Text size="2">{usageMessage}</Text>
 
-        <Flex gap="3" mt="8" justify="end">
+        <Flex gap="3" justify="end">
           <LinkButton
+            size="2"
+            color="green"
             href="https://refact.smallcloud.ai/pro"
             target="_blank"
-            loading={pollingForUser}
-            color="green"
             onClick={startPollingForUser}
           >
             Upgrade now
           </LinkButton>
-
-          <Dialog.Close>
-            <Button variant="soft" color="gray">
-              Close
-            </Button>
-          </Dialog.Close>
         </Flex>
-      </Dialog.Content>
-    </Dialog.Root>
+      </Flex>
+    </Card>
   );
 };

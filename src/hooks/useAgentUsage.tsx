@@ -12,7 +12,6 @@ import {
 } from "../features/Chat";
 import { ChatMessages, isUserMessage } from "../events";
 import { useAppDispatch } from "./useAppDispatch";
-import { Text, Link } from "@radix-ui/themes";
 
 const MAX_FREE_USAGE = 1;
 const ONE_DAY_IN_MS = 1000 * 60 * 60 * 24;
@@ -101,60 +100,13 @@ export function useAgentUsage() {
     if (toolUse !== "agent") return false;
     if (isStreaming || isWaiting) return false;
     if (user.data?.inference === "PRO") return false;
-    return aboveUsageLimit;
-  }, [aboveUsageLimit, isStreaming, isWaiting, toolUse, user.data?.inference]);
+    // return aboveUsageLimit;
+    return true;
+  }, [isStreaming, isWaiting, toolUse, user.data?.inference]);
 
-  const usageMessage = useMemo(() => {
-    if (user.isFetching || user.isLoading) return null;
-    if (!user.data || user.data.inference === "PRO") return null;
-    if (toolUse !== "agent") return null;
-    if (usersUsage >= MAX_FREE_USAGE) {
-      // TODO: should be null, because the popup will open.
-      return (
-        <Text>
-          You have reached your usage limit of {MAX_FREE_USAGE} messages a day.
-          You can use agent again tomorrow, or{" "}
-          <Link
-            href="https://refact.smallcloud.ai/pro"
-            target="_blank"
-            onClick={startPollingForUser}
-          >
-            upgrade to PRO
-          </Link>
-        </Text>
-      );
-    }
-
-    if (usersUsage >= MAX_FREE_USAGE - 5) {
-      return (
-        <Text>
-          You have left only {MAX_FREE_USAGE - 5} messages left today. To remove
-          the limit{" "}
-          <Link
-            href="https://refact.smallcloud.ai/pro"
-            target="_blank"
-            onClick={startPollingForUser}
-          >
-            upgrade to PRO
-          </Link>
-        </Text>
-      );
-    }
-
-    return (
-      <Text>
-        You have {MAX_FREE_USAGE - usersUsage} agent messages left on our FREE
-        plan
-      </Text>
-    );
-  }, [
-    startPollingForUser,
-    toolUse,
-    user.data,
-    user.isFetching,
-    user.isLoading,
-    usersUsage,
-  ]);
+  const disableInput = useMemo(() => {
+    return shouldShow && aboveUsageLimit;
+  }, [aboveUsageLimit, shouldShow]);
 
   return {
     incrementIfLastMessageIsFromUser,
@@ -162,8 +114,8 @@ export function useAgentUsage() {
     shouldShow,
     MAX_FREE_USAGE,
     aboveUsageLimit,
-    usageMessage,
     startPollingForUser,
     pollingForUser,
+    disableInput,
   };
 }

@@ -16,7 +16,6 @@ import {
   useAppDispatch,
   useCapsForToolUse,
   useCanUseTools,
-  useAgentUsage,
 } from "../../hooks";
 
 const CapsSelect: React.FC = () => {
@@ -152,8 +151,6 @@ export const ChatControls: React.FC<ChatControlsProps> = ({
     [dispatch],
   );
 
-  const { usageMessage } = useAgentUsage();
-
   return (
     <Flex
       pt="2"
@@ -191,20 +188,15 @@ export const ChatControls: React.FC<ChatControlsProps> = ({
           </Flex>
         );
       })}
-      <Flex align="start" justify="between" wrap="wrap">
-        {canUseTools && showControls && (
-          <Flex
-            ref={(x) => refs.setUseTools(x)}
-            style={{ alignSelf: "flex-start" }}
-          >
-            <ToolUseSwitch toolUse={toolUse} setToolUse={onSetToolUse} />
-          </Flex>
-        )}
 
-        <Flex direction="column" gap="3" mb="2">
-          <Text size="2">{usageMessage}</Text>
+      {canUseTools && showControls && (
+        <Flex
+          ref={(x) => refs.setUseTools(x)}
+          style={{ alignSelf: "flex-start" }}
+        >
+          <ToolUseSwitch toolUse={toolUse} setToolUse={onSetToolUse} />
         </Flex>
-      </Flex>
+      )}
 
       {showControls && (
         <Flex style={{ alignSelf: "flex-start" }}>

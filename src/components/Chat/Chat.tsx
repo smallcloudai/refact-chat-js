@@ -116,12 +116,13 @@ export const Chat: React.FC<ChatProps> = ({
         justify="between"
         px="1"
       >
-        {!unCalledTools && <AgentUsage />}
         <ChatContent
           key={`chat-content-${chatId}`}
           onRetry={retryFromIndex}
           onStopStreaming={abort}
         />
+
+        {!unCalledTools && <AgentUsage />}
         {!isStreaming && preventSend && unCalledTools && (
           <Container py="4" bottom="0" style={{ justifyContent: "flex-end" }}>
             <Card>
