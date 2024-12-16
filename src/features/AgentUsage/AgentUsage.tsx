@@ -7,7 +7,7 @@ import { LinkButton } from "../../components/Buttons";
 export const AgentUsage: React.FC = () => {
   const userRequest = useGetUser();
 
-  const { usersUsage, shouldShow, MAX_FREE_USAGE, startPollingForUser } =
+  const { usersUsage, shouldShow, MAX_FREE_USAGE, startPollingForUser, plan } =
     useAgentUsage();
 
   const usageMessage = useMemo(() => {
@@ -25,9 +25,9 @@ export const AgentUsage: React.FC = () => {
 
     return `You have ${
       MAX_FREE_USAGE - usersUsage
-    } agent messages left on our FREE
+    } agent messages left on our ${plan}
         plan.`;
-  }, [MAX_FREE_USAGE, usersUsage]);
+  }, [MAX_FREE_USAGE, plan, usersUsage]);
 
   if (!userRequest.data) return null;
   if (!shouldShow) return null;

@@ -117,5 +117,6 @@ export function useAgentUsage() {
     startPollingForUser,
     pollingForUser,
     disableInput,
+    plan: user.data?.inference ?? "",
   };
 }
