@@ -18,7 +18,7 @@ export const AgentUsage: React.FC = () => {
 
     if (usersUsage >= MAX_FREE_USAGE - 5) {
       return `You have left only ${
-        MAX_FREE_USAGE - 5
+        MAX_FREE_USAGE - usersUsage
       } messages left today. To remove
           the limit upgrade to PRO.`;
     }
