@@ -52,7 +52,7 @@ export function useCapsForToolUse() {
     if (!usage.aboveUsageLimit) return usableModels;
     return usableModels.map((model) => {
       if (!PAID_AGENT_LIST.includes(model)) return model;
-      return { value: model, disabled: true, textValue: `${model} Pro` };
+      return { value: model, disabled: true };
     });
   }, [user.data?.inference, usableModels, usage.aboveUsageLimit]);
 

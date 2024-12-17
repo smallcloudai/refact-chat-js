@@ -10,7 +10,12 @@ import { Checkbox } from "../Checkbox";
 import { QuestionMarkCircledIcon } from "@radix-ui/react-icons";
 import { useTourRefs } from "../../features/Tour";
 import { ToolUseSwitch } from "./ToolUseSwitch";
-import { ToolUse, selectToolUse, setToolUse } from "../../features/Chat/Thread";
+import {
+  ToolUse,
+  selectThreadToolUse,
+  selectToolUse,
+  setToolUse,
+} from "../../features/Chat/Thread";
 import {
   useAppSelector,
   useAppDispatch,
@@ -18,9 +23,39 @@ import {
   useCanUseTools,
 } from "../../hooks";
 
+const OptionText = React.forwardRef<HTMLDivElement, { model: string }>(
+  ({ model }, ref) => {
+    return (
+      <Flex wrap="nowrap" justify="between" gap="4" ref={ref}>
+        <Text wrap="nowrap">{model}</Text>
+        <Text>(Agent only)</Text>
+      </Flex>
+    );
+  },
+);
+OptionText.displayName = "OptionText";
+
 const CapsSelect: React.FC = () => {
   const refs = useTourRefs();
   const caps = useCapsForToolUse();
+  const toolUse = useAppSelector(selectThreadToolUse);
+
+  const options = caps.usableModelsForPlan.map((model) => {
+    if (typeof model === "string") return model;
+    if (model.disabled && toolUse !== "agent") {
+      return {
+        ...model,
+        children: <OptionText model={model.value} />,
+        className: styles.select_option_wide,
+      };
+    }
+    return model;
+  });
+
+  const allDisabled = options.every((option) => {
+    if (typeof option === "string") return false;
+    return option.disabled;
+  });
 
   return (
     <Flex
@@ -30,14 +65,22 @@ const CapsSelect: React.FC = () => {
       ref={(x) => refs.setUseModel(x)}
       style={{ alignSelf: "flex-start" }}
     >
+      {/** TODO: loading state */}
       <Text size="2">Use model:</Text>
-      <Select
-        disabled={caps.loading}
-        title="chat model"
-        options={caps.usableModelsForPlan}
-        value={caps.currentModel}
-        onChange={caps.setCapModel}
-      ></Select>
+
+      {!caps.loading && allDisabled ? (
+        <Text size="1" color="gray">
+          No models available
+        </Text>
+      ) : (
+        <Select
+          disabled={caps.loading}
+          title="chat model"
+          options={options}
+          value={caps.currentModel}
+          onChange={caps.setCapModel}
+        ></Select>
+      )}
     </Flex>
   );
 };
