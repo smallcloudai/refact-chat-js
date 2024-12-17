@@ -3,6 +3,7 @@ import React, { useMemo } from "react";
 import { useAgentUsage, useGetUser } from "../../hooks";
 import { Flex, Card, Text } from "@radix-ui/themes";
 import { LinkButton } from "../../components/Buttons";
+import styles from "./AgentUsage.module.css";
 
 export const AgentUsage: React.FC = () => {
   const userRequest = useGetUser();
@@ -33,7 +34,7 @@ export const AgentUsage: React.FC = () => {
   if (!shouldShow) return null;
 
   return (
-    <Card size="1">
+    <Card size="1" className={styles.agent_usage}>
       <Flex gap="4" direction="column">
         <Text size="2">{usageMessage}</Text>
 
