@@ -45,6 +45,7 @@ export const AgentUsage: React.FC = () => {
             href="https://refact.smallcloud.ai/pro"
             target="_blank"
             onClick={startPollingForUser}
+            className={styles.upgrade_button}
           >
             Upgrade now
           </LinkButton>
