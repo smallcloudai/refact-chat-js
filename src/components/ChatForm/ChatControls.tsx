@@ -10,12 +10,7 @@ import { Checkbox } from "../Checkbox";
 import { QuestionMarkCircledIcon } from "@radix-ui/react-icons";
 import { useTourRefs } from "../../features/Tour";
 import { ToolUseSwitch } from "./ToolUseSwitch";
-import {
-  ToolUse,
-  selectThreadToolUse,
-  selectToolUse,
-  setToolUse,
-} from "../../features/Chat/Thread";
+import { ToolUse, selectToolUse, setToolUse } from "../../features/Chat/Thread";
 import {
   useAppSelector,
   useAppDispatch,
@@ -23,36 +18,11 @@ import {
   useCanUseTools,
 } from "../../hooks";
 
-const OptionText = React.forwardRef<HTMLDivElement, { model: string }>(
-  ({ model }, ref) => {
-    return (
-      <Flex wrap="nowrap" justify="between" gap="4" ref={ref}>
-        <Text wrap="nowrap">{model}</Text>
-        <Text>(Agent only)</Text>
-      </Flex>
-    );
-  },
-);
-OptionText.displayName = "OptionText";
-
 const CapsSelect: React.FC = () => {
   const refs = useTourRefs();
   const caps = useCapsForToolUse();
-  const toolUse = useAppSelector(selectThreadToolUse);
 
-  const options = caps.usableModelsForPlan.map((model) => {
-    if (typeof model === "string") return model;
-    if (model.disabled && toolUse !== "agent") {
-      return {
-        ...model,
-        children: <OptionText model={model.value} />,
-        className: styles.select_option_wide,
-      };
-    }
-    return model;
-  });
-
-  const allDisabled = options.every((option) => {
+  const allDisabled = caps.usableModelsForPlan.every((option) => {
     if (typeof option === "string") return false;
     return option.disabled;
   });
@@ -76,7 +46,7 @@ const CapsSelect: React.FC = () => {
         <Select
           disabled={caps.loading}
           title="chat model"
-          options={options}
+          options={caps.usableModelsForPlan}
           value={caps.currentModel}
           onChange={caps.setCapModel}
         ></Select>

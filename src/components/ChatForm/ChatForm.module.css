@@ -71,8 +71,3 @@
 .controls {
   overflow: hidden;
 }
-
-.select_option_wide,
-.select_option_wide span:not(:global(.rt-SelectItemIndicator)) {
-  width: 100%;
-}
