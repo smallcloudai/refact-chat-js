@@ -27,6 +27,63 @@ import { setInformation } from "../features/Errors/informationSlice";
 import { debugIntegrations } from "../debugConfig";
 import { telemetryApi } from "../services/refact/telemetry";
 
+export function useGetLinksFromLsp() {
+  const isStreaming = useAppSelector(selectIsStreaming);
+  const isWaiting = useAppSelector(selectIsWaiting);
+  const messages = useAppSelector(selectMessages);
+  const chatId = useAppSelector(selectChatId);
+  const maybeIntegration = useAppSelector(selectIntegration);
+  const threadMode = useAppSelector(selectThreadMode);
+  const toolUse = useAppSelector(selectThreadToolUse);
+
+  // TODO: add the model
+  const caps = useGetCapsQuery();
+
+  const model =
+    useAppSelector(selectModel) || caps.data?.code_chat_default_model;
+
+  const unCalledTools = React.useMemo(() => {
+    if (messages.length === 0) return false;
+    const last = messages[messages.length - 1];
+    //TODO: handle multiple tool calls in last assistant message
+    if (last.role !== "assistant") return false;
+    const maybeTools = last.tool_calls;
+    if (maybeTools && maybeTools.length > 0) return true;
+    return false;
+  }, [messages]);
+  const skipLinksRequest = useMemo(() => {
+    const lastMessageIsUserMessage =
+      messages.length > 0 && isUserMessage(messages[messages.length - 1]);
+    if (!model) return true;
+    if (!caps.data) return true;
+    if (toolUse !== "agent") return true;
+    return (
+      isStreaming || isWaiting || unCalledTools || lastMessageIsUserMessage
+    );
+  }, [
+    caps.data,
+    isStreaming,
+    isWaiting,
+    messages,
+    model,
+    toolUse,
+    unCalledTools,
+  ]);
+
+  const linksResult = linksApi.useGetLinksForChatQuery(
+    {
+      chat_id: chatId,
+      messages,
+      model: model ?? "",
+      mode: threadMode, // TODO: Changing thread mode invalidates the cache.
+      current_config_file: maybeIntegration?.path,
+    },
+    { skip: skipLinksRequest },
+  );
+
+  return linksResult;
+}
+
 export function useLinksFromLsp() {
   const dispatch = useAppDispatch();
   const { handleGoTo } = useGoToLink();
@@ -42,16 +99,7 @@ export function useLinksFromLsp() {
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
   const messages = useAppSelector(selectMessages);
-  const chatId = useAppSelector(selectChatId);
   const maybeIntegration = useAppSelector(selectIntegration);
-  const threadMode = useAppSelector(selectThreadMode);
-  const toolUse = useAppSelector(selectThreadToolUse);
-
-  // TODO: add the model
-  const caps = useGetCapsQuery();
-
-  const model =
-    useAppSelector(selectModel) || caps.data?.code_chat_default_model;
 
   const unCalledTools = React.useMemo(() => {
     if (messages.length === 0) return false;
@@ -177,35 +225,7 @@ export function useLinksFromLsp() {
     ],
   );
 
-  const skipLinksRequest = useMemo(() => {
-    const lastMessageIsUserMessage =
-      messages.length > 0 && isUserMessage(messages[messages.length - 1]);
-    if (!model) return true;
-    if (!caps.data) return true;
-    if (toolUse !== "agent") return true;
-    return (
-      isStreaming || isWaiting || unCalledTools || lastMessageIsUserMessage
-    );
-  }, [
-    caps.data,
-    isStreaming,
-    isWaiting,
-    messages,
-    model,
-    toolUse,
-    unCalledTools,
-  ]);
-
-  const linksResult = linksApi.useGetLinksForChatQuery(
-    {
-      chat_id: chatId,
-      messages,
-      model: model ?? "",
-      mode: threadMode, // TODO: Changing thread mode invalidates the cache.
-      current_config_file: maybeIntegration?.path,
-    },
-    { skip: skipLinksRequest },
-  );
+  const linksResult = useGetLinksFromLsp();
 
   return {
     linksResult,
