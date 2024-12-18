@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useGetLinksFromLsp } from "../../hooks";
 import { Markdown } from "../Markdown";
-import { Callout, Flex } from "@radix-ui/themes";
+import { Callout, Flex, Box, Card } from "@radix-ui/themes";
 import { InfoCircledIcon } from "@radix-ui/react-icons";
+import styles from "./UncommittedChangesWarning.module.css";
 
-export const UncommittedChangesWarning: React.FC = () => {
+export const UncommittedChangesWarning: React.FC<{
+  children?: React.ReactNode;
+}> = ({ children }) => {
   const linksRequest = useGetLinksFromLsp();
 
   const [isOpened, setIsOpened] = useState<boolean>(
@@ -19,23 +22,28 @@ export const UncommittedChangesWarning: React.FC = () => {
     }
   }, [linksRequest.data?.uncommited_changes_warning]);
 
-  if (!linksRequest.data?.uncommited_changes_warning) return null;
-  if (!isOpened) return null;
-
   return (
-    <Callout.Root
-      color="amber"
-      my="4"
-      onClick={() => setIsOpened(false)}
-      style={{ overflowWrap: "anywhere" }}
-    >
-      <Flex direction="row" align="center" gap="4" position="relative">
-        <Callout.Icon>
-          <InfoCircledIcon />
-        </Callout.Icon>
+    <Box>
+      {isOpened && linksRequest.data?.uncommited_changes_warning && (
+        <Card asChild>
+          <Callout.Root
+            color="amber"
+            onClick={() => setIsOpened(false)}
+            className={styles.changes_warning}
+          >
+            <Flex direction="row" align="center" gap="4" position="relative">
+              <Callout.Icon>
+                <InfoCircledIcon />
+              </Callout.Icon>
 
-        <Markdown wrap>{linksRequest.data.uncommited_changes_warning}</Markdown>
-      </Flex>
-    </Callout.Root>
+              <Markdown wrap>
+                {linksRequest.data.uncommited_changes_warning}
+              </Markdown>
+            </Flex>
+          </Callout.Root>
+        </Card>
+      )}
+      {children}
+    </Box>
   );
 };
