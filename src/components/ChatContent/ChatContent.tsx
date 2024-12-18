@@ -178,6 +178,7 @@ export const ChatContent: React.FC<ChatContentProps> = ({
       <Flex direction="column" className={styles.content} p="2" gap="1">
         {messages.length === 0 && <PlaceHolderText />}
         {renderMessages(messages, onRetryWrapper)}
+        <UncommittedChangesWarning />
 
         <Container py="4">
           <Spinner spinning={isWaiting} />
@@ -194,7 +195,6 @@ export const ChatContent: React.FC<ChatContentProps> = ({
           maxWidth: "100%", // TODO: make space for the down button
         }}
       >
-        <UncommittedChangesWarning />
         <ScrollArea scrollbars="horizontal">
           <Flex align="start" gap="3" pb="4">
             {isStreaming && (
