@@ -2,6 +2,7 @@
   overflow-wrap: anywhere;
   position: absolute;
   animation: rollin 0.2s ease-out;
+  z-index: 1;
 }
 
 @keyframes rollin {
