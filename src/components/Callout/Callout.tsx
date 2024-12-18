@@ -145,7 +145,3 @@ export const DiffWarningCallout: React.FC<Omit<CalloutProps, "type">> = ({
     </Callout>
   );
 };
-
-export const WarningCallout: React.FC<Omit<CalloutProps, "type">> = (props) => {
-  return <Callout type="info" color="amber" {...props} />;
-};
