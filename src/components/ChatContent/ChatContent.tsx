@@ -28,7 +28,7 @@ import { GroupedDiffs } from "./DiffContent";
 import { ScrollToBottomButton } from "./ScrollToBottomButton";
 import { currentTipOfTheDay } from "../../features/TipOfTheDay";
 import { popBackTo } from "../../features/Pages/pagesSlice";
-import { ChatLinks } from "../ChatLinks";
+import { ChatLinks, UncommittedChangesWarning } from "../ChatLinks";
 import { telemetryApi } from "../../services/refact/telemetry";
 
 const TipOfTheDay: React.FC = () => {
@@ -194,6 +194,7 @@ export const ChatContent: React.FC<ChatContentProps> = ({
           maxWidth: "100%", // TODO: make space for the down button
         }}
       >
+        <UncommittedChangesWarning />
         <ScrollArea scrollbars="horizontal">
           <Flex align="start" gap="3" pb="4">
             {isStreaming && (
