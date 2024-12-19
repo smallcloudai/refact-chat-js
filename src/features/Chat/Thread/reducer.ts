@@ -1,5 +1,12 @@
 import { createReducer } from "@reduxjs/toolkit";
-import { Chat, ChatThread, ToolUse } from "./types";
+import {
+  Chat,
+  ChatThread,
+  IntegrationMeta,
+  ToolUse,
+  LspChatMode,
+  chatModeToLspMode,
+} from "./types";
 import { v4 as uuidv4 } from "uuid";
 import { chatResponse, chatAskedQuestion } from ".";
 import {
@@ -16,24 +23,41 @@ import {
   restoreChat,
   setPreventSend,
   saveTitle,
+  newIntegrationChat,
+  setSendImmediately,
+  setChatMode,
+  setIntegrationData,
+  setIsWaitingForResponse,
 } from "./actions";
 import { formatChatResponse } from "./utils";
 
-const createChatThread = (tool_use: ToolUse): ChatThread => {
+const createChatThread = (
+  tool_use: ToolUse,
+  integration?: IntegrationMeta | null,
+  mode?: LspChatMode,
+): ChatThread => {
   const chat: ChatThread = {
     id: uuidv4(),
     messages: [],
     title: "",
     model: "",
     tool_use,
+    integration,
+    mode,
   };
   return chat;
 };
 
-const createInitialState = (tool_use: ToolUse = "explore"): Chat => {
+const createInitialState = (
+  tool_use: ToolUse = "agent",
+  integration?: IntegrationMeta | null,
+  maybeMode?: LspChatMode,
+): Chat => {
+  const mode =
+    maybeMode ?? integration ? "CONFIGURE" : chatModeToLspMode(tool_use);
   return {
     streaming: false,
-    thread: createChatThread(tool_use),
+    thread: createChatThread(tool_use, integration, mode),
     error: null,
     prevent_send: false,
     waiting_for_response: false,
@@ -50,6 +74,7 @@ export const chatReducer = createReducer(initialState, (builder) => {
   builder.addCase(setToolUse, (state, action) => {
     state.thread.tool_use = action.payload;
     state.tool_use = action.payload;
+    state.thread.mode = chatModeToLspMode(action.payload);
   });
 
   builder.addCase(setPreventSend, (state, action) => {
@@ -181,5 +206,41 @@ export const chatReducer = createReducer(initialState, (builder) => {
     if (state.thread.id !== action.payload.id) return state;
     state.thread.title = action.payload.title;
     state.thread.isTitleGenerated = action.payload.isTitleGenerated;
+  });
+
+  builder.addCase(newIntegrationChat, (state, action) => {
+    // TODO: find out about tool use
+    // TODO: should be CONFIGURE ?
+    const next = createInitialState(
+      "agent",
+      action.payload.integration,
+      "CONFIGURE",
+    );
+    next.thread.integration = action.payload.integration;
+    next.thread.messages = action.payload.messages;
+
+    next.thread.model = state.thread.model;
+    next.system_prompt = state.system_prompt;
+    next.cache = { ...state.cache };
+    if (state.streaming) {
+      next.cache[state.thread.id] = { ...state.thread, read: false };
+    }
+    return next;
+  });
+
+  builder.addCase(setSendImmediately, (state, action) => {
+    state.send_immediately = action.payload;
+  });
+
+  builder.addCase(setChatMode, (state, action) => {
+    state.thread.mode = action.payload;
+  });
+
+  builder.addCase(setIntegrationData, (state, action) => {
+    state.thread.integration = action.payload;
+  });
+
+  builder.addCase(setIsWaitingForResponse, (state, action) => {
+    state.waiting_for_response = action.payload;
   });
 });

@@ -4,11 +4,15 @@ import {
   type ChatThread,
   type PayloadWithId,
   type ToolUse,
+  IntegrationMeta,
+  LspChatMode,
 } from "./types";
 import {
+  isAssistantDelta,
   isAssistantMessage,
   isCDInstructionMessage,
-  isChatGetTitleResponse,
+  isChatResponseChoice,
+  // isChatGetTitleResponse,
   isToolCallMessage,
   isToolMessage,
   ToolCall,
@@ -17,24 +21,36 @@ import {
   type ChatResponse,
 } from "../../../services/refact/types";
 import type { AppDispatch, RootState } from "../../../app/store";
-import type { SystemPrompts } from "../../../services/refact/prompts";
+import { type SystemPrompts } from "../../../services/refact/prompts";
 import { formatMessagesForLsp, consumeStream } from "./utils";
 import { generateChatTitle, sendChat } from "../../../services/refact/chat";
 import { ToolCommand } from "../../../services/refact/tools";
 import { scanFoDuplicatesWith, takeFromEndWhile } from "../../../utils";
+import { debugApp } from "../../../debugConfig";
 
 export const newChatAction = createAction("chatThread/new");
+
+export const newIntegrationChat = createAction<{
+  integration: IntegrationMeta;
+  messages: ChatMessages;
+}>("chatThread/newIntegrationChat");
 
 export const chatResponse = createAction<PayloadWithId & ChatResponse>(
   "chatThread/response",
 );
+
+export const chatTitleGenerationResponse = createAction<
+  PayloadWithId & ChatResponse
+>("chatTitleGeneration/response");
 
 export const chatAskedQuestion = createAction<PayloadWithId>(
   "chatThread/askQuestion",
 );
 
 export const backUpMessages = createAction<
-  PayloadWithId & { messages: ChatThread["messages"] }
+  PayloadWithId & {
+    messages: ChatThread["messages"];
+  }
 >("chatThread/backUpMessages");
 
 // TODO: add history actions to this, maybe not used any more
@@ -75,6 +91,21 @@ export const setToolUse = createAction<ToolUse>("chatThread/setToolUse");
 export const saveTitle = createAction<PayloadWithIdAndTitle>(
   "chatThread/saveTitle",
 );
+
+export const setSendImmediately = createAction<boolean>(
+  "chatThread/setSendImmediately",
+);
+
+export const setChatMode = createAction<LspChatMode>("chatThread/setChatMode");
+
+export const setIntegrationData = createAction<Partial<IntegrationMeta>>(
+  "chatThread/setIntegrationData",
+);
+
+export const setIsWaitingForResponse = createAction<boolean>(
+  "chatThread/setIsWaiting",
+);
+
 // TODO: This is the circular dep when imported from hooks :/
 const createAppAsyncThunk = createAsyncThunk.withTypes<{
   state: RootState;
@@ -90,18 +121,20 @@ export const chatGenerateTitleThunk = createAppAsyncThunk<
 >("chatThread/generateTitle", ({ messages, chatId }, thunkAPI) => {
   const state = thunkAPI.getState();
 
-  const messagesToSend = messages
-    .filter((msg) => !isToolMessage(msg) && msg.content !== "")
-    .map((msg) => {
-      if (isAssistantMessage(msg)) {
-        return {
-          role: msg.role,
-          content: msg.content,
-        };
-      }
-      return msg;
-    });
-
+  const messagesToSend = messages.filter(
+    (msg) =>
+      !isToolMessage(msg) && !isAssistantMessage(msg) && msg.content !== "",
+  );
+  // .map((msg) => {
+  //   if (isAssistantMessage(msg)) {
+  //     return {
+  //       role: msg.role,
+  //       content: msg.content,
+  //     };
+  //   }
+  //   return msg;
+  // });
+  debugApp(`[DEBUG TITLE]: messagesToSend: `, messagesToSend);
   const messagesForLsp = formatMessagesForLsp([
     ...messagesToSend,
     {
@@ -110,6 +143,8 @@ export const chatGenerateTitleThunk = createAppAsyncThunk<
         "Generate a short 2-3 word title for the current chat that reflects the context of the user's query. The title should be specific, avoiding generic terms, and should relate to relevant files, symbols, or objects. If user message contains filename, please make sure that filename remains inside of a generated title. Please ensure the answer is strictly 2-3 words, not paragraphs of text.\nOutput should be STRICTLY 2-3 words, not explanation.",
     },
   ]);
+
+  const chatResponseChunks: ChatResponse[] = [];
 
   return generateChatTitle({
     messages: messagesForLsp,
@@ -123,26 +158,33 @@ export const chatGenerateTitleThunk = createAppAsyncThunk<
       if (!response.ok) {
         return Promise.reject(new Error(response.statusText));
       }
-      return response.json();
-    })
-    .then((data) => {
-      if (!isChatGetTitleResponse(data)) {
-        return;
-      }
-
-      const title = data.choices[0].message.content;
-      const cleanedTitle = title.replace(/"/g, "");
-
-      // Dispatching saveTitle action for a chatThread
-      thunkAPI.dispatch(
-        saveTitle({ id: chatId, title: cleanedTitle, isTitleGenerated: true }),
-      );
-      return { title: cleanedTitle, chatId: state.chat.thread.id };
+      const reader = response.body?.getReader();
+      if (!reader) return;
+      const onAbort = () => thunkAPI.dispatch(setPreventSend({ id: chatId }));
+      const onChunk = (json: Record<string, unknown>) => {
+        chatResponseChunks.push(json as ChatResponse);
+      };
+      return consumeStream(reader, thunkAPI.signal, onAbort, onChunk);
     })
     .catch((err: Error) => {
-      // console.log("Catch called");
+      thunkAPI.dispatch(doneStreaming({ id: chatId }));
       thunkAPI.dispatch(chatError({ id: chatId, message: err.message }));
       return thunkAPI.rejectWithValue(err.message);
+    })
+    .finally(() => {
+      const title = chatResponseChunks.reduce<string>((acc, chunk) => {
+        if (isChatResponseChoice(chunk)) {
+          if (isAssistantDelta(chunk.choices[0].delta)) {
+            return acc + chunk.choices[0].delta.content;
+          }
+        }
+        return acc;
+      }, "");
+
+      thunkAPI.dispatch(
+        saveTitle({ id: chatId, title, isTitleGenerated: true }),
+      );
+      thunkAPI.dispatch(doneStreaming({ id: chatId }));
     });
 });
 
@@ -186,6 +228,13 @@ function checkForToolLoop(message: ChatMessages): boolean {
 
   return hasDuplicates;
 }
+// TODO: add props for config chat
+
+// export function chatModeToLspMode(mode?: ToolUse) {
+//   if (mode === "agent") return "AGENT";
+//   if (mode === "quick") return "NO_TOOLS";
+//   return "EXPLORE";
+// }
 
 export const chatAskQuestionThunk = createAppAsyncThunk<
   unknown,
@@ -193,13 +242,27 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
     messages: ChatMessages;
     chatId: string;
     tools: ToolCommand[] | null;
+    mode?: LspChatMode; // used once for actions
+    // TODO: make a separate function for this... and it'll need to be saved.
   }
->("chatThread/sendChat", ({ messages, chatId, tools }, thunkAPI) => {
+>("chatThread/sendChat", ({ messages, chatId, tools, mode }, thunkAPI) => {
   const state = thunkAPI.getState();
+
+  const thread =
+    chatId in state.chat.cache
+      ? state.chat.cache[chatId]
+      : state.chat.thread.id === chatId
+        ? state.chat.thread
+        : null;
+
+  // TODO: stops the stream.
+  // const onlyDeterministicMessages =
+  //   checkForToolLoop(messages) || !messages.some(isSystemMessage);
 
   const onlyDeterministicMessages = checkForToolLoop(messages);
 
   const messagesForLsp = formatMessagesForLsp(messages);
+  const realMode = mode ?? thread?.mode;
 
   return sendChat({
     messages: messagesForLsp,
@@ -211,12 +274,13 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
     apiKey: state.config.apiKey,
     port: state.config.lspPort,
     onlyDeterministicMessages,
+    integration: thread?.integration,
+    mode: realMode,
   })
     .then((response) => {
       if (!response.ok) {
         return Promise.reject(new Error(response.statusText));
       }
-
       const reader = response.body?.getReader();
       if (!reader) return;
       const onAbort = () => thunkAPI.dispatch(setPreventSend({ id: chatId }));

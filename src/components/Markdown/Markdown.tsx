@@ -41,6 +41,8 @@ import { ErrorCallout, DiffWarningCallout } from "../Callout";
 import { TruncateLeft } from "../Text";
 import { extractFilePathFromPin } from "../../utils";
 
+import { telemetryApi } from "../../services/refact/telemetry";
+
 export type MarkdownProps = Pick<
   React.ComponentProps<typeof ReactMarkdown>,
   "children" | "allowedElements" | "unwrapDisallowed"
@@ -48,7 +50,7 @@ export type MarkdownProps = Pick<
   Pick<
     MarkdownCodeBlockProps,
     "startingLineNumber" | "showLineNumbers" | "useInlineStyles" | "style"
-  > & { canHavePins?: boolean } & Partial<MarkdownControls>;
+  > & { canHavePins?: boolean; wrap?: boolean } & Partial<MarkdownControls>;
 
 const PinMessages: React.FC<{
   children: string;
@@ -63,6 +65,8 @@ const PinMessages: React.FC<{
     handlePaste,
     canPaste,
   } = usePatchActions();
+  const [sendTelemetryEvent] =
+    telemetryApi.useLazySendTelemetryChatEventQuery();
 
   const getMarkdown = useCallback(() => {
     return (
@@ -76,7 +80,13 @@ const PinMessages: React.FC<{
     if (markdown) {
       handlePaste(markdown);
     }
-  }, [getMarkdown, handlePaste]);
+
+    void sendTelemetryEvent({
+      scope: `replaceSelection`,
+      success: true,
+      error_message: "",
+    });
+  }, [getMarkdown, handlePaste, sendTelemetryEvent]);
 
   const handleAutoApply = useCallback(
     (
@@ -210,7 +220,7 @@ const _Markdown: React.FC<MarkdownProps> = ({
         if (canHavePins) {
           return <MaybePinButton {...props} />;
         }
-        return <Text my="2" as="p" {...props} />;
+        return <Text as="p" {...props} />;
       },
       h1({ color: _color, ref: _ref, node: _node, ...props }) {
         return <Heading my="4" size="4" as="h1" {...props} />;
