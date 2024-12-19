@@ -46,6 +46,13 @@ function isToolCall(call: unknown): call is ToolCall {
 }
 
 type ToolContent = string | MultiModalToolContent[];
+
+export function isToolContent(json: unknown): json is ToolContent {
+  if (!json) return false;
+  if (typeof json === "string") return true;
+  if (Array.isArray(json)) return json.every(isMultiModalToolContent);
+  return false;
+}
 export interface BaseToolResult {
   tool_call_id: string;
   finish_reason?: string; // "call_failed" | "call_worked";
@@ -240,6 +247,12 @@ export function isToolMessage(message: ChatMessage): message is ToolMessage {
 
 export function isDiffMessage(message: ChatMessage): message is DiffMessage {
   return message.role === "diff";
+}
+
+export function isSystemMessage(
+  message: ChatMessage,
+): message is SystemMessage {
+  return message.role === "system";
 }
 
 export function isToolCallMessage(
@@ -483,6 +496,13 @@ export function isSubchatResponse(json: unknown): json is SubchatResponse {
   return true;
 }
 
+export function isSystemResponse(json: unknown): json is SystemMessage {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  if (!("role" in json)) return false;
+  return json.role === "system";
+}
+
 export function isCDInstructionResponse(
   json: unknown,
 ): json is CDInstructionMessage {
@@ -511,3 +531,13 @@ export type ChatResponse =
   | ChatUserMessageResponse
   | ToolResponse
   | PlainTextResponse;
+
+export function areAllFieldsBoolean(
+  json: unknown,
+): json is Record<string, boolean> {
+  return (
+    typeof json === "object" &&
+    json !== null &&
+    Object.values(json).every((value) => typeof value === "boolean")
+  );
+}

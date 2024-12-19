@@ -19,6 +19,9 @@ import {
   diffApi,
   pathApi,
   pingApi,
+  integrationsApi,
+  dockerApi,
+  telemetryApi,
 } from "../services/refact";
 import { smallCloudApi } from "../services/smallcloud";
 import { reducer as fimReducer } from "../features/FIM/reducer";
@@ -41,6 +44,9 @@ import { informationSlice } from "../features/Errors/informationSlice";
 import { confirmationSlice } from "../features/ToolConfirmation/confirmationSlice";
 import { attachedImagesSlice } from "../features/AttachedImages";
 import { userSurveySlice } from "../features/UserSurvey/userSurveySlice";
+import { linksApi } from "../services/refact/links";
+import { integrationsSlice } from "../features/Integrations";
+import { agentUsageSlice } from "../features/AgentUsage/agentUsageSlice";
 
 const tipOfTheDayPersistConfig = {
   key: "totd",
@@ -74,20 +80,31 @@ const rootReducer = combineSlices(
     [smallCloudApi.reducerPath]: smallCloudApi.reducer,
     [pathApi.reducerPath]: pathApi.reducer,
     [pingApi.reducerPath]: pingApi.reducer,
+    [linksApi.reducerPath]: linksApi.reducer,
+    [telemetryApi.reducerPath]: telemetryApi.reducer,
   },
   historySlice,
   errorSlice,
   informationSlice,
   pagesSlice,
+  integrationsApi,
+  dockerApi,
   confirmationSlice,
   attachedImagesSlice,
   userSurveySlice,
+  integrationsSlice,
+  agentUsageSlice,
 );
 
 const rootPersistConfig = {
   key: "root",
   storage: storage(),
-  whitelist: [historySlice.reducerPath, "tour", userSurveySlice.reducerPath],
+  whitelist: [
+    historySlice.reducerPath,
+    "tour",
+    userSurveySlice.reducerPath,
+    agentUsageSlice.reducerPath,
+  ],
   stateReconciler: mergeInitialState,
 };
 
@@ -143,6 +160,10 @@ export function setUpStore(preloadedState?: Partial<RootState>) {
             diffApi.middleware,
             smallCloudApi.middleware,
             pathApi.middleware,
+            linksApi.middleware,
+            integrationsApi.middleware,
+            dockerApi.middleware,
+            telemetryApi.middleware,
           )
           .prepend(historyMiddleware.middleware)
           // .prepend(errorMiddleware.middleware)
