@@ -9,8 +9,15 @@ export const UncommittedChangesWarning: React.FC = () => {
   const isWaiting = useAppSelector(selectIsWaiting);
   const linksRequest = useGetLinksFromLsp();
 
-  if (isStreaming || isWaiting) return false;
-  if (!linksRequest.data?.uncommited_changes_warning) return false;
+  if (
+    isStreaming ||
+    isWaiting ||
+    linksRequest.isFetching ||
+    linksRequest.isLoading ||
+    !linksRequest.data?.uncommited_changes_warning
+  ) {
+    return false;
+  }
 
   return (
     <Flex py="4" gap="4" direction="column" justify="between">
