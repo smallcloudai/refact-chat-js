@@ -1,11 +1,15 @@
 import React from "react";
-import { useGetLinksFromLsp } from "../../hooks";
+import { useAppSelector, useGetLinksFromLsp } from "../../hooks";
 import { Markdown } from "../Markdown";
 import { Flex, Separator } from "@radix-ui/themes";
+import { selectIsStreaming, selectIsWaiting } from "../../features/Chat";
 
 export const UncommittedChangesWarning: React.FC = () => {
+  const isStreaming = useAppSelector(selectIsStreaming);
+  const isWaiting = useAppSelector(selectIsWaiting);
   const linksRequest = useGetLinksFromLsp();
 
+  if (isStreaming || isWaiting) return false;
   if (!linksRequest.data?.uncommited_changes_warning) return false;
 
   return (
