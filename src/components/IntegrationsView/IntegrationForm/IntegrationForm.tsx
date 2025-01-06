@@ -12,7 +12,7 @@ import type {
 
 import styles from "./IntegrationForm.module.css";
 import { Spinner } from "../../Spinner";
-import { Button, Flex, Grid, Heading, Text } from "@radix-ui/themes";
+import { Badge, Button, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { IntegrationDocker } from "../IntegrationDocker";
 import { SmartLink } from "../../SmartLink";
 import { renderIntegrationFormField } from "../../../features/Integrations/renderIntegrationFormField";
@@ -26,6 +26,8 @@ import {
   areToolParameters,
 } from "../../../services/refact";
 import { Confirmation } from "../Confirmation";
+import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
+import { useEventsBusForIDE } from "../../../hooks";
 
 type IntegrationFormProps = {
   integrationPath: string;
@@ -72,6 +74,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   const [areExtraFieldsRevealed, setAreExtraFieldsRevealed] = useState(false);
 
   const { integration } = useGetIntegrationDataByPathQuery(integrationPath);
+  const { openFile } = useEventsBusForIDE();
 
   const handleAvailabilityChange = useCallback(
     (fieldName: string, value: boolean) => {
@@ -172,6 +175,36 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
     );
   }
 
+  if (integration.data.error_log.length > 0) {
+    const errorMessage = integration.data.error_log[0].error_msg;
+    const integrationFile = integration.data.error_log[0].integr_config_path;
+    const errorLine = integration.data.error_log[0].error_line;
+    return (
+      <Flex width="100%" direction="column" align="start" gap="4">
+        <Text size="2" color="gray">
+          Whoops, this integration has a syntax error in the config file. You
+          can fix this problem by editing the config file.
+        </Text>
+        <Badge size="2" color="red">
+          <ExclamationTriangleIcon />
+          {errorMessage}
+        </Badge>
+        <Button
+          variant="outline"
+          color="gray"
+          onClick={() =>
+            openFile({
+              file_name: integrationFile,
+              line: errorLine === 0 ? 1 : errorLine,
+            })
+          }
+        >
+          Open {integration.data.integr_name}.yaml
+        </Button>
+      </Flex>
+    );
+  }
+
   return (
     <Flex width="100%" direction="column" gap="2">
       {integration.data.integr_schema.description && (
@@ -187,7 +220,13 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         <Flex direction="column" gap="2">
           <Grid mt="2" mb="0">
             {integration.data.integr_values && (
-              <Flex gap="4" mb="3" className={styles.switchInline}>
+              <Flex
+                gap="4"
+                mb="4"
+                align="center"
+                justify="between"
+                className={styles.switchInline}
+              >
                 {integration.data.integr_values.available &&
                   Object.keys(integration.data.integr_values.available).map(
                     (key) => (
@@ -199,6 +238,13 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
                       />
                     ),
                   )}
+                <IntegrationDeletePopover
+                  integrationName={integration.data.integr_name}
+                  integrationConfigPath={integration.data.integr_config_path}
+                  isApplying={isApplying}
+                  isDeletingIntegration={isDeletingIntegration}
+                  handleDeleteIntegration={handleDeleteIntegration}
+                />
               </Flex>
             )}
             <Grid gap="2" className={styles.gridContainer}>
@@ -268,15 +314,6 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
           )}
           <Flex justify="end" width="100%">
             <Flex gap="4">
-              {integration.data.integr_values && (
-                <IntegrationDeletePopover
-                  integrationName={integration.data.integr_name}
-                  integrationConfigPath={integration.data.integr_config_path}
-                  isApplying={isApplying}
-                  isDeletingIntegration={isDeletingIntegration}
-                  handleDeleteIntegration={handleDeleteIntegration}
-                />
-              )}
               <Button
                 color="green"
                 variant="solid"
