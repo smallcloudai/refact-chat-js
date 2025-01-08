@@ -1,14 +1,8 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-
-export type PauseReason = {
-  type: "confirmation" | "denial";
-  command: string;
-  rule: string;
-  tool_call_id: string;
-};
+import { ToolConfirmationPauseReason } from "../../events";
 
 export type ConfirmationState = {
-  pauseReasons: PauseReason[];
+  pauseReasons: ToolConfirmationPauseReason[];
   pause: boolean;
   status: {
     wasInteracted: boolean;
@@ -34,9 +28,17 @@ export const confirmationSlice = createSlice({
   name: "confirmation",
   initialState,
   reducers: {
-    setPauseReasons(state, action: PayloadAction<PauseReason[]>) {
+    setPauseReasons(
+      state,
+      action: PayloadAction<ToolConfirmationPauseReason[]>,
+    ) {
       state.pause = true;
       state.pauseReasons = action.payload;
+    },
+    resetConfirmationInteractedState(state) {
+      state.status.wasInteracted = false;
+      state.pause = false;
+      state.pauseReasons = [];
     },
     clearPauseReasonsAndHandleToolsStatus(
       state,
@@ -55,8 +57,11 @@ export const confirmationSlice = createSlice({
   },
 });
 
-export const { setPauseReasons, clearPauseReasonsAndHandleToolsStatus } =
-  confirmationSlice.actions;
+export const {
+  setPauseReasons,
+  resetConfirmationInteractedState,
+  clearPauseReasonsAndHandleToolsStatus,
+} = confirmationSlice.actions;
 export const {
   getPauseReasonsWithPauseStatus,
   getToolsConfirmationStatus,

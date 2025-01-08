@@ -120,8 +120,10 @@ export const useSendChatRequest = () => {
         lastMessage.tool_calls
       ) {
         const toolCalls = lastMessage.tool_calls;
-        const confirmationResponse =
-          await triggerCheckForConfirmation(toolCalls).unwrap();
+        const confirmationResponse = await triggerCheckForConfirmation({
+          tool_calls: toolCalls,
+          messages: messages,
+        }).unwrap();
         if (confirmationResponse.pause) {
           dispatch(setPauseReasons(confirmationResponse.pause_reasons));
           return;
