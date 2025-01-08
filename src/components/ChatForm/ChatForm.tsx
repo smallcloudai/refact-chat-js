@@ -1,16 +1,19 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 
 import { Flex, Card, Text } from "@radix-ui/themes";
 import styles from "./ChatForm.module.css";
 
 import { PaperPlaneButton, BackToSideBarButton } from "../Buttons/Buttons";
-import { TextArea, TextAreaProps } from "../TextArea";
+import { TextArea } from "../TextArea";
 import { Form } from "./Form";
-import { useOnPressedEnter, useIsOnline, useConfig } from "../../hooks";
+import {
+  useOnPressedEnter,
+  useIsOnline,
+  useConfig,
+  useAgentUsage,
+} from "../../hooks";
 import { ErrorCallout, Callout } from "../Callout";
-import { Button } from "@radix-ui/themes";
 import { ComboBox } from "../ComboBox";
-import { CodeChatModel, SystemPrompts } from "../../services/refact";
 import { FilesPreview } from "./FilesPreview";
 import { ChatControls } from "./ChatControls";
 import { addCheckboxValuesToInput } from "./utils";
@@ -23,52 +26,72 @@ import { useInputValue } from "./useInputValue";
 import {
   clearInformation,
   getInformationMessage,
+  setInformation,
 } from "../../features/Errors/informationSlice";
 import { InformationCallout } from "../Callout/Callout";
+import { ToolConfirmation } from "./ToolConfirmation";
+import { getPauseReasonsWithPauseStatus } from "../../features/ToolConfirmation/confirmationSlice";
+import { AttachFileButton, FileList } from "../Dropzone";
+import { useAttachedImages } from "../../hooks/useAttachedImages";
+import {
+  selectIsStreaming,
+  selectIsWaiting,
+  selectMessages,
+} from "../../features/Chat";
+import { isAssistantMessage } from "../../services/refact/types";
 
 export type ChatFormProps = {
   onSubmit: (str: string) => void;
   onClose?: () => void;
   className?: string;
-  caps: {
-    error: string | null;
-    fetching: boolean;
-    default_cap: string;
-    available_caps: Record<string, CodeChatModel>;
-  };
-  model: string;
-  onSetChatModel: (model: string) => void;
-  isStreaming: boolean;
-  onStopStreaming: () => void;
-  onTextAreaHeightChange: TextAreaProps["onTextAreaHeightChange"];
-  showControls: boolean;
-  prompts: SystemPrompts;
-  onSetSystemPrompt: (prompt: SystemPrompts) => void;
-  selectedSystemPrompt: SystemPrompts;
-  chatId: string;
 };
 
 export const ChatForm: React.FC<ChatFormProps> = ({
   onSubmit,
   onClose,
   className,
-  caps,
-  model,
-  onSetChatModel,
-  isStreaming,
-  onStopStreaming,
-  onTextAreaHeightChange,
-  showControls,
-  prompts,
-  onSetSystemPrompt,
-  selectedSystemPrompt,
 }) => {
   const dispatch = useAppDispatch();
+  const isStreaming = useAppSelector(selectIsStreaming);
+  const isWaiting = useAppSelector(selectIsWaiting);
   const config = useConfig();
   const error = useAppSelector(getErrorMessage);
   const information = useAppSelector(getInformationMessage);
+  const pauseReasonsWithPause = useAppSelector(getPauseReasonsWithPauseStatus);
   const [helpInfo, setHelpInfo] = React.useState<React.ReactNode | null>(null);
   const onClearError = useCallback(() => dispatch(clearError()), [dispatch]);
+  const { disableInput } = useAgentUsage();
+  const isOnline = useIsOnline();
+  const messages = useAppSelector(selectMessages);
+
+  const disableSend = useMemo(() => {
+    // TODO: if interrupting chat some errors can occur
+    if (messages.length === 0) return false;
+    const lastMessage = messages[messages.length - 1];
+    return (
+      isAssistantMessage(lastMessage) && (isWaiting || isStreaming || !isOnline)
+    );
+  }, [isOnline, isStreaming, isWaiting, messages]);
+
+  const { processAndInsertImages } = useAttachedImages();
+  const handlePastingFile = useCallback(
+    (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const files: File[] = [];
+      const items = event.clipboardData.items;
+      for (const item of items) {
+        if (item.kind === "file") {
+          const file = item.getAsFile();
+          file && files.push(file);
+        }
+      }
+      if (files.length > 0) {
+        event.preventDefault();
+        processAndInsertImages(files);
+      }
+    },
+    [processAndInsertImages],
+  );
+
   const {
     checkboxes,
     onToggleCheckbox,
@@ -90,26 +113,34 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 
   const refs = useTourRefs();
 
-  const isOnline = useIsOnline();
-
   const handleSubmit = useCallback(() => {
     const trimmedValue = value.trim();
-    if (trimmedValue.length > 0 && !isStreaming && isOnline) {
+    if (disableInput) {
+      const action = setInformation(
+        "You have exceeded the FREE usage limit, upgrade to PRO or switch to EXPLORE mode.",
+      );
+      dispatch(action);
+    } else if (!disableSend && trimmedValue.length > 0) {
       const valueIncludingChecks = addCheckboxValuesToInput(
         trimmedValue,
         checkboxes,
         config.features?.vecdb ?? false,
       );
+      setFileInteracted(false);
+      setLineSelectionInteracted(false);
       onSubmit(valueIncludingChecks);
       setValue(() => "");
       unCheckAll();
     }
   }, [
     value,
-    isStreaming,
-    isOnline,
+    disableInput,
+    disableSend,
+    dispatch,
     checkboxes,
     config.features?.vecdb,
+    setFileInteracted,
+    setLineSelectionInteracted,
     onSubmit,
     setValue,
     unCheckAll,
@@ -162,11 +193,17 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   );
 
   useEffect(() => {
-    if (isSendImmediately) {
+    if (isSendImmediately && !isWaiting && !isStreaming) {
       handleSubmit();
       setIsSendImmediately(false);
     }
-  }, [isSendImmediately, handleSubmit, setIsSendImmediately]);
+  }, [
+    isSendImmediately,
+    isWaiting,
+    isStreaming,
+    handleSubmit,
+    setIsSendImmediately,
+  ]);
 
   if (error) {
     return (
@@ -187,20 +224,15 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     );
   }
 
+  if (!isStreaming && pauseReasonsWithPause.pause) {
+    return (
+      <ToolConfirmation pauseReasons={pauseReasonsWithPause.pauseReasons} />
+    );
+  }
+
   return (
     <Card mt="1" style={{ flexShrink: 0, position: "static" }}>
       {!isOnline && <Callout type="info" message="Offline" />}
-
-      {isStreaming && (
-        <Button
-          ml="auto"
-          color="red"
-          title="stop streaming"
-          onClick={onStopStreaming}
-        >
-          Stop
-        </Button>
-      )}
 
       <Flex
         ref={(x) => refs.setChat(x)}
@@ -218,9 +250,9 @@ export const ChatForm: React.FC<ChatFormProps> = ({
           </Flex>
         )}
         <Form
-          disabled={isStreaming || !isOnline}
+          disabled={disableSend}
           className={className}
-          onSubmit={() => handleSubmit()}
+          onSubmit={handleSubmit}
         >
           <FilesPreview files={previewFiles} />
 
@@ -240,11 +272,11 @@ export const ChatForm: React.FC<ChatFormProps> = ({
               <TextArea
                 data-testid="chat-form-textarea"
                 required={true}
-                disabled={isStreaming}
+                // disabled={isStreaming}
                 {...props}
-                onTextAreaHeightChange={onTextAreaHeightChange}
                 autoFocus={true}
                 style={{ boxShadow: "none", outline: "none" }}
+                onPaste={handlePastingFile}
               />
             )}
           />
@@ -257,9 +289,10 @@ export const ChatForm: React.FC<ChatFormProps> = ({
                 onClick={onClose}
               />
             )}
+            {config.features?.images !== false && <AttachFileButton />}
             {/* TODO: Reserved space for microphone button coming later on */}
             <PaperPlaneButton
-              disabled={isStreaming || !isOnline}
+              disabled={disableSend || disableInput}
               title="send"
               size="1"
               type="submit"
@@ -267,22 +300,12 @@ export const ChatForm: React.FC<ChatFormProps> = ({
           </Flex>
         </Form>
       </Flex>
+      <FileList />
 
       <ChatControls
         host={config.host}
         checkboxes={checkboxes}
-        showControls={showControls}
         onCheckedChange={onToggleCheckbox}
-        selectProps={{
-          value: model || caps.default_cap,
-          onChange: onSetChatModel,
-          options: Object.keys(caps.available_caps),
-        }}
-        promptsProps={{
-          value: selectedSystemPrompt,
-          prompts: prompts,
-          onChange: onSetSystemPrompt,
-        }}
       />
     </Card>
   );

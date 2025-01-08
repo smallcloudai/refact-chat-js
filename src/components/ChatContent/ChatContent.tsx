@@ -1,171 +1,163 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useRef } from "react";
 import {
   ChatMessages,
   isChatContextFileMessage,
   isDiffMessage,
   isToolMessage,
+  UserMessage,
 } from "../../services/refact";
 import { UserInput } from "./UserInput";
 import { ScrollArea } from "../ScrollArea";
 import { Spinner } from "../Spinner";
-import { Flex, Text, Container, Link } from "@radix-ui/themes";
+import { Flex, Container, Button, Box } from "@radix-ui/themes";
 import styles from "./ChatContent.module.css";
 import { ContextFiles } from "./ContextFiles";
 import { AssistantInput } from "./AssistantInput";
 import { useAutoScroll } from "./useAutoScroll";
 import { PlainText } from "./PlainText";
-import { useConfig, useEventsBusForIDE } from "../../hooks";
-import { useAppSelector, useAppDispatch } from "../../hooks";
-import { RootState } from "../../app/store";
-import { next } from "../../features/TipOfTheDay";
+import { useAppDispatch } from "../../hooks";
+import { useAppSelector } from "../../hooks";
 import {
   selectIsStreaming,
   selectIsWaiting,
   selectMessages,
+  selectThread,
 } from "../../features/Chat/Thread/selectors";
 import { takeWhile } from "../../utils";
 import { GroupedDiffs } from "./DiffContent";
 import { ScrollToBottomButton } from "./ScrollToBottomButton";
-
-export const TipOfTheDay: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const config = useConfig();
-  const state = useAppSelector((state: RootState) => state.tipOfTheDay);
-
-  // TODO: find out what this is about.
-  useEffect(() => {
-    dispatch(next(config));
-  }, [dispatch, config]);
-
-  return (
-    <Text>
-      💡 <b>Tip of the day</b>: {state.tip}
-    </Text>
-  );
-};
-
-// TODO: turn this into a component
-const PlaceHolderText: React.FC = () => {
-  const config = useConfig();
-  const hasVecDB = config.features?.vecdb ?? false;
-  const hasAst = config.features?.ast ?? false;
-  const { openSettings } = useEventsBusForIDE();
-
-  const handleOpenSettings = useCallback(
-    (event: React.MouseEvent<HTMLAnchorElement>) => {
-      event.preventDefault();
-      openSettings();
-    },
-    [openSettings],
-  );
-
-  if (config.host === "web") {
-    <Flex direction="column" gap="4">
-      <Text>Welcome to Refact chat!</Text>;
-      <TipOfTheDay />
-    </Flex>;
-  }
-
-  if (!hasVecDB && !hasAst) {
-    return (
-      <Flex direction="column" gap="4">
-        <Text>Welcome to Refact chat!</Text>
-        <Text>
-          💡 You can turn on VecDB and AST in{" "}
-          <Link onClick={handleOpenSettings}>settings</Link>.
-        </Text>
-        <TipOfTheDay />
-      </Flex>
-    );
-  } else if (!hasVecDB) {
-    return (
-      <Flex direction="column" gap="4">
-        <Text>Welcome to Refact chat!</Text>
-        <Text>
-          💡 You can turn on VecDB in{" "}
-          <Link onClick={handleOpenSettings}>settings</Link>.
-        </Text>
-        <TipOfTheDay />
-      </Flex>
-    );
-  } else if (!hasAst) {
-    return (
-      <Flex direction="column" gap="4">
-        <Text>Welcome to Refact chat!</Text>
-        <Text>
-          💡 You can turn on AST in{" "}
-          <Link onClick={handleOpenSettings}>settings</Link>.
-        </Text>
-        <TipOfTheDay />
-      </Flex>
-    );
-  }
-
-  return (
-    <Flex direction="column" gap="4">
-      <Text>Welcome to Refact chat.</Text>
-      <TipOfTheDay />
-    </Flex>
-  );
-};
+import { popBackTo } from "../../features/Pages/pagesSlice";
+import { ChatLinks, UncommittedChangesWarning } from "../ChatLinks";
+import { telemetryApi } from "../../services/refact/telemetry";
+import { PlaceHolderText } from "./PlaceHolderText";
 
 export type ChatContentProps = {
-  onRetry: (index: number, question: string) => void;
+  onRetry: (index: number, question: UserMessage["content"]) => void;
+  onStopStreaming: () => void;
 };
 
-export const ChatContent = React.forwardRef<HTMLDivElement, ChatContentProps>(
-  (props, ref) => {
-    const messages = useAppSelector(selectMessages);
-    const isStreaming = useAppSelector(selectIsStreaming);
-    const isWaiting = useAppSelector(selectIsWaiting);
+export const ChatContent: React.FC<ChatContentProps> = ({
+  onStopStreaming,
+  onRetry,
+}) => {
+  const dispatch = useAppDispatch();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const messages = useAppSelector(selectMessages);
+  const isStreaming = useAppSelector(selectIsStreaming);
+  const thread = useAppSelector(selectThread);
+  const isConfig = thread.mode === "CONFIGURE";
+  const isWaiting = useAppSelector(selectIsWaiting);
+  const [sendTelemetryEvent] =
+    telemetryApi.useLazySendTelemetryChatEventQuery();
 
-    const {
-      innerRef,
-      handleScroll,
-      handleWheel,
-      handleScrollButtonClick,
-      isScrolledTillBottom,
-    } = useAutoScroll({
-      ref,
-      messages,
-      isStreaming,
-    });
+  const {
+    handleScroll,
+    handleWheel,
+    handleScrollButtonClick,
+    showFollowButton,
+  } = useAutoScroll({
+    scrollRef,
+  });
 
-    const onRetryWrapper = (index: number, question: string) => {
-      props.onRetry(index, question);
-      handleScrollButtonClick();
-    };
+  const onRetryWrapper = (index: number, question: UserMessage["content"]) => {
+    onRetry(index, question);
+  };
 
-    return (
-      <ScrollArea
-        style={{ flexGrow: 1, height: "auto", position: "relative" }}
-        scrollbars="vertical"
-        onScroll={handleScroll}
-        onWheel={handleWheel}
-      >
-        <Flex direction="column" className={styles.content} p="2" gap="1">
-          {messages.length === 0 && <PlaceHolderText />}
-          {renderMessages(messages, onRetryWrapper)}
-          {isWaiting && (
-            <Container py="4">
-              <Spinner />
-            </Container>
-          )}
-          <div ref={innerRef} />
-        </Flex>
-        {!isScrolledTillBottom && (
-          <ScrollToBottomButton onClick={handleScrollButtonClick} />
-        )}
-      </ScrollArea>
+  const handleReturnToConfigurationClick = useCallback(() => {
+    // console.log(`[DEBUG]: going back to configuration page`);
+    // TBD: should it be allowed to run in the background?
+    onStopStreaming();
+    dispatch(
+      popBackTo({
+        name: "integrations page",
+        projectPath: thread.integration?.project,
+        integrationName: thread.integration?.name,
+        integrationPath: thread.integration?.path,
+        wasOpenedThroughChat: true,
+      }),
     );
-  },
-);
+  }, [
+    onStopStreaming,
+    dispatch,
+    thread.integration?.project,
+    thread.integration?.name,
+    thread.integration?.path,
+  ]);
+
+  const handleManualStopStreamingClick = useCallback(() => {
+    onStopStreaming();
+    void sendTelemetryEvent({
+      scope: `stopStreaming`,
+      success: true,
+      error_message: "",
+    });
+  }, [onStopStreaming, sendTelemetryEvent]);
+
+  return (
+    <ScrollArea
+      ref={scrollRef}
+      style={{ flexGrow: 1, height: "auto", position: "relative" }}
+      scrollbars="vertical"
+      onScroll={handleScroll}
+      onWheel={handleWheel}
+      type={isWaiting || isStreaming ? "auto" : "hover"}
+    >
+      <Flex direction="column" className={styles.content} p="2" gap="1">
+        {messages.length === 0 && <PlaceHolderText />}
+        {renderMessages(messages, onRetryWrapper)}
+        <UncommittedChangesWarning />
+
+        <Container py="4">
+          <Spinner spinning={isWaiting} />
+        </Container>
+      </Flex>
+      {showFollowButton && (
+        <ScrollToBottomButton onClick={handleScrollButtonClick} />
+      )}
+
+      <Box
+        style={{
+          position: "absolute",
+          bottom: 0,
+          maxWidth: "100%", // TODO: make space for the down button
+        }}
+      >
+        <ScrollArea scrollbars="horizontal">
+          <Flex align="start" gap="3" pb="2">
+            {isStreaming && (
+              <Button
+                // ml="auto"
+                color="red"
+                title="stop streaming"
+                onClick={handleManualStopStreamingClick}
+              >
+                Stop
+              </Button>
+            )}
+            {isConfig && (
+              <Button
+                // ml="auto"
+                color="gray"
+                title="Return to configuration page"
+                onClick={handleReturnToConfigurationClick}
+              >
+                Return
+              </Button>
+            )}
+
+            <ChatLinks />
+          </Flex>
+        </ScrollArea>
+      </Box>
+    </ScrollArea>
+  );
+};
 
 ChatContent.displayName = "ChatContent";
 
 function renderMessages(
   messages: ChatMessages,
-  onRetry: (index: number, question: string) => void,
+  onRetry: (index: number, question: UserMessage["content"]) => void,
   memo: React.ReactNode[] = [],
   index = 0,
 ) {
@@ -197,6 +189,7 @@ function renderMessages(
 
   if (head.role === "user") {
     const key = "user-input-" + index;
+
     const nextMemo = [
       ...memo,
       <UserInput onRetry={onRetry} key={key} messageIndex={index}>

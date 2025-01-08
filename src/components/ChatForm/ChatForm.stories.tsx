@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { ChatForm } from "./ChatForm";
-import { SYSTEM_PROMPTS } from "../../__fixtures__";
 import { useDebounceCallback } from "usehooks-ts";
 
 // const _testCommands = [
@@ -42,9 +41,7 @@ import { useDebounceCallback } from "usehooks-ts";
 //   "@Zucchini",
 // ];
 
-const noop = () => ({});
-
-const long = "long".repeat(30);
+// const noop = () => ({});
 
 const meta: Meta<typeof ChatForm> = {
   title: "Chat Form",
@@ -58,121 +55,6 @@ const meta: Meta<typeof ChatForm> = {
       // eslint-disable-next-line no-console
       console.log("onclose called");
     },
-    isStreaming: false,
-    onStopStreaming: noop,
-    onSetChatModel: noop,
-    caps: {
-      fetching: false,
-      default_cap: "foo",
-      available_caps: {
-        bar: {
-          default_scratchpad: "",
-          n_ctx: 2048,
-          similar_models: [],
-          supports_tools: false,
-          supports_scratchpads: {},
-        },
-        [long]: {
-          default_scratchpad: "",
-          n_ctx: 2048,
-          similar_models: [],
-          supports_tools: false,
-          supports_scratchpads: {},
-        },
-        baz: {
-          default_scratchpad: "",
-          n_ctx: 2048,
-          similar_models: [],
-          supports_tools: false,
-          supports_scratchpads: {},
-        },
-      },
-      error: "",
-    },
-    // error: null,
-    // clearError: noop,
-    showControls: true,
-    // hasContextFile: false,
-    // commands: {
-    //   completions: testCommands,
-    //   replace: [-1, -1],
-    //   is_cmd_executable: false,
-    // },
-    // attachFile: {
-    //   name: "todo.md",
-    //   can_paste: true,
-    //   // attach: false,
-    //   line1: 1,
-    //   line2: 100,
-    //   path: "/Users/refact/Projects/smallcloudai/refact-chat-js/todo.md",
-    //   cursor: 50,
-    // },
-    // filesInPreview: [
-    //   {
-    //     file_name:
-    //       "/Users/refact/Projects/smallcloudai/refact-chat-js/src/components/ChatForm/index.tsx",
-    //     file_content: "",
-    //     line1: 1,
-    //     line2: 100,
-    //   },
-    //   {
-    //     file_name:
-    //       "/Users/refact/Projects/smallcloudai/refact-chat-js/src/components/ChatForm/ChatForm.stories.tsx",
-    //     file_content: "",
-    //     line1: 1,
-    //     line2: 100,
-    //   },
-    //   {
-    //     file_name:
-    //       "/Users/refact/Projects/smallcloudai/refact-chat-js/src/components/ChatForm/FilesPreview.tsx",
-    //     file_content: "",
-    //     line1: 1,
-    //     line2: 100,
-    //   },
-    //   {
-    //     file_name:
-    //       "/Users/refact/Projects/smallcloudai/refact-chat-js/src/components/ChatForm/CharForm.test.tsx",
-    //     file_content: "",
-    //     line1: 1,
-    //     line2: 100,
-    //   },
-    //   {
-    //     file_name:
-    //       "/Users/refact/Projects/smallcloudai/refact-chat-js/src/components/ChatForm/RetryForm.tsx",
-    //     file_content: "",
-    //     line1: 1,
-    //     line2: 100,
-    //   },
-    //   {
-    //     file_name:
-    //       "/Users/refact/Projects/smallcloudai/refact-chat-js/src/components/ChatForm/ChatForm.module.css",
-    //     file_content: "",
-    //     line1: 1,
-    //     line2: 100,
-    //   },
-    //   {
-    //     file_name:
-    //       "/Users/refact/Projects/smallcloudai/refact-chat-js/src/components/ChatForm/ChatForm.tsx",
-    //     file_content: "",
-    //     line1: 1,
-    //     line2: 100,
-    //   },
-    //   {
-    //     file_name:
-    //       "/Users/refacts/Projects/smallcloudai/refact-chat-js/src/components/ChatForm/Form.tsx",
-    //     file_content: "",
-    //     line1: 1,
-    //     line2: 100,
-    //   },
-    // ],
-    // removePreviewFileByName: () => ({}),
-    // requestPreviewFiles: () => ({}),
-    // requestCommandsCompletion: () => ({}),
-    // setSelectedCommand: () => ({}),
-    onTextAreaHeightChange: noop,
-    prompts: SYSTEM_PROMPTS,
-    onSetSystemPrompt: noop,
-    // selectedSystemPrompt: null,
   },
   decorators: [
     (Children) => {
@@ -194,7 +76,5 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Primary: Story = {
-  args: {
-    model: "foo",
-  },
+  args: {},
 };

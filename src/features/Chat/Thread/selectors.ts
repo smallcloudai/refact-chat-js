@@ -8,6 +8,8 @@ export const selectChatId = (state: RootState) => state.chat.thread.id;
 export const selectModel = (state: RootState) => state.chat.thread.model;
 export const selectMessages = (state: RootState) => state.chat.thread.messages;
 export const selectToolUse = (state: RootState) => state.chat.tool_use;
+export const selectThreadToolUse = (state: RootState) =>
+  state.chat.thread.tool_use;
 export const selectIsWaiting = (state: RootState) =>
   state.chat.waiting_for_response;
 export const selectIsStreaming = (state: RootState) => state.chat.streaming;
@@ -32,5 +34,23 @@ export const selectToolResultById = createSelector(
       ?.content;
   },
 );
+
+export const selectManyToolResultsByIds = (ids: string[]) =>
+  createSelector(toolMessagesSelector, (messages) => {
+    return messages
+      .filter((message) => ids.includes(message.content.tool_call_id))
+      .map((toolMessage) => toolMessage.content);
+  });
+
 export const getSelectedToolUse = (state: RootState) =>
   state.chat.thread.tool_use;
+
+export const selectIntegration = createSelector(
+  selectThread,
+  (thread) => thread.integration,
+);
+
+export const selectThreadMode = createSelector(
+  selectThread,
+  (thread) => thread.mode,
+);

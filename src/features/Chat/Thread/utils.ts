@@ -1,25 +1,31 @@
 import {
   AssistantMessage,
   ChatContextFile,
+  ChatContextFileMessage,
   ChatMessage,
   ChatMessages,
   ChatResponse,
   DiffChunk,
   SubchatResponse,
   ToolCall,
+  ToolMessage,
   ToolResult,
   UserMessage,
   isAssistantDelta,
   isAssistantMessage,
+  isCDInstructionResponse,
   isChatContextFileDelta,
   isChatResponseChoice,
   isContextFileResponse,
+  isDiffChunk,
   isDiffMessage,
   isDiffResponse,
   isPlainTextResponse,
   isSubchatContextFileResponse,
   isSubchatResponse,
+  isSystemResponse,
   isToolCallDelta,
+  isToolContent,
   isToolMessage,
   isToolResponse,
   isUserMessage,
@@ -145,7 +151,19 @@ export function formatChatResponse(
   if (isToolResponse(response)) {
     const { tool_call_id, content, finish_reason } = response;
     const filteredMessages = finishToolCallInMessages(messages, tool_call_id);
-    const toolResult: ToolResult = { tool_call_id, content, finish_reason };
+    const toolResult: ToolResult =
+      typeof content === "string"
+        ? {
+            tool_call_id,
+            content,
+            finish_reason,
+          }
+        : {
+            tool_call_id,
+            content,
+            finish_reason,
+          };
+
     return [...filteredMessages, { role: response.role, content: toolResult }];
   }
 
@@ -159,6 +177,15 @@ export function formatChatResponse(
 
   if (isPlainTextResponse(response)) {
     return [...messages, { role: response.role, content: response.content }];
+  }
+
+  if (isCDInstructionResponse(response)) {
+    return [...messages, { role: response.role, content: response.content }];
+  }
+
+  // system messages go to the front
+  if (isSystemResponse(response)) {
+    return [{ role: response.role, content: response.content }, ...messages];
   }
 
   if (!isChatResponseChoice(response)) {
@@ -336,6 +363,10 @@ function finishToolCallInMessages(
 
 export function formatMessagesForLsp(messages: ChatMessages): LspChatMessage[] {
   return messages.reduce<LspChatMessage[]>((acc, message) => {
+    if (isUserMessage(message)) {
+      return acc.concat([message]);
+    }
+
     if (isAssistantMessage(message)) {
       return acc.concat([
         {
@@ -370,6 +401,77 @@ export function formatMessagesForLsp(messages: ChatMessages): LspChatMessage[] {
         ? message.content
         : JSON.stringify(message.content);
     return [...acc, { role: message.role, content }];
+  }, []);
+}
+
+export function formatMessagesForChat(
+  messages: LspChatMessage[],
+): ChatMessages {
+  return messages.reduce<ChatMessages>((acc, message) => {
+    if (message.role === "user" && typeof message.content === "string") {
+      const userMessage: UserMessage = {
+        role: message.role,
+        content: message.content,
+      };
+      return acc.concat(userMessage);
+    }
+
+    if (message.role === "assistant") {
+      // TODO: why type cast this.
+      const assistantMessage = message as AssistantMessage;
+      return acc.concat(assistantMessage);
+    }
+
+    if (
+      message.role === "context_file" &&
+      typeof message.content === "string"
+    ) {
+      const files = parseOrElse<ChatContextFile[]>(message.content, []);
+      const contextFileMessage: ChatContextFileMessage = {
+        role: message.role,
+        content: files,
+      };
+      return acc.concat(contextFileMessage);
+    }
+
+    if (message.role === "system" && typeof message.content === "string") {
+      return acc.concat({ role: message.role, content: message.content });
+    }
+
+    if (message.role === "plain_text" && typeof message.content === "string") {
+      return acc.concat({ role: message.role, content: message.content });
+    }
+
+    if (
+      message.role === "cd_instruction" &&
+      typeof message.content === "string"
+    ) {
+      return acc.concat({ role: message.role, content: message.content });
+    }
+
+    if (
+      message.role === "tool" &&
+      (typeof message.content === "string" || isToolContent(message.content)) &&
+      typeof message.tool_call_id === "string"
+    ) {
+      // TODO: why type cast this
+      return acc.concat(message as unknown as ToolMessage);
+    }
+
+    if (
+      message.role === "diff" &&
+      Array.isArray(message.content) &&
+      message.content.every(isDiffChunk) &&
+      typeof message.tool_call_id === "string"
+    ) {
+      return acc.concat({
+        role: message.role,
+        content: message.content,
+        tool_call_id: message.tool_call_id,
+      });
+    }
+
+    return acc;
   }, []);
 }
 

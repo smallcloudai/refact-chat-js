@@ -1,6 +1,6 @@
 {
   "name": "refact-chat-js",
-  "version": "2.0.1",
+  "version": "2.0.3-alpha.14",
   "type": "module",
   "license": "BSD-3-Clause",
   "files": [
@@ -48,7 +48,9 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.2.7",
+    "@tanstack/react-table": "^8.20.6",
     "@types/react": "^18.2.43",
+    "debug": "^4.3.7",
     "react-redux": "^9.1.2"
   },
   "devDependencies": {
@@ -68,6 +70,7 @@
     "@testing-library/dom": "^10.1.0",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.1",
+    "@types/debug": "^4.1.12",
     "@types/js-cookie": "^3.0.6",
     "@types/lodash.groupby": "^4.6.9",
     "@types/lodash.isequal": "^4.5.8",
@@ -97,9 +100,11 @@
     "lodash.groupby": "^4.6.0",
     "lodash.isequal": "^4.5.0",
     "msw": "^2.3.4",
+    "msw-storybook-addon": "^2.0.3",
     "prettier": "3.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-dropzone": "^14.2.10",
     "react-markdown": "^9.0.1",
     "react-syntax-highlighter": "^15.5.0",
     "redux-persist": "^6.0.0",
@@ -125,5 +130,10 @@
       "eslint --cache --fix"
     ],
     "*.{js,css,md}": "prettier --write"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

@@ -7,6 +7,10 @@ import eslint from "vite-plugin-eslint";
 import { coverageConfigDefaults } from "vitest/config";
 import dts from "vite-plugin-dts";
 
+import { execSync } from "child_process";
+
+const commitHash = execSync("git rev-parse --short HEAD").toString().trim();
+
 // TODO: remove extra compile step when vscode can run esmodules  https://github.com/microsoft/vscode/issues/130367
 
 // https://vitejs.dev/config/
@@ -18,6 +22,12 @@ function makeConfig(library: "browser" | "node") {
       // Build the webpage
       define: {
         "process.env.NODE_ENV": JSON.stringify(mode),
+        __REFACT_CHAT_VERSION__: JSON.stringify({
+          semver: process.env.npm_package_version,
+          commit: commitHash,
+        }),
+        "process.env.DEBUG": JSON.stringify(process.env.DEBUG),
+        __REFACT_LSP_PORT__: process.env.REFACT_LSP_PORT,
       },
       mode,
       build: {
@@ -60,7 +70,11 @@ function makeConfig(library: "browser" | "node") {
 
     if (command !== "serve") {
       CONFIG.mode = "production";
-      CONFIG.define = { "process.env.NODE_ENV": "'production'" };
+      CONFIG.define = {
+        ...CONFIG.define,
+        "process.env.NODE_ENV": "'production'",
+      };
+
       CONFIG.plugins?.push([
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         eslint() as PluginOption,

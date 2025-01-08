@@ -1,13 +1,31 @@
+import { IntegrationMeta, LspChatMode } from "../../features/Chat";
 import { CHAT_URL } from "./consts";
 import { ToolCommand } from "./tools";
-import { ChatRole, ToolCall } from "./types";
+import { ChatRole, ToolCall, ToolResult, UserMessage } from "./types";
 
-export type LspChatMessage = {
-  role: ChatRole;
-  content: string | null;
-  tool_calls?: Omit<ToolCall, "index">[];
-  tool_call_id?: string;
-};
+export type LspChatMessage =
+  | {
+      role: ChatRole;
+      // TODO make this a union type for user message
+      content: string | null;
+      // TBD: why was index omitted ?
+      // tool_calls?: Omit<ToolCall, "index">[];
+      tool_calls?: ToolCall[];
+      tool_call_id?: string;
+    }
+  | UserMessage
+  | { role: "tool"; content: ToolResult["content"]; tool_call_id: string };
+
+// could be more narrow.
+export function isLspChatMessage(json: unknown): json is LspChatMessage {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  if (!("role" in json)) return false;
+  if (typeof json.role !== "string") return false;
+  if (!("content" in json)) return false;
+  if (json.content !== null && typeof json.content !== "string") return false;
+  return true;
+}
 
 type StreamArgs =
   | {
@@ -26,6 +44,10 @@ type SendChatArgs = {
   tools: ToolCommand[] | null;
   port?: number;
   apiKey?: string | null;
+  // isConfig?: boolean;
+  toolsConfirmed?: boolean;
+  integration?: IntegrationMeta | null;
+  mode?: LspChatMode; // used for chat actions
 } & StreamArgs;
 
 type GetChatTitleArgs = {
@@ -79,7 +101,7 @@ export type Usage = {
   prompt_tokens: number;
   total_tokens: number;
 };
-
+// TODO: add config url
 export async function sendChat({
   messages,
   model,
@@ -92,6 +114,10 @@ export async function sendChat({
   tools,
   port = 8001,
   apiKey,
+  toolsConfirmed = true,
+  // isConfig = false,
+  integration,
+  mode,
 }: SendChatArgs): Promise<Response> {
   // const toolsResponse = await getAvailableTools();
 
@@ -106,14 +132,21 @@ export async function sendChat({
   const body = JSON.stringify({
     messages,
     model: model,
-    parameters: {
-      max_new_tokens: 2048,
-    },
     stream,
     tools,
-    max_tokens: 2048,
+    max_tokens: 4096,
     only_deterministic_messages,
-    chat_id,
+    tools_confirmation: toolsConfirmed,
+    // chat_id,
+    meta: {
+      chat_id,
+      // chat_remote,
+      // TODO: pass this through
+      chat_mode: mode ?? "EXPLORE",
+      // chat_mode: "EXPLORE", // NOTOOLS, EXPLORE, AGENT, CONFIGURE, PROJECTSUMMARY,
+      // TODO: not clear, that if we set integration.path it's going to be set also in meta as current_config_file
+      ...(integration?.path ? { current_config_file: integration.path } : {}),
+    },
   });
 
   //   const apiKey = getApiKey();

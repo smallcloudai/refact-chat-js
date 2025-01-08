@@ -34,11 +34,16 @@ import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
 import "katex/dist/katex.min.css";
-import { usePatchActions } from "../../hooks";
+import { useLinksFromLsp, usePatchActions } from "../../hooks";
 
 import { ErrorCallout, DiffWarningCallout } from "../Callout";
 
 import { TruncateLeft } from "../Text";
+import { extractFilePathFromPin } from "../../utils";
+
+import { telemetryApi } from "../../services/refact/telemetry";
+import { ChatLinkButton } from "../ChatLinks";
+import { extractLinkFromPuzzle } from "../../utils/extractLinkFromPuzzle";
 
 export type MarkdownProps = Pick<
   React.ComponentProps<typeof ReactMarkdown>,
@@ -47,7 +52,10 @@ export type MarkdownProps = Pick<
   Pick<
     MarkdownCodeBlockProps,
     "startingLineNumber" | "showLineNumbers" | "useInlineStyles" | "style"
-  > & { canHavePins?: boolean } & Partial<MarkdownControls>;
+  > & {
+    canHaveInteractiveElements?: boolean;
+    wrap?: boolean;
+  } & Partial<MarkdownControls>;
 
 const PinMessages: React.FC<{
   children: string;
@@ -62,6 +70,8 @@ const PinMessages: React.FC<{
     handlePaste,
     canPaste,
   } = usePatchActions();
+  const [sendTelemetryEvent] =
+    telemetryApi.useLazySendTelemetryChatEventQuery();
 
   const getMarkdown = useCallback(() => {
     return (
@@ -75,7 +85,13 @@ const PinMessages: React.FC<{
     if (markdown) {
       handlePaste(markdown);
     }
-  }, [getMarkdown, handlePaste]);
+
+    void sendTelemetryEvent({
+      scope: `replaceSelection`,
+      success: true,
+      error_message: "",
+    });
+  }, [getMarkdown, handlePaste, sendTelemetryEvent]);
 
   const handleAutoApply = useCallback(
     (
@@ -109,7 +125,7 @@ const PinMessages: React.FC<{
     return null;
   }
 
-  const [_cmd, _ticket, filePath, ..._rest] = children.split(" ");
+  const filePath = extractFilePathFromPin(children);
   return (
     <Card
       className={styles.patch_title}
@@ -164,7 +180,22 @@ const PinMessages: React.FC<{
   );
 };
 
-const MaybePinButton: React.FC<{
+const PuzzleLink: React.FC<{
+  children: string;
+}> = ({ children }) => {
+  const { handleLinkAction } = useLinksFromLsp();
+  const link = extractLinkFromPuzzle(children);
+
+  if (!link) return children;
+
+  return (
+    <Flex direction="column" align="start" gap="2" mt="2">
+      <ChatLinkButton link={link} onClick={handleLinkAction} />
+    </Flex>
+  );
+};
+
+const MaybeInteractiveElement: React.FC<{
   key?: Key | null;
   children?: React.ReactNode;
 }> = ({ children }) => {
@@ -172,6 +203,10 @@ const MaybePinButton: React.FC<{
     if (typeof child === "string" && child.startsWith("📍")) {
       const key = `pin-message-${index}`;
       return <PinMessages key={key}>{child}</PinMessages>;
+    }
+    if (typeof child === "string" && child.startsWith("🧩")) {
+      const key = `puzzle-link-${index}`;
+      return <PuzzleLink key={key}>{child}</PuzzleLink>;
     }
     return child;
   });
@@ -187,7 +222,7 @@ const _Markdown: React.FC<MarkdownProps> = ({
   children,
   allowedElements,
   unwrapDisallowed,
-  canHavePins,
+  canHaveInteractiveElements,
   ...rest
 }) => {
   const components: Partial<Components> = useMemo(() => {
@@ -206,25 +241,25 @@ const _Markdown: React.FC<MarkdownProps> = ({
         return <MarkdownCodeBlock {...props} {...rest} />;
       },
       p({ color: _color, ref: _ref, node: _node, ...props }) {
-        if (canHavePins) {
-          return <MaybePinButton {...props} />;
+        if (canHaveInteractiveElements) {
+          return <MaybeInteractiveElement {...props} />;
         }
-        return <Text my="2" as="p" {...props} />;
+        return <Text as="p" {...props} />;
       },
       h1({ color: _color, ref: _ref, node: _node, ...props }) {
-        return <Heading my="6" size="8" as="h1" {...props} />;
+        return <Heading my="4" size="4" as="h1" {...props} />;
       },
       h2({ color: _color, ref: _ref, node: _node, ...props }) {
-        return <Heading my="6" size="7" as="h2" {...props} />;
+        return <Heading my="3" size="3" as="h2" {...props} />;
       },
       h3({ color: _color, ref: _ref, node: _node, ...props }) {
-        return <Heading my="6" size="6" as="h3" {...props} />;
+        return <Heading my="3" size="3" as="h3" {...props} />;
       },
       h4({ color: _color, ref: _ref, node: _node, ...props }) {
-        return <Heading my="5" size="5" as="h4" {...props} />;
+        return <Heading my="3" size="3" as="h4" {...props} />;
       },
       h5({ color: _color, ref: _ref, node: _node, ...props }) {
-        return <Heading my="4" size="4" as="h5" {...props} />;
+        return <Heading my="3" size="3" as="h5" {...props} />;
       },
       h6({ color: _color, ref: _ref, node: _node, ...props }) {
         return <Heading my="3" size="3" as="h6" {...props} />;
@@ -239,7 +274,15 @@ const _Markdown: React.FC<MarkdownProps> = ({
         return <Kbd {...props} />;
       },
       a({ color: _color, ref: _ref, node: _node, ...props }) {
-        return <Link {...props} />;
+        const shouldTargetBeBlank =
+          props.href &&
+          (props.href.startsWith("http") || props.href.startsWith("https"));
+        return (
+          <Link
+            {...props}
+            target={shouldTargetBeBlank ? "_blank" : undefined}
+          />
+        );
       },
       q({ color: _color, ref: _ref, node: _node, ...props }) {
         return <Quote {...props} />;
@@ -272,7 +315,7 @@ const _Markdown: React.FC<MarkdownProps> = ({
         return <Table.Cell {...props} />;
       },
     };
-  }, [rest, canHavePins]);
+  }, [rest, canHaveInteractiveElements]);
   return (
     <ReactMarkdown
       className={styles.markdown}

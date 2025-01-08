@@ -5,45 +5,81 @@ import {
   getSelectedSystemPrompt,
   selectChatError,
   selectChatId,
+  selectIntegration,
   selectIsStreaming,
+  selectIsWaiting,
   selectMessages,
   selectPreventSend,
   selectSendImmediately,
-  selectToolUse,
+  selectThread,
+  selectThreadMode,
+  selectThreadToolUse,
 } from "../features/Chat/Thread/selectors";
-import { useGetToolsLazyQuery } from "./useGetToolsQuery";
+import {
+  useCheckForConfirmationMutation,
+  useGetToolsLazyQuery,
+} from "./useGetToolsQuery";
 import {
   ChatMessage,
   ChatMessages,
   isAssistantMessage,
+  UserMessage,
+  UserMessageContentWithImage,
 } from "../services/refact/types";
 import {
   backUpMessages,
   chatAskQuestionThunk,
   chatAskedQuestion,
-  setToolUse,
+  setSendImmediately,
 } from "../features/Chat/Thread/actions";
-import { isToolUse } from "../features/Chat";
+
+import { selectAllImages } from "../features/AttachedImages";
 import { useAbortControllers } from "./useAbortControllers";
+import {
+  clearPauseReasonsAndHandleToolsStatus,
+  getToolsConfirmationStatus,
+  getToolsInteractionStatus,
+  setPauseReasons,
+} from "../features/ToolConfirmation/confirmationSlice";
+import { useAgentUsage } from "./useAgentUsage";
+import {
+  chatModeToLspMode,
+  LspChatMode,
+  setChatMode,
+  setIsWaitingForResponse,
+} from "../features/Chat";
+
+type SubmitHandlerParams =
+  | { question: string; maybeMode?: LspChatMode; maybeMessages?: undefined }
+  | {
+      question?: undefined;
+      maybeMode?: LspChatMode;
+      maybeMessages: ChatMessage[];
+    };
+
+let recallCounter = 0;
 
 export const useSendChatRequest = () => {
   const dispatch = useAppDispatch();
-  const hasError = useAppSelector(selectChatError);
   const abortControllers = useAbortControllers();
 
   const [triggerGetTools] = useGetToolsLazyQuery();
+  const [triggerCheckForConfirmation] = useCheckForConfirmationMutation();
+  const { incrementIfLastMessageIsFromUser } = useAgentUsage();
 
   const chatId = useAppSelector(selectChatId);
-  const streaming = useAppSelector(selectIsStreaming);
-  const chatError = useAppSelector(selectChatError);
 
-  const errored: boolean = !!hasError || !!chatError;
-  const preventSend = useAppSelector(selectPreventSend);
+  const isWaiting = useAppSelector(selectIsWaiting);
 
   const currentMessages = useAppSelector(selectMessages);
   const systemPrompt = useAppSelector(getSelectedSystemPrompt);
   const sendImmediately = useAppSelector(selectSendImmediately);
-  const toolUse = useAppSelector(selectToolUse);
+  const toolUse = useAppSelector(selectThreadToolUse);
+  const attachedImages = useAppSelector(selectAllImages);
+  const threadMode = useAppSelector(selectThreadMode);
+  const threadIntegration = useAppSelector(selectIntegration);
+  const wasInteracted = useAppSelector(getToolsInteractionStatus); // shows if tool confirmation popup was interacted by user
+  const areToolsConfirmed = useAppSelector(getToolsConfirmationStatus);
 
   const messagesWithSystemPrompt = useMemo(() => {
     const prompts = Object.entries(systemPrompt);
@@ -58,11 +94,14 @@ export const useSendChatRequest = () => {
   }, [currentMessages, systemPrompt]);
 
   const sendMessages = useCallback(
-    async (messages: ChatMessages) => {
+    async (messages: ChatMessages, maybeMode?: LspChatMode) => {
+      dispatch(setIsWaitingForResponse(true));
+
       let tools = await triggerGetTools(undefined).unwrap();
-      if (isToolUse(toolUse)) {
-        dispatch(setToolUse(toolUse));
-      }
+      // TODO: save tool use to state.chat
+      // if (toolUse && isToolUse(toolUse)) {
+      //   dispatch(setToolUse(toolUse));
+      // }
       if (toolUse === "quick") {
         tools = [];
       } else if (toolUse === "explore") {
@@ -72,64 +111,167 @@ export const useSendChatRequest = () => {
         const { agentic: _, ...remaining } = t.function;
         return { ...t, function: { ...remaining } };
       });
+
+      const lastMessage = messages.slice(-1)[0];
+      if (
+        !isWaiting &&
+        !wasInteracted &&
+        isAssistantMessage(lastMessage) &&
+        lastMessage.tool_calls
+      ) {
+        const toolCalls = lastMessage.tool_calls;
+        const confirmationResponse = await triggerCheckForConfirmation({
+          tool_calls: toolCalls,
+          messages: messages,
+        }).unwrap();
+        if (confirmationResponse.pause) {
+          dispatch(setPauseReasons(confirmationResponse.pause_reasons));
+          return;
+        }
+      }
+
       dispatch(backUpMessages({ id: chatId, messages }));
       dispatch(chatAskedQuestion({ id: chatId }));
+
+      const mode = maybeMode ?? chatModeToLspMode(toolUse, threadMode);
 
       const action = chatAskQuestionThunk({
         messages,
         tools,
+        toolsConfirmed: areToolsConfirmed,
         chatId,
+        mode,
       });
 
       const dispatchedAction = dispatch(action);
       abortControllers.addAbortController(chatId, dispatchedAction.abort);
+      incrementIfLastMessageIsFromUser(messages);
     },
-    [triggerGetTools, toolUse, dispatch, chatId, abortControllers],
+    [
+      triggerGetTools,
+      toolUse,
+      isWaiting,
+      dispatch,
+      chatId,
+      threadMode,
+      wasInteracted,
+      areToolsConfirmed,
+      abortControllers,
+      incrementIfLastMessageIsFromUser,
+      triggerCheckForConfirmation,
+    ],
+  );
+
+  const maybeAddImagesToQuestion = useCallback(
+    (question: string): UserMessage => {
+      if (attachedImages.length === 0)
+        return { role: "user" as const, content: question };
+
+      const images = attachedImages.reduce<UserMessageContentWithImage[]>(
+        (acc, image) => {
+          if (typeof image.content !== "string") return acc;
+          return acc.concat({
+            type: "image_url",
+            image_url: { url: image.content },
+          });
+        },
+        [],
+      );
+
+      if (images.length === 0) return { role: "user", content: question };
+
+      return {
+        role: "user",
+        content: [...images, { type: "text", text: question }],
+      };
+    },
+    [attachedImages],
   );
 
   const submit = useCallback(
-    (question: string) => {
-      const message: ChatMessage = { role: "user", content: question };
-      const messages = messagesWithSystemPrompt.concat(message);
-      void sendMessages(messages);
-    },
-    [messagesWithSystemPrompt, sendMessages],
-  );
+    ({ question, maybeMode, maybeMessages }: SubmitHandlerParams) => {
+      if (!question && !maybeMessages) return;
 
-  useEffect(() => {
-    if (sendImmediately) {
-      void sendMessages(messagesWithSystemPrompt);
-    }
-  }, [sendImmediately, sendMessages, messagesWithSystemPrompt]);
+      let messages = messagesWithSystemPrompt;
 
-  // TODO: Automatically calls tool calls. This means that this hook can only be used once :/
-  useEffect(() => {
-    if (!streaming && currentMessages.length > 0 && !errored && !preventSend) {
-      const lastMessage = currentMessages.slice(-1)[0];
-      if (
-        isAssistantMessage(lastMessage) &&
-        lastMessage.tool_calls &&
-        lastMessage.tool_calls.length > 0
-      ) {
-        void sendMessages(currentMessages);
+      if (question) {
+        const message = maybeAddImagesToQuestion(question);
+        messages = messages.concat(message);
+      } else if (maybeMessages) {
+        messages = maybeMessages;
       }
-    }
-  }, [errored, currentMessages, preventSend, sendMessages, streaming]);
+
+      // TODO: make a better way for setting / detecting thread mode.
+      const maybeConfigure = threadIntegration ? "CONFIGURE" : undefined;
+      const mode = chatModeToLspMode(
+        toolUse,
+        maybeMode ?? threadMode ?? maybeConfigure,
+      );
+      dispatch(setChatMode(mode));
+
+      void sendMessages(messages, mode);
+    },
+    [
+      dispatch,
+      maybeAddImagesToQuestion,
+      messagesWithSystemPrompt,
+      sendMessages,
+      threadIntegration,
+      threadMode,
+      toolUse,
+    ],
+  );
 
   const abort = useCallback(() => {
     abortControllers.abort(chatId);
   }, [abortControllers, chatId]);
 
+  useEffect(() => {
+    if (sendImmediately) {
+      dispatch(setSendImmediately(false));
+      void sendMessages(messagesWithSystemPrompt);
+    }
+  }, [dispatch, messagesWithSystemPrompt, sendImmediately, sendMessages]);
+
   const retry = useCallback(
     (messages: ChatMessages) => {
       abort();
+      dispatch(
+        clearPauseReasonsAndHandleToolsStatus({
+          wasInteracted: false,
+          confirmationStatus: areToolsConfirmed,
+        }),
+      );
       void sendMessages(messages);
     },
-    [abort, sendMessages],
+    [abort, sendMessages, dispatch, areToolsConfirmed],
   );
 
+  const confirmToolUsage = useCallback(() => {
+    abort();
+    dispatch(
+      clearPauseReasonsAndHandleToolsStatus({
+        wasInteracted: true,
+        confirmationStatus: true,
+      }),
+    );
+
+    dispatch(setIsWaitingForResponse(false));
+  }, [abort, dispatch]);
+
+  const rejectToolUsage = useCallback(() => {
+    abort();
+    dispatch(
+      clearPauseReasonsAndHandleToolsStatus({
+        wasInteracted: true,
+        confirmationStatus: false,
+      }),
+    );
+    dispatch(setIsWaitingForResponse(false));
+  }, [abort, dispatch]);
+
   const retryFromIndex = useCallback(
-    (index: number, question: string) => {
+    (index: number, question: UserMessage["content"]) => {
       const messagesToKeep = currentMessages.slice(0, index);
       const messagesToSend = messagesToKeep.concat([
         { role: "user", content: question },
@@ -144,5 +286,72 @@ export const useSendChatRequest = () => {
     abort,
     retry,
     retryFromIndex,
+    confirmToolUsage,
+    rejectToolUsage,
+    sendMessages,
   };
 };
+
+// NOTE: only use this once
+export function useAutoSend() {
+  const dispatch = useAppDispatch();
+  const streaming = useAppSelector(selectIsStreaming);
+  const currentMessages = useAppSelector(selectMessages);
+  const errored = useAppSelector(selectChatError);
+  const preventSend = useAppSelector(selectPreventSend);
+  const isWaiting = useAppSelector(selectIsWaiting);
+  const wasInteracted = useAppSelector(getToolsInteractionStatus); // shows if tool confirmation popup was interacted by user
+  const areToolsConfirmed = useAppSelector(getToolsConfirmationStatus);
+  const { sendMessages, abort } = useSendChatRequest();
+  // TODO: make a selector for this, or show tool formation
+  const thread = useAppSelector(selectThread);
+  const isIntegration = thread.integration ?? false;
+
+  useEffect(() => {
+    if (
+      !isWaiting &&
+      !streaming &&
+      currentMessages.length > 0 &&
+      !errored &&
+      !preventSend
+    ) {
+      const lastMessage = currentMessages.slice(-1)[0];
+      if (
+        isAssistantMessage(lastMessage) &&
+        lastMessage.tool_calls &&
+        lastMessage.tool_calls.length > 0
+      ) {
+        if (!isIntegration && !wasInteracted) {
+          abort();
+          if (recallCounter < 1) {
+            recallCounter++;
+            return;
+          }
+        }
+
+        dispatch(
+          clearPauseReasonsAndHandleToolsStatus({
+            wasInteracted: false,
+            confirmationStatus: areToolsConfirmed,
+          }),
+        );
+        void sendMessages(currentMessages, thread.mode);
+        recallCounter = 0;
+      }
+    }
+  }, [
+    dispatch,
+    errored,
+    currentMessages,
+    preventSend,
+    sendMessages,
+    abort,
+    streaming,
+    wasInteracted,
+    areToolsConfirmed,
+    isWaiting,
+    isIntegration,
+    thread.mode,
+    thread,
+  ]);
+}

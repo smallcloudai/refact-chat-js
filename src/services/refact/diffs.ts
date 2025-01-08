@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { PATCH_URL } from "./consts";
+import { PATCH_URL, APPLY_ALL_URL } from "./consts";
 import { ChatMessages, DiffChunk, isDiffChunk } from "./types";
 import { RootState } from "../../app/store";
 import { createAction } from "@reduxjs/toolkit";
@@ -28,6 +28,7 @@ function isPatchState(json: unknown): json is PatchState {
 
 export type PatchResult = {
   file_text: string;
+  already_applied: boolean;
   file_name_edit: string | null;
   file_name_delete: string | null;
   file_name_add: string | null;
@@ -35,20 +36,31 @@ export type PatchResult = {
 
 function isPatchResult(json: unknown): json is PatchResult {
   if (!json || typeof json !== "object") return false;
+
   if (!("file_text" in json)) return false;
   if (typeof json.file_text !== "string") return false;
+
+  if (!("already_applied" in json)) return false;
+  if (typeof json.already_applied !== "boolean") return false;
+
   if (!("file_name_edit" in json)) return false;
-  if (typeof json.file_name_edit !== "string" && json.file_name_edit !== null)
+  if (typeof json.file_name_edit !== "string" && json.file_name_edit !== null) {
     return false;
+  }
+
   if (!("file_name_delete" in json)) return false;
   if (
     typeof json.file_name_delete !== "string" &&
     json.file_name_delete !== null
-  )
+  ) {
     return false;
+  }
+
   if (!("file_name_add" in json)) return false;
-  if (typeof json.file_name_add !== "string" && json.file_name_add !== null)
+  if (typeof json.file_name_add !== "string" && json.file_name_add !== null) {
     return false;
+  }
+
   return true;
 }
 
@@ -66,6 +78,16 @@ function isPatchResponse(json: unknown): json is PatchResponse {
   if (!("results" in json)) return false;
   if (!Array.isArray(json.results)) return false;
   if (!json.results.every(isPatchResult)) return false;
+  if (!("chunks" in json)) return false;
+  if (!Array.isArray(json.chunks)) return false;
+  if (!json.chunks.every(isDiffChunk)) return false;
+  return true;
+}
+type ApplyAllResponse = {
+  chunks: DiffChunk[];
+};
+function isApplyAllResponse(json: unknown): json is ApplyAllResponse {
+  if (!json || typeof json !== "object") return false;
   if (!("chunks" in json)) return false;
   if (!Array.isArray(json.chunks)) return false;
   if (!json.chunks.every(isDiffChunk)) return false;
@@ -128,6 +150,45 @@ export const diffApi = createApi({
         return { data: result.data };
       },
     }),
+
+    applyAllPatchesInMessages: builder.mutation<ApplyAllResponse, ChatMessages>(
+      {
+        async queryFn(messages, api, extraOptions, baseQuery) {
+          const state = api.getState() as RootState;
+          const port = state.config.lspPort as unknown as number;
+          const url = `http://127.0.0.1:${port}${APPLY_ALL_URL}`;
+          const formattedMessage = formatMessagesForLsp(messages);
+          const result = await baseQuery({
+            ...extraOptions,
+            url,
+            credentials: "same-origin",
+            redirect: "follow",
+            method: "POST",
+            body: {
+              messages: formattedMessage,
+            },
+          });
+
+          if (result.error) {
+            return { error: result.error };
+          }
+
+          if (!isApplyAllResponse(result.data)) {
+            return {
+              error: {
+                status: "CUSTOM_ERROR",
+                error: "Failed to parse apply all response",
+                data: result.data,
+              },
+            };
+          }
+
+          return {
+            data: result.data,
+          };
+        },
+      },
+    ),
   }),
 });
 

@@ -15,6 +15,7 @@ import {
 } from "../features/Chat";
 import { useEventsBusForIDE } from "./useEventBusForIDE";
 import { useAppSelector } from "./useAppSelector";
+import { extractFilePathFromPin } from "../utils";
 
 export const usePatchActions = () => {
   const {
@@ -52,8 +53,9 @@ export const usePatchActions = () => {
     setErrorMessage(null);
   }, []);
 
-  const [getPatch, patchResult] =
-    diffApi.usePatchSingleFileFromTicketMutation();
+  const [getPatch, patchResult] = diffApi.usePatchSingleFileFromTicketMutation(
+    {},
+  );
 
   const disable = useMemo(() => {
     return !!errorMessage || isStreaming || isWaiting || patchResult.isLoading;
@@ -73,9 +75,8 @@ export const usePatchActions = () => {
 
   const handleShow = useCallback(
     (pin: string) => {
-      const [, , fileName] = pin.split(" ");
+      const fileName = extractFilePathFromPin(pin);
       const cleanedFileName = fileName.replace(/\\\?\\|^\\+/g, "");
-
       startFileAnimation(cleanedFileName);
       getPatch({ pin, messages })
         .unwrap()
@@ -88,21 +89,30 @@ export const usePatchActions = () => {
         })
         .then((patch) => {
           stopFileAnimation(cleanedFileName);
-          diffPreview(patch, pin, pinMessages);
+
+          if (patch.results.every((result) => result.already_applied)) {
+            const errorText =
+              "Already applied, no significant changes generated.";
+            setErrorMessage({
+              type: "warning",
+              text: errorText,
+            });
+          } else {
+            diffPreview(patch, pin, pinMessages);
+          }
         })
         .catch((error: Error | { data: { detail: string } }) => {
           stopFileAnimation(cleanedFileName);
+          let text = "";
           if ("message" in error) {
-            setErrorMessage({
-              type: "error",
-              text: "Failed to open patch: " + error.message,
-            });
+            text = "Failed to open patch: " + error.message;
           } else {
-            setErrorMessage({
-              type: "error",
-              text: "Failed to open patch: " + error.data.detail,
-            });
+            text = "Failed to open patch: " + error.data.detail;
           }
+          setErrorMessage({
+            type: "error",
+            text: text,
+          });
         });
     },
     [
@@ -117,7 +127,7 @@ export const usePatchActions = () => {
 
   const handleApply = useCallback(
     (pin: string) => {
-      const [, , fileName] = pin.split(" ");
+      const fileName = extractFilePathFromPin(pin);
       startFileAnimation(fileName);
 
       getPatch({ pin, messages })
@@ -131,7 +141,14 @@ export const usePatchActions = () => {
         })
         .then((patch) => {
           stopFileAnimation(fileName);
-          writeResultsToFile(patch.results);
+          if (patch.results.every((result) => result.already_applied)) {
+            setErrorMessage({
+              type: "warning",
+              text: "Already applied, no significant changes generated.",
+            });
+          } else {
+            writeResultsToFile(patch.results);
+          }
         })
         .catch((error: Error | { data: { detail: string } }) => {
           stopFileAnimation(fileName);
