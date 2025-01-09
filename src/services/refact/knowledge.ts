@@ -2,7 +2,12 @@ import { RootState } from "../../app/store";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { consumeStream } from "../../features/Chat/Thread/utils";
 import { parseOrElse } from "../../utils";
-import { KNOWLEDGE_SUB_URL } from "./consts";
+import {
+  KNOWLEDGE_ADD_URL,
+  KNOWLEDGE_REMOVE_URL,
+  KNOWLEDGE_SEARCH_URL,
+  KNOWLEDGE_SUB_URL,
+} from "./consts";
 
 /**
  * vecdb
@@ -41,18 +46,6 @@ function isMemoRecord(obj: unknown): obj is MemoRecord {
   if (!("memid" in obj) || typeof obj.memid !== "string") return false;
   // TODO: other checks
   return true;
-}
-
-type ListResponse = {
-  data: MemoRecord[];
-};
-
-function isListResponse(obj: unknown): obj is ListResponse {
-  if (!obj) return false;
-  if (typeof obj !== "object") return false;
-  if (!("data" in obj) || !Array.isArray(obj.data)) return false;
-  // TODO: other checks
-  return obj.data.every(isMemoRecord);
 }
 
 export type MemdbSubEvent = {
@@ -95,6 +88,44 @@ function subscribeToMemories(
   });
 }
 
+export type MemAddRequest = {
+  mem_type: string;
+  goal: string;
+  project: string;
+  payload: string;
+  origin: string;
+};
+
+type MemAddResponse = {
+  memid: string;
+};
+function isMemAddResponse(obj: unknown): obj is MemAddResponse {
+  if (!obj) return false;
+  if (typeof obj !== "object") return false;
+  if (!("memid" in obj) || typeof obj.memid !== "string") return false;
+  return true;
+}
+
+export type MemQuery = {
+  goal: string;
+  project: string;
+  top_n: number;
+};
+
+export type MemoSearchResult = {
+  query_text: string;
+  results: MemoRecord[];
+};
+
+function isMemoSearchResult(obj: unknown): obj is MemoSearchResult {
+  if (!obj) return false;
+  if (typeof obj !== "object") return false;
+  if (!("query_text" in obj) || typeof obj.query_text !== "string")
+    return false;
+  if (!("results" in obj) || !Array.isArray(obj.results)) return false;
+  return obj.results.every(isMemoRecord);
+}
+
 export const knowledgeApi = createApi({
   reducerPath: "knowledgeApi",
   baseQuery: fetchBaseQuery({
@@ -107,33 +138,6 @@ export const knowledgeApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    // Can remove
-    listAll: builder.query<MemoRecord[], undefined>({
-      async queryFn(_arg, api, extraOptions, baseQuery) {
-        const state = api.getState() as RootState;
-        const port = state.config.lspPort;
-        const response = await baseQuery({
-          ...extraOptions,
-          url: `http://127.0.0.1:${port}/v1/mem-list`,
-        });
-
-        if (response.error) {
-          return { error: response.error };
-        }
-
-        if (!isListResponse(response)) {
-          return {
-            error: {
-              error: "Invalid response",
-              status: "CUSTOM_ERROR",
-              data: response.data,
-            },
-          };
-        }
-
-        return { data: response.data };
-      },
-    }),
     subscribe: builder.query<
       {
         loaded: boolean;
@@ -200,6 +204,84 @@ export const knowledgeApi = createApi({
         await api.cacheEntryRemoved;
 
         await stream.cancel();
+      },
+      // transformResponse // use this to format the cache using memid
+    }),
+
+    addMemory: builder.mutation<MemAddResponse, MemAddRequest>({
+      async queryFn(arg, api, extraOptions, baseQuery) {
+        const state = api.getState() as RootState;
+        const port = state.config.lspPort as unknown as number;
+        const url = `http://127.0.0.1:${port}${KNOWLEDGE_ADD_URL}`;
+
+        const response = await baseQuery({
+          ...extraOptions,
+          url,
+          method: "POST",
+          body: arg,
+        });
+
+        if (response.error) {
+          return response;
+        }
+
+        if (!isMemAddResponse(response.data)) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: `Invalid response from ${url}`,
+              data: response.data,
+            },
+            meta: response.meta,
+          };
+        }
+
+        return { data: response.data, meta: response.meta };
+      },
+      // TDOD: use the memid in the response to update the cache
+    }),
+
+    deleteMemory: builder.mutation<unknown, string>({
+      async queryFn(arg, api, extraOptions, baseQuery) {
+        const state = api.getState() as RootState;
+        const port = state.config.lspPort as unknown as number;
+        const url = `http://127.0.0.1:${port}${KNOWLEDGE_REMOVE_URL}`;
+        const response = await baseQuery({
+          ...extraOptions,
+          url,
+          method: "POST",
+          body: { memid: arg },
+        });
+        return response;
+      },
+    }),
+
+    searchMemories: builder.query<MemoSearchResult, MemQuery>({
+      async queryFn(arg, api, extraOptions, baseQuery) {
+        const state = api.getState() as RootState;
+        const port = state.config.lspPort as unknown as number;
+        const url = `http://127.0.0.1:${port}${KNOWLEDGE_SEARCH_URL}`;
+        const response = await baseQuery({
+          ...extraOptions,
+          url,
+          method: "POST",
+          body: { memid: arg },
+        });
+
+        if (response.error) {
+          return { error: response.error };
+        }
+
+        if (!isMemoSearchResult(response.data)) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: `Invalid response from ${url}`,
+              data: response.data,
+            },
+          };
+        }
+        return { data: response.data };
       },
     }),
   }),

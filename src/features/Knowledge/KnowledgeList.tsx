@@ -9,6 +9,7 @@ export const KnowledgeList: React.FC = () => {
 
   const memoryCount = Object.keys(request.data?.memories ?? {}).length;
 
+  // TBD: should the user be able to add a new memory ?
   return (
     <Flex direction="column" gap="4" px="4">
       <Heading as="h4">Knowledge</Heading>
@@ -26,7 +27,7 @@ export const KnowledgeList: React.FC = () => {
 
 const KnowledgeListItem: React.FC<{ memory: MemoRecord }> = ({ memory }) => {
   return (
-    <Card asChild>
+    <Card>
       <DataList.Root size="1">
         {Object.entries(memory).map(([key, value]) => {
           return (

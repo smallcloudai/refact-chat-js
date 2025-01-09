@@ -31,3 +31,6 @@ export const TELEMETRY_CHAT_PATH = "/v1/telemetry-chat";
 export const TELEMETRY_NET_PATH = "/v1/telemetry-network";
 
 export const KNOWLEDGE_SUB_URL = "/v1/mem-sub";
+export const KNOWLEDGE_ADD_URL = "/v1/mem-add";
+export const KNOWLEDGE_REMOVE_URL = "/v1//mem-erase";
+export const KNOWLEDGE_SEARCH_URL = "/v1/mem-query";
