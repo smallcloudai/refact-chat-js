@@ -34,3 +34,4 @@ export const KNOWLEDGE_SUB_URL = "/v1/mem-sub";
 export const KNOWLEDGE_ADD_URL = "/v1/mem-add";
 export const KNOWLEDGE_REMOVE_URL = "/v1//mem-erase";
 export const KNOWLEDGE_SEARCH_URL = "/v1/mem-query";
+export const KNOWLEDGE_UPDATE_USED_URL = "/v1/mem-update-used";

@@ -7,6 +7,7 @@ import {
   KNOWLEDGE_REMOVE_URL,
   KNOWLEDGE_SEARCH_URL,
   KNOWLEDGE_SUB_URL,
+  KNOWLEDGE_UPDATE_USED_URL,
 } from "./consts";
 
 /**
@@ -125,6 +126,12 @@ function isMemoSearchResult(obj: unknown): obj is MemoSearchResult {
   if (!("results" in obj) || !Array.isArray(obj.results)) return false;
   return obj.results.every(isMemoRecord);
 }
+
+export type MemUpdateUsedRequest = {
+  memid: string;
+  correct: number;
+  relevant: number;
+};
 
 export const knowledgeApi = createApi({
   reducerPath: "knowledgeApi",
@@ -282,6 +289,21 @@ export const knowledgeApi = createApi({
           };
         }
         return { data: response.data };
+      },
+    }),
+
+    updateMemoryUsage: builder.mutation<unknown, MemUpdateUsedRequest>({
+      async queryFn(arg, api, extraOptions, baseQuery) {
+        const state = api.getState() as RootState;
+        const port = state.config.lspPort as unknown as number;
+        const url = `http://127.0.0.1:${port}${KNOWLEDGE_UPDATE_USED_URL}`;
+        const response = await baseQuery({
+          ...extraOptions,
+          url,
+          method: "POST",
+          body: arg,
+        });
+        return response;
       },
     }),
   }),
