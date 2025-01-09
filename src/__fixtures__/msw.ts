@@ -5,8 +5,10 @@ import { STUB_LINKS_FOR_CHAT_RESPONSE } from "./chat_links_response";
 import {
   AT_TOOLS_AVAILABLE_URL,
   CHAT_LINKS_URL,
+  KNOWLEDGE_SUB_URL,
 } from "../services/refact/consts";
 import { STUB_TOOL_RESPONSE } from "./tools_response";
+import { STUB_SUB_RESPONSE } from "./knowledge";
 
 export const goodPing: HttpHandler = http.get(
   "http://127.0.0.1:8001/v1/ping",
@@ -95,5 +97,31 @@ export const goodTools: HttpHandler = http.get(
   `http://127.0.0.1:8001${AT_TOOLS_AVAILABLE_URL}`,
   () => {
     return HttpResponse.json(STUB_TOOL_RESPONSE);
+  },
+);
+
+export const knowLedgeLoading: HttpHandler = http.get(
+  `http://127.0.0.1:8001${KNOWLEDGE_SUB_URL}`,
+  async () => {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        // Encode the string chunks using "TextEncoder".
+        STUB_SUB_RESPONSE.forEach((item) => {
+          const str = `data: ${JSON.stringify(item)}\n\n`;
+          controller.enqueue(encoder.encode(str));
+        });
+
+        controller.close();
+      },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    return new HttpResponse(stream, {
+      headers: {
+        "Content-Type": "text/plain",
+      },
+    });
   },
 );

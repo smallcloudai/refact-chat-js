@@ -2,6 +2,7 @@ import { RootState } from "../../app/store";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { consumeStream } from "../../features/Chat/Thread/utils";
 import { parseOrElse } from "../../utils";
+import { KNOWLEDGE_SUB_URL } from "./consts";
 
 /**
  * vecdb
@@ -18,25 +19,10 @@ import { parseOrElse } from "../../utils";
  *
  */
 
-/**
- * pub struct MemoRecord {
-    pub memid: String,
-    pub thevec: Option<Vec<f32>>,
-    pub distance: f32,
-    pub m_type: String,
-    pub m_goal: String,
-    pub m_project: String,
-    pub m_payload: String,
-    pub m_origin: String,
-    pub mstat_correct: f64,
-    pub mstat_relevant: f64,
-    pub mstat_times_used: i32,
-}
- */
-type MemoRecord = {
+export type MemoRecord = {
   memid: string;
   thevec?: number[]; // are options nullable?
-  distance: number;
+  distance?: number;
   m_type: string;
   m_goal: string;
   m_project: string;
@@ -69,7 +55,7 @@ function isListResponse(obj: unknown): obj is ListResponse {
   return obj.data.every(isMemoRecord);
 }
 
-type MemdbSubEvent = {
+export type MemdbSubEvent = {
   pubevent_id: number;
   pubevent_action: string;
   pubevent_json: string; // stringified MemRcord
@@ -94,7 +80,7 @@ function subscribeToMemories(
   port = 8001,
   apiKey?: string | null,
 ): Promise<Response> {
-  const url = `http://127.0.0.1:${port}/v1/mem-sub`;
+  const url = `http://127.0.0.1:${port}${KNOWLEDGE_SUB_URL}`;
   const headers = new Headers();
   headers.append("Content-Type", "application/json");
   if (apiKey) {
@@ -121,6 +107,7 @@ export const knowledgeApi = createApi({
     },
   }),
   endpoints: (builder) => ({
+    // Can remove
     listAll: builder.query<MemoRecord[], undefined>({
       async queryFn(_arg, api, extraOptions, baseQuery) {
         const state = api.getState() as RootState;

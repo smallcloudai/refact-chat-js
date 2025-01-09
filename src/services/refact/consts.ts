@@ -29,3 +29,5 @@ export const DOCKER_CONTAINER_ACTION = "/v1/docker-container-action";
 
 export const TELEMETRY_CHAT_PATH = "/v1/telemetry-chat";
 export const TELEMETRY_NET_PATH = "/v1/telemetry-network";
+
+export const KNOWLEDGE_SUB_URL = "/v1/mem-sub";
