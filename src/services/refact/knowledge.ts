@@ -1,6 +1,7 @@
 import { RootState } from "../../app/store";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { consumeStream } from "../../features/Chat/Thread/utils";
+import { parseOrElse } from "../../utils";
 
 /**
  * vecdb
@@ -71,8 +72,23 @@ function isListResponse(obj: unknown): obj is ListResponse {
 type MemdbSubEvent = {
   pubevent_id: number;
   pubevent_action: string;
-  pubevent_json: string;
+  pubevent_json: string; // stringified MemRcord
 };
+
+function isMenudbSubEvent(obj: unknown): obj is MemdbSubEvent {
+  if (!obj) return false;
+  if (typeof obj !== "object") return false;
+  if (!("pubevent_id" in obj) || typeof obj.pubevent_id !== "number") {
+    return false;
+  }
+  if (!("pubevent_action" in obj) || typeof obj.pubevent_action !== "string") {
+    return false;
+  }
+  if (!("pubevent_json" in obj) || typeof obj.pubevent_json !== "string") {
+    return false;
+  }
+  return true;
+}
 
 function subscribeToMemories(
   port = 8001,
@@ -134,7 +150,7 @@ export const knowledgeApi = createApi({
     subscribe: builder.query<
       {
         loaded: boolean;
-        memories: MemdbSubEvent[]; // What is the json?
+        memories: Record<string, MemoRecord>;
       },
       undefined
     >({
@@ -142,7 +158,7 @@ export const knowledgeApi = createApi({
         return {
           data: {
             loaded: false,
-            memories: [],
+            memories: {},
           },
         };
       },
@@ -162,10 +178,28 @@ export const knowledgeApi = createApi({
           // validate the type
           console.log("mem-db chunk");
           console.log(chunk);
+          if (!isMenudbSubEvent(chunk)) {
+            return;
+          }
+          const data = parseOrElse<MemoRecord | null>(
+            chunk.pubevent_json,
+            null,
+            isMemoRecord,
+          );
+          if (data === null) {
+            return;
+          }
           api.updateCachedData((draft) => {
             draft.loaded = true;
-            // TODO: types of chunk
-            draft.memories.push(chunk as MemdbSubEvent);
+            if (chunk.pubevent_action === "DELETE") {
+              draft.memories = removeFromObject(draft.memories, data.memid);
+            } else if (chunk.pubevent_action === "INSERT") {
+              draft.memories[data.memid] = data;
+            } else if (chunk.pubevent_action === "UPDATE") {
+              draft.memories[data.memid] = data;
+            } else {
+              console.log("Unknown action", chunk.pubevent_action);
+            }
           });
         };
         try {
@@ -183,3 +217,11 @@ export const knowledgeApi = createApi({
     }),
   }),
 });
+
+function removeFromObject<T extends Record<string, unknown>>(
+  obj: T,
+  key: string,
+): T {
+  const entries = Object.entries(obj).filter(([k, _]) => k !== key);
+  return Object.fromEntries(entries) as T;
+}

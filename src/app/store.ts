@@ -23,6 +23,7 @@ import {
   integrationsApi,
   dockerApi,
   telemetryApi,
+  knowledgeApi,
 } from "../services/refact";
 import { smallCloudApi } from "../services/smallcloud";
 import { reducer as fimReducer } from "../features/FIM/reducer";
@@ -83,6 +84,7 @@ const rootReducer = combineSlices(
     [pingApi.reducerPath]: pingApi.reducer,
     [linksApi.reducerPath]: linksApi.reducer,
     [telemetryApi.reducerPath]: telemetryApi.reducer,
+    [knowledgeApi.reducerPath]: knowledgeApi.reducer,
   },
   historySlice,
   errorSlice,
@@ -167,6 +169,7 @@ export function setUpStore(preloadedState?: Partial<RootState>) {
             integrationsApi.middleware,
             dockerApi.middleware,
             telemetryApi.middleware,
+            knowledgeApi.middleware,
           )
           .prepend(historyMiddleware.middleware)
           // .prepend(errorMiddleware.middleware)
