@@ -2,6 +2,16 @@ import { RootState } from "../../app/store";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { consumeStream } from "../../features/Chat/Thread/utils";
 
+/**
+ *  * .route("/cthreads-sub", telemetry_post!(handle_db_v1_cthreads_sub))
+ * .route("/cthread-update", telemetry_post!(handle_db_v1_cthread_update))
+ * .route("/cmessages-sub", telemetry_post!(handle_db_v1_cmessages_sub))
+ * .route("/cmessages-update", telemetry_post!(handle_db_v1_cmessages_update))
+ * .route("/chores-sub", telemetry_post!(handle_db_v1_chores_sub))
+ * .route("/chore-update", telemetry_post!(handle_db_v1_chore_update))
+ * .route("/chore-event-update", telemetry_post!(handle_db_v1_chore_event_update))
+ */
+
 // TODO: rename to ChatThread, refactor current ChatThread... minor breaking change
 export type CThread = {
   cthread_id: string;
@@ -113,7 +123,6 @@ export const chatDb = createApi({
         console.log({ args });
 
         const state = api.getState() as unknown as RootState;
-        console.log({ state });
         const token = state.config.apiKey;
         const port = state.config.lspPort;
 
@@ -125,6 +134,7 @@ export const chatDb = createApi({
         const onAbort = () => console.log("Aborted");
         const onChunk = (chunk: Record<string, unknown>) => {
           // validate the type
+          console.log("chat-db chunk");
           console.log(chunk);
           api.updateCachedData((draft) => {
             draft.loaded = true;
