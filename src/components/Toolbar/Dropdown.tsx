@@ -13,6 +13,7 @@ import { useOpenUrl } from "../../hooks/useOpenUrl";
 import { DropdownMenu, Flex, IconButton } from "@radix-ui/themes";
 import { HamburgerMenuIcon, DiscordLogoIcon } from "@radix-ui/react-icons";
 import { clearHistory } from "../../features/History/historySlice";
+import { KnowledgeListPage } from "../../features/Pages/pagesSlice";
 //import { Coin } from "../../images";
 
 export type DropdownNavigationOptions =
@@ -23,6 +24,7 @@ export type DropdownNavigationOptions =
   | "restart tour"
   | "cloud login"
   | "integrations"
+  | KnowledgeListPage["name"]
   | "";
 
 type DropdownProps = {
@@ -125,6 +127,10 @@ export const Dropdown: React.FC<DropdownProps> = ({
 
         <DropdownMenu.Item onSelect={() => handleNavigation("integrations")}>
           Setup Agent Integrations
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Item onSelect={() => handleNavigation("knowledge list")}>
+          Knowledge
         </DropdownMenu.Item>
 
         <DropdownMenu.Item onSelect={() => handleNavigation("hot keys")}>

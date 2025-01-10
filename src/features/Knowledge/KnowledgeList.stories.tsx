@@ -24,7 +24,7 @@ const Template: React.FC = () => {
 };
 
 const meta: Meta<typeof KnowledgeList> = {
-  title: "Components/KnowledgeList",
+  title: "KnowledgeList",
   component: Template,
   parameters: {
     msw: {

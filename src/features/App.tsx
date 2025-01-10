@@ -36,6 +36,7 @@ import { ThreadHistory } from "./ThreadHistory";
 import { Integrations } from "./Integrations";
 import { UserSurvey } from "./UserSurvey";
 import { integrationsApi } from "../services/refact";
+import { KnowledgeList } from "./Knowledge";
 
 export interface AppProps {
   style?: React.CSSProperties;
@@ -246,6 +247,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
             chatId={page.chatId}
           />
         )}
+        {page.name === "knowledge list" && <KnowledgeList />}
       </PageWrapper>
       <Tour page={pages[pages.length - 1].name} />
     </Flex>

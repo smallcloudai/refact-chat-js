@@ -63,6 +63,10 @@ export interface IntegrationsSetupPage {
   wasOpenedThroughChat?: boolean;
 }
 
+export interface KnowledgeListPage {
+  name: "knowledge list";
+}
+
 export type Page =
   | InitialSetupPage
   | CloudLogin
@@ -77,7 +81,8 @@ export type Page =
   | StatisticsPage
   | DocumentationSettingsPage
   | ChatThreadHistoryPage
-  | IntegrationsSetupPage;
+  | IntegrationsSetupPage
+  | KnowledgeListPage;
 
 export function isIntegrationSetupPage(
   page: Page,
