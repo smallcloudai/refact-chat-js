@@ -17,11 +17,22 @@ import {
   knowledgeApi,
   MemoRecord,
 } from "../../services/refact/knowledge";
+import { pop } from "../../features/Pages/pagesSlice";
+import { useAppDispatch } from "../../hooks";
 
 export const KnowledgeList: React.FC = () => {
   const request = knowledgeApi.useSubscribeQuery(undefined);
+  const dispatch = useAppDispatch();
 
   const [openForm, setOpenForm] = React.useState<boolean>(false);
+
+  const handleBack = React.useCallback(() => {
+    if (openForm) {
+      setOpenForm(false);
+    } else {
+      dispatch(pop());
+    }
+  }, [dispatch, openForm]);
 
   const memoryCount = Object.keys(request.data?.memories ?? {}).length;
 
@@ -29,16 +40,19 @@ export const KnowledgeList: React.FC = () => {
   return (
     <Container>
       <Flex direction="column" gap="4" px="4">
+        <Flex justify="between">
+          <Button variant="outline" onClick={handleBack}>
+            Back
+          </Button>
+          <Heading as="h4">Knowledge</Heading>
+          {!openForm && (
+            <Button onClick={() => setOpenForm(true)}>Add new knowledge</Button>
+          )}
+        </Flex>
         {openForm ? (
           <KnowledgeListForm onClose={() => setOpenForm(false)} />
         ) : (
           <>
-            <Flex justify="between">
-              <Heading as="h4">Knowledge</Heading>
-              <Button onClick={() => setOpenForm(true)}>
-                Add new knowledge
-              </Button>
-            </Flex>
             {request.isLoading && <Spinner loading={request.isLoading} />}
             {/* TODO: this could happen if theres no knowledge, but may also happen while waiting for the stream */}
             {!request.isFetching &&
