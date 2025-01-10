@@ -98,7 +98,10 @@ const KnowledgeListItem: React.FC<{ memory: MemoRecord }> = ({ memory }) => {
           <TrashIcon />
         </IconButton>
       </Box>
-      <DataList.Root size="1">
+      <DataList.Root
+        size="1"
+        orientation={{ initial: "vertical", xs: "horizontal" }}
+      >
         {Object.entries(memory).map(([key, value]) => {
           return (
             <DataList.Item key={key}>
