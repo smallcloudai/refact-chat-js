@@ -23,11 +23,8 @@ import { ScrollArea } from "../../components/ScrollArea";
 import styles from "./Knowledge.module.css";
 
 export const KnowledgeList: React.FC = () => {
-  const request = knowledgeApi.useSubscribeQuery(undefined);
+  const request = knowledgeApi.useListAllAndSubscribeQuery(undefined);
   const dispatch = useAppDispatch();
-
-  const list = knowledgeApi.useListAllQuery(undefined);
-  console.log({ list });
 
   const [openForm, setOpenForm] = React.useState<boolean>(false);
 
@@ -39,7 +36,7 @@ export const KnowledgeList: React.FC = () => {
     }
   }, [dispatch, openForm]);
 
-  const memoryCount = Object.keys(request.data?.memories ?? {}).length;
+  const memoryCount = Object.keys(request.data ?? {}).length;
 
   // TBD: should the user be able to add a new memory ?
   return (
@@ -67,11 +64,11 @@ export const KnowledgeList: React.FC = () => {
         <Flex direction="column" gap="4" px="4">
           {request.isLoading && <Spinner loading={request.isLoading} />}
           {/* TODO: this could happen if theres no knowledge, but may also happen while waiting for the stream */}
-          {!request.isFetching &&
-            request.data?.loaded === true &&
-            memoryCount === 0 && <Text>No knowledge items found</Text>}
+          {!request.isFetching && memoryCount === 0 && (
+            <Text>No knowledge items found</Text>
+          )}
 
-          {Object.values(request.data?.memories ?? {}).map((memory) => {
+          {Object.values(request.data ?? {}).map((memory) => {
             return <KnowledgeListItem key={memory.memid} memory={memory} />;
           })}
         </Flex>

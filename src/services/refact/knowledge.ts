@@ -169,6 +169,88 @@ export const knowledgeApi = createApi({
     },
   }),
   endpoints: (builder) => ({
+    listAllAndSubscribe: builder.query<Record<string, MemoRecord>, undefined>({
+      async queryFn(_arg, api, extraOptions, baseQuery) {
+        console.log("knowledgeApi.listAllAndSubscribe.queryFn");
+        const state = api.getState() as RootState;
+        const port = state.config.lspPort;
+        const response = await baseQuery({
+          ...extraOptions,
+          url: `http://127.0.0.1:${port}${KNOWLEDGE_LIST_URL}`,
+        });
+
+        if (response.error) {
+          return { error: response.error };
+        }
+
+        if (!isListResponse(response)) {
+          return {
+            error: {
+              error: "Invalid response",
+              status: "CUSTOM_ERROR",
+              data: response.data,
+            },
+          };
+        }
+
+        const data = Object.fromEntries(
+          response.data.map((memoRecord) => [memoRecord.memid, memoRecord]),
+        );
+
+        return { data };
+      },
+      onCacheEntryAdded: async (_args, api) => {
+        console.log("knowledgeApi.listAllAndSubscribe.onCacheEntryAdded");
+
+        const state = api.getState() as unknown as RootState;
+        const token = state.config.apiKey;
+        const port = state.config.lspPort;
+
+        const response = await subscribeToMemories(port, token);
+        if (!response.body) return;
+
+        const stream = response.body.getReader();
+        const abortSignal = new AbortController();
+        const onAbort = () => console.log("Aborted");
+        const onChunk = (chunk: Record<string, unknown>) => {
+          // validate the type
+          console.log("mem-db chunk");
+          console.log(chunk);
+          if (!isMenudbSubEvent(chunk)) {
+            return;
+          }
+          const data = parseOrElse<MemoRecord | null>(
+            chunk.pubevent_json,
+            null,
+            isMemoRecord,
+          );
+          api.updateCachedData((draft) => {
+            if (data === null) {
+              return draft;
+            } else if (chunk.pubevent_action === "DELETE") {
+              draft = removeFromObject(draft, data.memid);
+            } else if (chunk.pubevent_action === "INSERT") {
+              draft[data.memid] = data;
+            } else if (chunk.pubevent_action === "UPDATE") {
+              draft[data.memid] = data;
+            } else {
+              console.log("Unknown action", chunk.pubevent_action);
+            }
+          });
+        };
+        try {
+          await api.cacheDataLoaded;
+          await consumeStream(stream, abortSignal.signal, onAbort, onChunk);
+        } catch {
+          // no-op in case `cacheEntryRemoved` resolves before `cacheDataLoaded`,
+          // in which case `cacheDataLoaded` will throw
+        }
+
+        await api.cacheEntryRemoved;
+
+        await stream.cancel();
+      },
+    }),
     listAll: builder.query<MemoRecord[], undefined>({
       async queryFn(_arg, api, extraOptions, baseQuery) {
         const state = api.getState() as RootState;
