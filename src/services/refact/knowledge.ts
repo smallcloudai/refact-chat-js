@@ -202,6 +202,8 @@ export const knowledgeApi = createApi({
       onCacheEntryAdded: async (_args, api) => {
         console.log("knowledgeApi.listAllAndSubscribe.onCacheEntryAdded");
 
+        await api.cacheDataLoaded;
+
         const state = api.getState() as unknown as RootState;
         const token = state.config.apiKey;
         const port = state.config.lspPort;
@@ -228,7 +230,13 @@ export const knowledgeApi = createApi({
             if (data === null) {
               return draft;
             } else if (chunk.pubevent_action === "DELETE") {
-              draft = removeFromObject(draft, data.memid);
+              //   console.log("Deleting");
+              //   console.log({ mem: draft[data.memid] });
+              //   draft = removeFromObject(draft, data.memid);
+              //   console.log({ updae: draft[data.memid] });
+
+              // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+              delete draft[data.memid];
             } else if (chunk.pubevent_action === "INSERT") {
               draft[data.memid] = data;
             } else if (chunk.pubevent_action === "UPDATE") {

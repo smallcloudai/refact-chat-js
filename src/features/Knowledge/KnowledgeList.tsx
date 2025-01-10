@@ -11,7 +11,9 @@ import {
   TextArea,
   TextAreaProps,
   Box,
+  IconButton,
 } from "@radix-ui/themes";
+import { TrashIcon } from "@radix-ui/react-icons";
 import {
   isAddMemoryRequest,
   knowledgeApi,
@@ -78,8 +80,24 @@ export const KnowledgeList: React.FC = () => {
 };
 
 const KnowledgeListItem: React.FC<{ memory: MemoRecord }> = ({ memory }) => {
+  const [deleteMemory, result] = knowledgeApi.useDeleteMemoryMutation();
+  const handleDeletion = React.useCallback(() => {
+    void deleteMemory(memory.memid);
+    // TBD: handle errors
+    // TBD: should we clear the form after submit?
+    // event.currentTarget.reset();
+  }, [deleteMemory, memory.memid]);
   return (
     <Card>
+      <Box position="absolute" right="3">
+        <IconButton
+          onClick={handleDeletion}
+          variant="outline"
+          loading={result.isLoading}
+        >
+          <TrashIcon />
+        </IconButton>
+      </Box>
       <DataList.Root size="1">
         {Object.entries(memory).map(([key, value]) => {
           return (
