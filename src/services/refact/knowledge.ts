@@ -97,6 +97,17 @@ export type MemAddRequest = {
   origin: string;
 };
 
+export function isAddMemoryRequest(obj: unknown): obj is MemAddRequest {
+  if (!obj) return false;
+  if (typeof obj !== "object") return false;
+  if (!("mem_type" in obj) || typeof obj.mem_type !== "string") return false;
+  if (!("goal" in obj) || typeof obj.goal !== "string") return false;
+  if (!("project" in obj) || typeof obj.project !== "string") return false;
+  if (!("payload" in obj) || typeof obj.payload !== "string") return false;
+  if (!("origin" in obj) || typeof obj.origin !== "string") return false;
+  return true;
+}
+
 type MemAddResponse = {
   memid: string;
 };
@@ -184,12 +195,11 @@ export const knowledgeApi = createApi({
             null,
             isMemoRecord,
           );
-          if (data === null) {
-            return;
-          }
           api.updateCachedData((draft) => {
             draft.loaded = true;
-            if (chunk.pubevent_action === "DELETE") {
+            if (data === null) {
+              return;
+            } else if (chunk.pubevent_action === "DELETE") {
               draft.memories = removeFromObject(draft.memories, data.memid);
             } else if (chunk.pubevent_action === "INSERT") {
               draft.memories[data.memid] = data;
