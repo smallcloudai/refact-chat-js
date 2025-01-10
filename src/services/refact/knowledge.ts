@@ -4,6 +4,7 @@ import { consumeStream } from "../../features/Chat/Thread/utils";
 import { parseOrElse } from "../../utils";
 import {
   KNOWLEDGE_ADD_URL,
+  KNOWLEDGE_LIST_URL,
   KNOWLEDGE_REMOVE_URL,
   KNOWLEDGE_SEARCH_URL,
   KNOWLEDGE_SUB_URL,
@@ -144,6 +145,18 @@ export type MemUpdateUsedRequest = {
   relevant: number;
 };
 
+type ListResponse = {
+  data: MemoRecord[];
+};
+
+function isListResponse(obj: unknown): obj is ListResponse {
+  if (!obj) return false;
+  if (typeof obj !== "object") return false;
+  if (!("data" in obj) || !Array.isArray(obj.data)) return false;
+  // TODO: other checks
+  return obj.data.every(isMemoRecord);
+}
+
 export const knowledgeApi = createApi({
   reducerPath: "knowledgeApi",
   baseQuery: fetchBaseQuery({
@@ -156,6 +169,32 @@ export const knowledgeApi = createApi({
     },
   }),
   endpoints: (builder) => ({
+    listAll: builder.query<MemoRecord[], undefined>({
+      async queryFn(_arg, api, extraOptions, baseQuery) {
+        const state = api.getState() as RootState;
+        const port = state.config.lspPort;
+        const response = await baseQuery({
+          ...extraOptions,
+          url: `http://127.0.0.1:${port}${KNOWLEDGE_LIST_URL}`,
+        });
+
+        if (response.error) {
+          return { error: response.error };
+        }
+
+        if (!isListResponse(response)) {
+          return {
+            error: {
+              error: "Invalid response",
+              status: "CUSTOM_ERROR",
+              data: response.data,
+            },
+          };
+        }
+
+        return { data: response.data };
+      },
+    }),
     subscribe: builder.query<
       {
         loaded: boolean;

@@ -10,7 +10,7 @@ import {
   TextField,
   TextArea,
   TextAreaProps,
-  Container,
+  Box,
 } from "@radix-ui/themes";
 import {
   isAddMemoryRequest,
@@ -19,10 +19,15 @@ import {
 } from "../../services/refact/knowledge";
 import { pop } from "../../features/Pages/pagesSlice";
 import { useAppDispatch } from "../../hooks";
+import { ScrollArea } from "../../components/ScrollArea";
+import styles from "./Knowledge.module.css";
 
 export const KnowledgeList: React.FC = () => {
   const request = knowledgeApi.useSubscribeQuery(undefined);
   const dispatch = useAppDispatch();
+
+  const list = knowledgeApi.useListAllQuery(undefined);
+  console.log({ list });
 
   const [openForm, setOpenForm] = React.useState<boolean>(false);
 
@@ -38,34 +43,40 @@ export const KnowledgeList: React.FC = () => {
 
   // TBD: should the user be able to add a new memory ?
   return (
-    <Container>
-      <Flex direction="column" gap="4" px="4">
-        <Flex justify="between">
+    <Flex direction="column" overflowY="hidden" height="100%">
+      <Flex direction="column" gap="4" mb="4">
+        <Box>
           <Button variant="outline" onClick={handleBack}>
             Back
           </Button>
-          <Heading as="h4">Knowledge</Heading>
-          {!openForm && (
+        </Box>
+
+        <Heading ml="auto" mr="auto" as="h4">
+          Knowledge
+        </Heading>
+
+        <Box>
+          {openForm ? (
+            <KnowledgeListForm onClose={() => setOpenForm(false)} />
+          ) : (
             <Button onClick={() => setOpenForm(true)}>Add new knowledge</Button>
           )}
-        </Flex>
-        {openForm ? (
-          <KnowledgeListForm onClose={() => setOpenForm(false)} />
-        ) : (
-          <>
-            {request.isLoading && <Spinner loading={request.isLoading} />}
-            {/* TODO: this could happen if theres no knowledge, but may also happen while waiting for the stream */}
-            {!request.isFetching &&
-              request.data?.loaded === true &&
-              memoryCount === 0 && <Text>No knowledge items found</Text>}
-
-            {Object.values(request.data?.memories ?? {}).map((memory) => {
-              return <KnowledgeListItem key={memory.memid} memory={memory} />;
-            })}
-          </>
-        )}
+        </Box>
       </Flex>
-    </Container>
+      <ScrollArea scrollbars="vertical">
+        <Flex direction="column" gap="4" px="4">
+          {request.isLoading && <Spinner loading={request.isLoading} />}
+          {/* TODO: this could happen if theres no knowledge, but may also happen while waiting for the stream */}
+          {!request.isFetching &&
+            request.data?.loaded === true &&
+            memoryCount === 0 && <Text>No knowledge items found</Text>}
+
+          {Object.values(request.data?.memories ?? {}).map((memory) => {
+            return <KnowledgeListItem key={memory.memid} memory={memory} />;
+          })}
+        </Flex>
+      </ScrollArea>
+    </Flex>
   );
 };
 
@@ -107,28 +118,32 @@ const KnowledgeListForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   }, [result.isSuccess, onClose]);
 
   return (
-    <form onSubmit={handleSubmit} onReset={onClose}>
-      <Flex direction="column" gap="2">
-        <TextInput name="mem_type" label="Type" required />
+    <Card asChild className={styles.knowledge__form}>
+      <form onSubmit={handleSubmit} onReset={onClose}>
+        <Flex gap="8" direction="column">
+          <Flex direction="column" gap="4">
+            <TextInput name="mem_type" label="Type" required />
 
-        <TextInput name="goal" label="Goal" required />
+            <TextInput name="goal" label="Goal" required />
 
-        <TextInput name="project" label="Project" required />
+            <TextInput name="project" label="Project" required />
 
-        <TextInput name="origin" label="Origin" required />
+            <TextInput name="origin" label="Origin" required />
 
-        <TextAreaInput name="payload" label="Payload" required />
+            <TextAreaInput name="payload" label="Payload" required />
+          </Flex>
 
-        <Flex gap="3" justify="end">
-          <Button type="submit" color="green">
-            Save
-          </Button>
-          <Button variant="soft" color="gray" type="reset">
-            Close
-          </Button>
+          <Flex gap="3" justify="end">
+            <Button type="submit" color="green">
+              Save
+            </Button>
+            <Button variant="soft" color="gray" type="reset">
+              Close
+            </Button>
+          </Flex>
         </Flex>
-      </Flex>
-    </form>
+      </form>
+    </Card>
   );
 };
 
