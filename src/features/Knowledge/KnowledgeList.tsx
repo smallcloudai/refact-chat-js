@@ -102,14 +102,15 @@ const KnowledgeListItem: React.FC<{ memory: MemoRecord }> = ({ memory }) => {
         size="1"
         orientation={{ initial: "vertical", xs: "horizontal" }}
       >
-        {Object.entries(memory).map(([key, value]) => {
-          return (
-            <DataList.Item key={key}>
-              <DataList.Label>{key}</DataList.Label>
-              <DataList.Value>{value}</DataList.Value>
-            </DataList.Item>
-          );
-        })}
+        <DataList.Item>
+          <DataList.Label>Goal</DataList.Label>
+          <DataList.Value>{memory.m_goal}</DataList.Value>
+        </DataList.Item>
+
+        <DataList.Item>
+          <DataList.Label>Content</DataList.Label>
+          <DataList.Value>{memory.m_payload}</DataList.Value>
+        </DataList.Item>
       </DataList.Root>
     </Card>
   );
