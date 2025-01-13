@@ -62,7 +62,7 @@ export const KnowledgeList: React.FC = () => {
         </Box>
       </Flex>
       <ScrollArea scrollbars="vertical">
-        <Flex direction="column" gap="4" px="4">
+        <Flex direction="column" gap="4">
           {request.isLoading && <Spinner loading={request.isLoading} />}
           {/* TODO: this could happen if theres no knowledge, but may also happen while waiting for the stream */}
           {!request.isFetching && memoryCount === 0 && (
@@ -134,14 +134,7 @@ const KnowledgeListForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       <form onSubmit={handleSubmit} onReset={onClose}>
         <Flex gap="8" direction="column">
           <Flex direction="column" gap="4">
-            <TextInput name="mem_type" label="Type" required />
-
             <TextInput name="goal" label="Goal" required />
-
-            <TextInput name="project" label="Project" required />
-
-            <TextInput name="origin" label="Origin" required />
-
             <TextAreaInput name="payload" label="Payload" required />
           </Flex>
 
