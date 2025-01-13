@@ -5,7 +5,6 @@ import {
   Heading,
   Spinner,
   Text,
-  DataList,
   Button,
   TextField,
   TextArea,
@@ -89,29 +88,23 @@ const KnowledgeListItem: React.FC<{ memory: MemoRecord }> = ({ memory }) => {
   }, [deleteMemory, memory.memid]);
   return (
     <Card>
-      <Box position="absolute" right="3">
-        <IconButton
-          onClick={handleDeletion}
-          variant="outline"
-          loading={result.isLoading}
-        >
-          <TrashIcon />
-        </IconButton>
-      </Box>
-      <DataList.Root
-        size="1"
-        orientation={{ initial: "vertical", xs: "horizontal" }}
-      >
-        <DataList.Item>
-          <DataList.Label>Goal</DataList.Label>
-          <DataList.Value>{memory.m_goal}</DataList.Value>
-        </DataList.Item>
+      <Flex direction="column" gap="3">
+        <Flex justify="between" align="center">
+          <Text size="2" weight="bold">
+            {memory.m_goal}
+          </Text>
+          <IconButton
+            onClick={handleDeletion}
+            variant="outline"
+            loading={result.isLoading}
+            style={{ alignSelf: "flex-start" }}
+          >
+            <TrashIcon />
+          </IconButton>
+        </Flex>
 
-        <DataList.Item>
-          <DataList.Label>Content</DataList.Label>
-          <DataList.Value>{memory.m_payload}</DataList.Value>
-        </DataList.Item>
-      </DataList.Root>
+        <Text size="2">{memory.m_payload}</Text>
+      </Flex>
     </Card>
   );
 };

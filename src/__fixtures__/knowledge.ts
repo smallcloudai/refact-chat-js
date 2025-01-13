@@ -34,6 +34,19 @@ export const STUB_MEMORIES: MemoRecord[] = [
     mstat_relevant: 0,
     mstat_times_used: 0,
   },
+
+  {
+    memid: "eb1d64684c",
+    m_type: "proj-fact",
+    m_goal:
+      "Long goal Long goal Long goal Long goal Long goal Long goal Long goal Long goal Long goal Long goal",
+    m_project: "proj2",
+    m_payload: "Looks like proj2 is written in fact in Rust.",
+    m_origin: "local-committed",
+    mstat_correct: 0,
+    mstat_relevant: 0,
+    mstat_times_used: 0,
+  },
 ];
 
 export const STUB_SUB_RESPONSE: MemdbSubEvent[] = [
