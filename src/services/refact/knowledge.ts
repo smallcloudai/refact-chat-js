@@ -1,6 +1,9 @@
 import { RootState } from "../../app/store";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { consumeStream } from "../../features/Chat/Thread/utils";
+import {
+  consumeStream,
+  formatMessagesForLsp,
+} from "../../features/Chat/Thread/utils";
 import { parseOrElse } from "../../utils";
 import {
   KNOWLEDGE_ADD_URL,
@@ -10,6 +13,7 @@ import {
   KNOWLEDGE_SUB_URL,
   KNOWLEDGE_UPDATE_USED_URL,
 } from "./consts";
+import type { ChatMessages } from ".";
 
 /**
  * vecdb
@@ -443,6 +447,17 @@ export const knowledgeApi = createApi({
           body: arg,
         });
         return response;
+      },
+    }),
+
+    createNewMemoryFromMessages: builder.mutation<unknown, ChatMessages>({
+      async queryFn(messages, _api, _extraOptions, _baseQuery) {
+        const messagesForLsp = formatMessagesForLsp(messages);
+        console.log("Messages to make a memory out of");
+        console.log(messagesForLsp);
+        // TODO: add the call to the endpoint when it's there.
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        return { data: null };
       },
     }),
   }),

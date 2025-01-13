@@ -1,6 +1,7 @@
 import React, { useCallback, useRef } from "react";
 import {
   ChatMessages,
+  isAssistantMessage,
   isChatContextFileMessage,
   isDiffMessage,
   isToolMessage,
@@ -175,12 +176,14 @@ function renderMessages(
 
   if (head.role === "assistant") {
     const key = "assistant-input-" + index;
+    const isLast = !tail.some(isAssistantMessage);
     const nextMemo = [
       ...memo,
       <AssistantInput
         key={key}
         message={head.content}
         toolCalls={head.tool_calls}
+        isLast={isLast}
       />,
     ];
 
