@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import {
   Card,
   Flex,
@@ -12,7 +12,7 @@ import {
   Box,
   IconButton,
 } from "@radix-ui/themes";
-import { TrashIcon } from "@radix-ui/react-icons";
+import { TrashIcon, Pencil1Icon } from "@radix-ui/react-icons";
 import {
   isAddMemoryRequest,
   knowledgeApi,
@@ -28,6 +28,7 @@ export const KnowledgeList: React.FC = () => {
   const dispatch = useAppDispatch();
 
   const [openForm, setOpenForm] = React.useState<boolean>(false);
+  const [editing, setEditing] = React.useState<null | string>(null);
 
   const handleBack = React.useCallback(() => {
     if (openForm) {
@@ -37,7 +38,7 @@ export const KnowledgeList: React.FC = () => {
     }
   }, [dispatch, openForm]);
 
-  const memoryCount = Object.keys(request.data ?? {}).length;
+  const memoryCount = Object.keys(request.data?.memories ?? {}).length;
 
   // TBD: should the user be able to add a new memory ?
   return (
@@ -70,7 +71,15 @@ export const KnowledgeList: React.FC = () => {
           )}
 
           {Object.values(request.data?.memories ?? {}).map((memory) => {
-            return <KnowledgeListItem key={memory.memid} memory={memory} />;
+            return (
+              <KnowledgeListItem
+                key={memory.memid}
+                memory={memory}
+                editing={editing === memory.memid}
+                onOpenEdit={() => setEditing(memory.memid)}
+                onCloseEdit={() => setEditing(null)}
+              />
+            );
           })}
         </Flex>
       </ScrollArea>
@@ -78,14 +87,32 @@ export const KnowledgeList: React.FC = () => {
   );
 };
 
-const KnowledgeListItem: React.FC<{ memory: MemoRecord }> = ({ memory }) => {
+type KnowledgeListItemProps = {
+  memory: MemoRecord;
+  editing: boolean;
+  onOpenEdit: () => void;
+  onCloseEdit: () => void;
+};
+
+const KnowledgeListItem: React.FC<KnowledgeListItemProps> = ({
+  memory,
+  editing,
+  onOpenEdit,
+  onCloseEdit,
+}) => {
   const [deleteMemory, result] = knowledgeApi.useDeleteMemoryMutation();
+
   const handleDeletion = React.useCallback(() => {
     void deleteMemory(memory.memid);
     // TBD: handle errors
     // TBD: should we clear the form after submit?
     // event.currentTarget.reset();
   }, [deleteMemory, memory.memid]);
+
+  if (editing) {
+    return <EditKnowledgeForm memory={memory} onClose={onCloseEdit} />;
+  }
+
   return (
     <Card>
       <Flex direction="column" gap="3">
@@ -93,14 +120,19 @@ const KnowledgeListItem: React.FC<{ memory: MemoRecord }> = ({ memory }) => {
           <Text size="2" weight="bold">
             {memory.m_goal}
           </Text>
-          <IconButton
-            onClick={handleDeletion}
-            variant="outline"
-            loading={result.isLoading}
-            style={{ alignSelf: "flex-start" }}
-          >
-            <TrashIcon />
-          </IconButton>
+          <Flex gap="2" style={{ alignSelf: "flex-start" }}>
+            <IconButton onClick={onOpenEdit} variant="outline">
+              <Pencil1Icon />
+            </IconButton>
+
+            <IconButton
+              onClick={handleDeletion}
+              variant="outline"
+              loading={result.isLoading}
+            >
+              <TrashIcon />
+            </IconButton>
+          </Flex>
         </Flex>
 
         <Text size="2">{memory.m_payload}</Text>
@@ -109,6 +141,73 @@ const KnowledgeListItem: React.FC<{ memory: MemoRecord }> = ({ memory }) => {
   );
 };
 
+type EditKnowledgeFormProps = {
+  memory: MemoRecord;
+  onClose: () => void;
+};
+
+const EditKnowledgeForm: React.FC<EditKnowledgeFormProps> = ({
+  memory,
+  onClose,
+}) => {
+  const [submit, result] = knowledgeApi.useAddMemoryMutation();
+
+  const handleSubmit = useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const formData = Object.fromEntries(new FormData(event.currentTarget));
+      const nextMemory = { ...memory, ...formData };
+      if (isAddMemoryRequest(nextMemory)) {
+        // TODO: handle errors
+        void submit(nextMemory);
+      }
+    },
+    [memory, submit],
+  );
+
+  useEffect(() => {
+    if (result.isSuccess) {
+      onClose();
+    }
+  }, [onClose, result.isSuccess]);
+
+  return (
+    <Card asChild>
+      <form onSubmit={handleSubmit} onReset={onClose}>
+        <Flex gap="8" direction="column">
+          <Flex direction="column" gap="3">
+            <TextInput
+              name="m_goal"
+              label="Goal"
+              defaultValue={memory.m_goal}
+            />
+            <TextInput
+              name="m_project"
+              label="Project"
+              defaultValue={memory.m_project}
+            />
+            <TextAreaInput
+              name="m_payload"
+              label="Payload"
+              defaultValue={memory.m_payload}
+            />
+          </Flex>
+
+          <Flex gap="3" justify="end">
+            <Button type="submit" color="green">
+              Save
+            </Button>
+            <Button variant="soft" color="gray" type="reset">
+              Close
+            </Button>
+          </Flex>
+        </Flex>
+      </form>
+    </Card>
+  );
+};
+
+// TODO: for adding, will change slightly
 const KnowledgeListForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [submit, result] = knowledgeApi.useAddMemoryMutation();
 
