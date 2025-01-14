@@ -3,11 +3,15 @@ import { CHAT_URL } from "./consts";
 import { ToolCommand } from "./tools";
 import { ChatRole, ToolCall, ToolResult, UserMessage } from "./types";
 
+export const DEFAULT_MAX_NEW_TOKENS = 4096;
+export const INCREASED_MAX_NEW_TOKENS = 16384;
+
 export type LspChatMessage =
   | {
       role: ChatRole;
       // TODO make this a union type for user message
       content: string | null;
+      finish_reason?: "stop" | "length" | "abort" | "tool_calls" | null;
       // TBD: why was index omitted ?
       // tool_calls?: Omit<ToolCall, "index">[];
       tool_calls?: ToolCall[];
@@ -37,6 +41,7 @@ type StreamArgs =
 type SendChatArgs = {
   messages: LspChatMessage[];
   model: string;
+  max_new_tokens?: number;
   lspUrl?: string;
   takeNote?: boolean;
   onlyDeterministicMessages?: boolean;
@@ -45,6 +50,7 @@ type SendChatArgs = {
   port?: number;
   apiKey?: string | null;
   // isConfig?: boolean;
+  toolsConfirmed?: boolean;
   integration?: IntegrationMeta | null;
   mode?: LspChatMode; // used for chat actions
 } & StreamArgs;
@@ -106,6 +112,7 @@ export async function sendChat({
   model,
   abortSignal,
   stream,
+  max_new_tokens,
   // lspUrl,
   // takeNote = false,
   onlyDeterministicMessages: only_deterministic_messages,
@@ -113,6 +120,7 @@ export async function sendChat({
   tools,
   port = 8001,
   apiKey,
+  toolsConfirmed = true,
   // isConfig = false,
   integration,
   mode,
@@ -130,13 +138,11 @@ export async function sendChat({
   const body = JSON.stringify({
     messages,
     model: model,
-    parameters: {
-      max_new_tokens: 2048,
-    },
     stream,
     tools,
-    max_tokens: 2048,
+    max_tokens: max_new_tokens,
     only_deterministic_messages,
+    tools_confirmation: toolsConfirmed,
     // chat_id,
     meta: {
       chat_id,
@@ -144,6 +150,7 @@ export async function sendChat({
       // TODO: pass this through
       chat_mode: mode ?? "EXPLORE",
       // chat_mode: "EXPLORE", // NOTOOLS, EXPLORE, AGENT, CONFIGURE, PROJECTSUMMARY,
+      // TODO: not clear, that if we set integration.path it's going to be set also in meta as current_config_file
       ...(integration?.path ? { current_config_file: integration.path } : {}),
     },
   });
@@ -181,9 +188,6 @@ export async function generateChatTitle({
   const body = JSON.stringify({
     messages,
     model: model,
-    parameters: {
-      max_new_tokens: 2048,
-    },
     stream,
     max_tokens: 300,
     only_deterministic_messages,

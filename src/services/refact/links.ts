@@ -1,9 +1,11 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { RootState } from "../../app/store";
-import { ChatMessages } from "./types";
+import { ChatMessage, ChatMessages } from "./types";
 import { formatMessagesForLsp } from "../../features/Chat/Thread/utils";
 import { CHAT_COMMIT_LINK_URL, CHAT_LINKS_URL } from "./consts";
 import { LspChatMode } from "../../features/Chat";
+// useful for forcing specific links
+// import { STUB_LINKS_FOR_CHAT_RESPONSE } from "../../__fixtures__";
 
 // goto: can be an integration file to open in settings, a file to open in an idea or a global integration.
 // XXX rename to:
@@ -11,31 +13,38 @@ import { LspChatMode } from "../../features/Chat";
 // link_goto
 // link_action
 // link_tooltip
+type LinkActions =
+  | "patch-all"
+  | "follow-up"
+  | "commit"
+  | "goto"
+  | "summarize-project"
+  | "post-chat"
+  | "regenerate-with-increased-context-size";
 
-export type ChatLink =
-  | { text: string; goto: string; action: string; link_tooltip: string }
-  | { text: string; goto: string; link_tooltip: string /* action: undefined */ }
-  | {
-      text: string;
-      /* goto: undefined; */ action: string;
-      link_tooltip: string;
-    }
-  | { text: string; goto: string; action: "go-to"; link_tooltip: string }
-  | {
-      text: string;
-      action: "summarize-project";
-      current_config_file?: string;
-      link_tooltip: string;
-    }
-  | CommitLink;
+export type ChatLink = BaseLink | CommitLink | PostChatLink;
 
-export type CommitLink = {
-  text: string;
-  action: "commit";
-  goto: string;
+interface BaseLink {
+  link_action: LinkActions;
+  link_text: string;
+  link_goto?: string;
+  link_tooltip?: string;
+  link_payload?: CommitLinkPayload | PostChatLinkPayload | null;
+  link_summary_path?: string;
+}
+
+export interface CommitLink extends BaseLink {
+  link_text: string;
+  link_action: "commit";
+  link_goto: string;
   link_tooltip: string;
   link_payload: CommitLinkPayload;
-};
+}
+
+export interface PostChatLink extends BaseLink {
+  link_action: "post-chat";
+  link_payload: PostChatLinkPayload;
+}
 
 export type CommitLinkPayload = {
   project_path: string;
@@ -43,25 +52,54 @@ export type CommitLinkPayload = {
   file_changes: { path: string; status: string }[];
 };
 
+export type PostChatLinkPayload = {
+  chat_meta: {
+    chat_id: string;
+    chat_remote: boolean;
+    chat_mode: "CONFIGURE";
+    current_config_file: string;
+  };
+  messages: ChatMessage[];
+};
+
 function isChatLink(json: unknown): json is ChatLink {
   if (!json || typeof json !== "object") return false;
 
-  if (!("text" in json)) return false;
-  if (typeof json.text !== "string") return false;
+  if (!("link_action" in json) || typeof json.link_action !== "string") {
+    return false;
+  }
 
-  if ("goto" in json && typeof json.goto === "string") return true;
+  if (!("link_text" in json)) return false;
+  if (typeof json.link_text !== "string") return false;
 
-  if ("action" in json && typeof json.action === "string") return true;
+  if ("link_goto" in json && typeof json.link_goto !== "string") return false;
 
-  return false;
+  if (json.link_action === "post-chat") {
+    return isPostChatLink(json as PostChatLink);
+  }
+
+  return true;
 }
 
 export function isCommitLink(chatLink: ChatLink): chatLink is CommitLink {
-  return "action" in chatLink && chatLink.action === "commit";
+  return "link_action" in chatLink && chatLink.link_action === "commit";
+}
+
+export function isPostChatLink(chatLink: ChatLink): chatLink is PostChatLink {
+  return (
+    "link_action" in chatLink &&
+    chatLink.link_action === "post-chat" &&
+    "link_payload" in chatLink &&
+    typeof chatLink.link_payload === "object" &&
+    chatLink.link_payload !== null &&
+    "chat_meta" in chatLink.link_payload &&
+    "messages" in chatLink.link_payload
+  );
 }
 
 export type LinksForChatResponse = {
   links: ChatLink[];
+  uncommited_changes_warning: string;
 };
 
 export type LinksApiRequest = {
@@ -127,6 +165,8 @@ export const linksApi = createApi({
             },
           };
         }
+
+        // return { data: STUB_LINKS_FOR_CHAT_RESPONSE };
 
         return { data: response.data };
       },

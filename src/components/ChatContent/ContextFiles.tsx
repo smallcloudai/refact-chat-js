@@ -112,7 +112,9 @@ const ContextFilesContent: React.FC<{
         <Flex wrap="nowrap" direction="column">
           {files.map((file, index) => {
             const lineText =
-              file.line1 && file.line2 ? `:${file.line1}-${file.line2}` : "";
+              file.line1 && file.line2 && file.line1 !== 0 && file.line2 !== 0
+                ? `:${file.line1}-${file.line2}`
+                : "";
             const key = file.file_name + lineText + index;
             return (
               <ContextFile

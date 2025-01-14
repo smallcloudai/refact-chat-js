@@ -24,6 +24,7 @@ import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
 import {
   areAllFieldsBoolean,
   areIntegrationsNotConfigured,
+  areToolConfirmation,
   areToolParameters,
   dockerApi,
   GroupedIntegrationWithIconRecord,
@@ -36,6 +37,7 @@ import {
   isNotConfiguredIntegrationWithIconRecord,
   isPrimitive,
   NotConfiguredIntegrationWithIconRecord,
+  ToolConfirmation,
 } from "../../services/refact";
 import { ErrorCallout } from "../Callout";
 import { InformationCallout } from "../Callout/Callout";
@@ -48,12 +50,14 @@ import styles from "./IntegrationsView.module.css";
 import { iconMap } from "./icons/iconMap";
 import { LeftRightPadding } from "../../features/Integrations/Integrations";
 import { IntermediateIntegration } from "./IntermediateIntegration";
-import { parseOrElse } from "../../utils";
 import { useDeleteIntegrationByPath } from "../../hooks/useDeleteIntegrationByPath";
 import { toPascalCase } from "../../utils/toPascalCase";
 import { selectThemeMode } from "../../features/Config/configSlice";
 import type { ToolParameterEntity } from "../../services/refact";
 import isEqual from "lodash.isequal";
+import { convertRawIntegrationFormValues } from "../../features/Integrations/convertRawIntegrationFormValues";
+import { validateSnakeCase } from "../../utils/validateSnakeCase";
+import { setIntegrationData } from "../../features/Chat";
 
 type IntegrationViewProps = {
   integrationsMap?: IntegrationWithIconResponse;
@@ -91,34 +95,55 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     if (!currentThreadIntegration) return null;
     if (!integrationsMap) return null;
     debugIntegrations(
-      `[DEBUG]: currentThreadIntegration: `,
+      `[DEBUG LINKS]: currentThreadIntegration: `,
       currentThreadIntegration,
     );
+    const integrationName = currentThreadIntegration.integrationName;
+    const integrationPath = currentThreadIntegration.integrationPath;
+    const isCmdline = integrationName
+      ? integrationName.startsWith("cmdline")
+      : false;
+    const isService = integrationName
+      ? integrationName.startsWith("service")
+      : false;
+    const shouldIntermediatePageShowUp =
+      currentThreadIntegration.shouldIntermediatePageShowUp;
+
     // TODO: check for extra flag in currentThreadIntegration to return different find() call from notConfiguredGrouped integrations if it's set to true
     const integration =
-      integrationsMap.integrations.find(
-        (integration) =>
-          currentThreadIntegration.integrationName?.startsWith("cmdline")
-            ? integration.integr_name === "cmdline_TEMPLATE"
-            : integration.integr_name ===
-              currentThreadIntegration.integrationName,
-        // integration.integr_name === currentThreadIntegration.integrationName,
-      ) ?? null;
-    if (!integration) return null;
+      integrationsMap.integrations.find((integration) => {
+        if (!integrationPath) {
+          if (isCmdline) return integration.integr_name === "cmdline_TEMPLATE";
+          if (isService) return integration.integr_name === "service_TEMPLATE";
+        }
+        if (!shouldIntermediatePageShowUp)
+          return integrationName
+            ? integration.integr_name === integrationName &&
+                integration.integr_config_path === integrationPath
+            : integration.integr_config_path === integrationPath;
+        return integrationName
+          ? integration.integr_name === integrationName
+          : integration.integr_config_path === integrationPath;
+      }) ?? null;
+    if (!integration) {
+      debugIntegrations(`[DEBUG INTEGRATIONS] not found integration`);
+      return null;
+    }
 
     const integrationWithFlag = {
       ...integration,
       commandName:
-        currentThreadIntegration.integrationName?.startsWith("cmdline") ??
-        currentThreadIntegration.integrationName?.startsWith("service")
-          ? currentThreadIntegration.integrationName
-              .split("_")
-              .slice(1)
-              .join("_")
+        (isCmdline || isService) && integrationName
+          ? integrationName.split("_").slice(1).join("_")
           : undefined,
-      shouldIntermediatePageShowUp:
-        currentThreadIntegration.shouldIntermediatePageShowUp ?? false,
+      shouldIntermediatePageShowUp: shouldIntermediatePageShowUp ?? false,
+      wasOpenedThroughChat:
+        currentThreadIntegration.wasOpenedThroughChat ?? false,
     } as IntegrationWithIconRecordAndAddress;
+    debugIntegrations(
+      `[DEBUG NAVIGATE]: integrationWithFlag: `,
+      integrationWithFlag,
+    );
     return integrationWithFlag;
   }, [currentThreadIntegration, integrationsMap]);
 
@@ -196,9 +221,14 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     Record<string, boolean>
   >({});
 
-  const [toolParameters, setToolParameters] = useState<ToolParameterEntity[]>(
-    [],
-  );
+  const [confirmationRules, setConfirmationRules] = useState<ToolConfirmation>({
+    ask_user: [],
+    deny: [],
+  });
+
+  const [toolParameters, setToolParameters] = useState<
+    ToolParameterEntity[] | null
+  >(null);
 
   useEffect(() => {
     debugIntegrations(`[DEBUG]: integrationsData: `, integrationsMap);
@@ -294,6 +324,101 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     );
   }, [availableIntegrationsToConfigure]);
 
+  // TODO: make this one in better way, too much of code
+  useEffect(() => {
+    if (
+      currentIntegration &&
+      currentIntegrationSchema &&
+      currentIntegrationValues
+    ) {
+      setIsDisabledIntegrationForm((isDisabled) => {
+        const toolParametersChanged =
+          toolParameters &&
+          areToolParameters(currentIntegrationValues.parameters)
+            ? !isEqual(toolParameters, currentIntegrationValues.parameters)
+            : false;
+
+        // Manually collecting data from the form
+        const formElement = document.getElementById(
+          `form-${currentIntegration.integr_name}`,
+        ) as HTMLFormElement | null;
+
+        if (!formElement) return true;
+        const formData = new FormData(formElement);
+        const rawFormValues = Object.fromEntries(formData.entries());
+
+        const formValues = convertRawIntegrationFormValues(
+          rawFormValues,
+          currentIntegrationSchema,
+          currentIntegrationValues,
+        );
+
+        const otherFieldsChanged = !Object.entries(formValues).every(
+          ([fieldKey, fieldValue]) => {
+            if (isPrimitive(fieldValue)) {
+              return (
+                fieldKey in currentIntegrationValues &&
+                fieldValue === currentIntegrationValues[fieldKey]
+              );
+            }
+            if (typeof fieldValue === "object" || Array.isArray(fieldValue)) {
+              return (
+                fieldKey in currentIntegrationValues &&
+                isEqual(fieldValue, currentIntegrationValues[fieldKey])
+              );
+            }
+            return false;
+          },
+        );
+
+        const confirmationRulesChanged = !isEqual(
+          confirmationRules,
+          currentIntegrationValues.confirmation,
+        );
+
+        debugIntegrations(
+          `[DEBUG confirmationRulesChanged]: confirmationRulesChanged: `,
+          confirmationRulesChanged,
+        );
+
+        const allToolParametersNamesInSnakeCase = toolParameters
+          ? toolParameters.every((param) => validateSnakeCase(param.name))
+          : true;
+
+        if (!allToolParametersNamesInSnakeCase) {
+          return true; // Disabling form if any of tool parameters names are written not in snake case
+        }
+
+        if ((toolParametersChanged || confirmationRulesChanged) && isDisabled) {
+          return false; // Enable form if toolParameters changed and form was disabled
+        }
+
+        if (
+          otherFieldsChanged &&
+          (toolParametersChanged || confirmationRulesChanged)
+        ) {
+          return isDisabled; // Keep the form in the same condition
+        }
+
+        if (
+          !otherFieldsChanged &&
+          !toolParametersChanged &&
+          !confirmationRulesChanged
+        ) {
+          return true; // Disable form if all fields are back to original state
+        }
+
+        return isDisabled;
+      });
+    }
+  }, [
+    toolParameters,
+    currentIntegrationValues,
+    currentIntegrationSchema,
+    confirmationRules,
+    currentIntegration,
+  ]);
+
   const handleSetCurrentIntegrationSchema = (
     schema: Integration["integr_schema"],
   ) => {
@@ -321,6 +446,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     }
     setAvailabilityValues({});
     setToolParameters([]);
+    setConfirmationRules({
+      ask_user: [],
+      deny: [],
+    });
     information && dispatch(clearInformation());
     globalError && dispatch(clearError());
     currentIntegrationValues && setCurrentIntegrationValues(null);
@@ -354,44 +483,25 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       const rawFormValues = Object.fromEntries(formData.entries());
       debugIntegrations(`[DEBUG]: rawFormValues: `, rawFormValues);
       // Adjust types of data based on f_type of each field in schema
-      const formValues: NonNullable<Integration["integr_values"]> = Object.keys(
+
+      const formValues = convertRawIntegrationFormValues(
         rawFormValues,
-      ).reduce<NonNullable<Integration["integr_values"]>>((acc, key) => {
-        const field = currentIntegrationSchema.fields[key];
-        const [f_type, _f_size] = (field.f_type as string).split("_");
-        switch (f_type) {
-          case "int":
-            acc[key] = parseInt(rawFormValues[key] as string, 10);
-            break;
-          case "string":
-            acc[key] = rawFormValues[key] as string;
-            break;
-          case "bool":
-            acc[key] = rawFormValues[key] === "on" ? true : false;
-            break;
-          case "tool":
-            acc[key] = parseOrElse<NonNullable<Integration["integr_values"]>>(
-              rawFormValues[key] as string,
-              {},
-            );
-            break;
-          case "output":
-            acc[key] = parseOrElse<NonNullable<Integration["integr_values"]>>(
-              rawFormValues[key] as string,
-              {},
-            );
-            break;
-          default:
-            acc[key] = rawFormValues[key] as string;
-            break;
-        }
-        return acc;
-      }, {});
+        currentIntegrationSchema,
+        currentIntegrationValues,
+      );
 
       debugIntegrations(`[DEBUG]: formValues: `, formValues);
 
       formValues.available = availabilityValues;
-      formValues.parameters = toolParameters;
+      if (
+        currentIntegration.integr_name.includes("cmdline") ||
+        currentIntegration.integr_name.includes("service")
+      ) {
+        formValues.parameters = toolParameters;
+      }
+      if (!currentIntegrationSchema.confirmation.not_applicable) {
+        formValues.confirmation = confirmationRules;
+      }
 
       const response = await saveIntegrationMutationTrigger(
         currentIntegration.integr_config_path,
@@ -422,8 +532,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       currentIntegration,
       saveIntegrationMutationTrigger,
       currentIntegrationSchema,
+      currentIntegrationValues,
       dispatch,
       availabilityValues,
+      confirmationRules,
       toolParameters,
     ],
   );
@@ -466,43 +578,11 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       const rawFormValues = Object.fromEntries(formData.entries());
 
       // Adjust types of data based on f_type of each field in schema
-      const formValues: NonNullable<Integration["integr_values"]> = Object.keys(
+      const formValues = convertRawIntegrationFormValues(
         rawFormValues,
-      ).reduce<NonNullable<Integration["integr_values"]>>((acc, key) => {
-        const field = currentIntegrationSchema.fields[key];
-        const [f_type, _f_size] = (field.f_type as string).split("_");
-        switch (f_type) {
-          case "int":
-            acc[key] = parseInt(rawFormValues[key] as string, 10);
-            break;
-          case "string":
-            acc[key] = rawFormValues[key] as string;
-            break;
-          case "bool":
-            acc[key] = rawFormValues[key] === "on" ? true : false;
-            break;
-          case "tool":
-            acc[key] = parseOrElse<
-              NonNullable<Integration["integr_values"]>[number]
-            >(
-              rawFormValues[key] as string,
-              currentIntegrationValues &&
-                areToolParameters(currentIntegrationValues.parameters)
-                ? currentIntegrationValues.parameters
-                : [],
-            );
-            break;
-          case "output":
-            acc[key] = parseOrElse<
-              NonNullable<Integration["integr_values"]>[number]
-            >(rawFormValues[key] as string, {});
-            break;
-          default:
-            acc[key] = rawFormValues[key] as string;
-            break;
-        }
-        return acc;
-      }, {});
+        currentIntegrationSchema,
+        currentIntegrationValues,
+      );
 
       // formValues.parameters = toolParameters;
 
@@ -514,12 +594,10 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                 fieldValue === currentIntegrationValues[fieldKey]
               );
             }
-            // TODO: better comparison of objects?
             if (typeof fieldValue === "object" || Array.isArray(fieldValue)) {
               return (
                 fieldKey in currentIntegrationValues &&
-                JSON.stringify(fieldValue) ===
-                  JSON.stringify(currentIntegrationValues[fieldKey])
+                isEqual(fieldValue, currentIntegrationValues[fieldKey])
               );
             }
           })
@@ -544,9 +622,16 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         : true;
 
       const eachToolParameterIsNotChanged =
+        toolParameters &&
         currentIntegrationValues &&
         areToolParameters(currentIntegrationValues.parameters)
           ? isEqual(currentIntegrationValues.parameters, toolParameters)
+          : true;
+
+      const eachToolConfirmationIsNotChanged =
+        currentIntegrationValues &&
+        areToolConfirmation(currentIntegrationValues.confirmation)
+          ? isEqual(currentIntegrationValues.confirmation, confirmationRules)
           : true;
       debugIntegrations(`[DEBUG]: formValues: `, formValues);
       debugIntegrations(
@@ -562,14 +647,27 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         `[DEBUG]: eachToolParameterIsNotChanged: `,
         eachToolParameterIsNotChanged,
       );
+
+      debugIntegrations(
+        `[DEBUG]: eachToolConfirmationIsNotChanged: `,
+        eachToolConfirmationIsNotChanged,
+      );
       debugIntegrations(`[DEBUG]: availabilityValues: `, availabilityValues);
       const maybeDisabled =
         eachFormValueIsNotChanged &&
         eachAvailabilityOptionIsNotChanged &&
-        eachToolParameterIsNotChanged;
+        eachToolParameterIsNotChanged &&
+        eachToolConfirmationIsNotChanged;
+
       debugIntegrations(`[DEBUG CHANGE]: maybeDisabled: `, maybeDisabled);
 
-      setIsDisabledIntegrationForm(maybeDisabled);
+      setIsDisabledIntegrationForm(
+        toolParameters
+          ? toolParameters.every((param) => validateSnakeCase(param.name))
+            ? maybeDisabled
+            : true
+          : maybeDisabled,
+      );
     },
     [
       currentIntegration,
@@ -577,6 +675,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       currentIntegrationSchema,
       availabilityValues,
       toolParameters,
+      confirmationRules,
     ],
   );
 
@@ -593,6 +692,8 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       const formData = new FormData(event.currentTarget);
       const rawFormValues = Object.fromEntries(formData.entries());
       debugIntegrations(`[DEBUG]: rawFormValues: `, rawFormValues);
+      const [type, rest] =
+        currentNotConfiguredIntegration.integr_name.split("_");
       if (
         "integr_config_path" in rawFormValues &&
         typeof rawFormValues.integr_config_path === "string" &&
@@ -602,19 +703,19 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         // making integration-get call and setting the result as currentIntegration
         const commandName = rawFormValues.command_name;
         const configPath = rawFormValues.integr_config_path.replace(
-          "TEMPLATE",
+          rest,
           commandName,
         );
 
         debugIntegrations(
-          `[DEBUG]: config path for \`v1/integration-get\`: `,
+          `[DEBUG INTERMEDIATE PAGE]: config path for \`v1/integration-get\`: `,
           configPath,
         );
 
         const customIntegration: IntegrationWithIconRecord = {
           when_isolated: false,
           on_your_laptop: false,
-          integr_name: `cmdline_${commandName}`,
+          integr_name: `${type}_${commandName}`,
           integr_config_path: configPath,
           project_path: rawFormValues.integr_config_path
             .toString()
@@ -709,6 +810,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     dispatch(clearError());
     setCurrentIntegration(null);
     setCurrentNotConfiguredIntegration(null);
+    dispatch(setIntegrationData(null));
   };
 
   const handleIntegrationShowUp = (
@@ -720,7 +822,6 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       handleNotSetupIntegrationShowUp(integration);
       return;
     }
-    debugIntegrations(`[DEBUG]: open form: `, integration);
     setCurrentIntegration(integration);
   };
   const handleNotSetupIntegrationShowUp = (
@@ -771,7 +872,9 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             instantBackReturnment={
               currentNotConfiguredIntegration
                 ? currentNotConfiguredIntegration.wasOpenedThroughChat
-                : false
+                : currentIntegration
+                  ? currentIntegration.wasOpenedThroughChat
+                  : false
             }
             integrationName={
               currentIntegration
@@ -819,7 +922,9 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
               onValues={handleSetCurrentIntegrationValues}
               handleChange={handleIntegrationFormChange}
               availabilityValues={availabilityValues}
+              confirmationRules={confirmationRules}
               setAvailabilityValues={setAvailabilityValues}
+              setConfirmationRules={setConfirmationRules}
               setToolParameters={setToolParameters}
               handleSwitchIntegration={handleNavigateToIntegrationSetup}
             />
@@ -892,7 +997,6 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             {groupedProjectIntegrations &&
               Object.entries(groupedProjectIntegrations).map(
                 ([projectPath, integrations], index) => {
-                  debugIntegrations(projectPath);
                   const formattedProjectName =
                     "```.../" +
                     projectPath.split(/[/\\]/)[
@@ -908,7 +1012,13 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
                       align="start"
                     >
                       <Heading as="h4" size="3">
-                        <Flex align="start" gap="3" justify="center">
+                        <Flex
+                          align="start"
+                          gapX="3"
+                          gapY="1"
+                          justify="start"
+                          wrap="wrap"
+                        >
                           ⚙️ In
                           <Markdown>{formattedProjectName}</Markdown>
                           configured {integrations.length}{" "}

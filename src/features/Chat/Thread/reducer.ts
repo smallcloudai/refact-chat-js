@@ -27,8 +27,12 @@ import {
   setSendImmediately,
   setChatMode,
   setIntegrationData,
+  setIsWaitingForResponse,
+  setMaxNewTokens,
+  setAutomaticPatch,
 } from "./actions";
 import { formatChatResponse } from "./utils";
+import { DEFAULT_MAX_NEW_TOKENS } from "../../../services/refact";
 
 const createChatThread = (
   tool_use: ToolUse,
@@ -60,6 +64,7 @@ const createInitialState = (
     error: null,
     prevent_send: false,
     waiting_for_response: false,
+    max_new_tokens: DEFAULT_MAX_NEW_TOKENS,
     cache: {},
     system_prompt: {},
     tool_use,
@@ -154,6 +159,10 @@ export const chatReducer = createReducer(initialState, (builder) => {
     state.prevent_send = false;
   });
 
+  builder.addCase(setAutomaticPatch, (state, action) => {
+    state.automatic_patch = action.payload;
+  });
+
   builder.addCase(chatAskedQuestion, (state, action) => {
     if (state.thread.id !== action.payload.id) return state;
     state.send_immediately = false;
@@ -237,5 +246,13 @@ export const chatReducer = createReducer(initialState, (builder) => {
 
   builder.addCase(setIntegrationData, (state, action) => {
     state.thread.integration = action.payload;
+  });
+
+  builder.addCase(setIsWaitingForResponse, (state, action) => {
+    state.waiting_for_response = action.payload;
+  });
+
+  builder.addCase(setMaxNewTokens, (state, action) => {
+    state.max_new_tokens = action.payload;
   });
 });

@@ -23,7 +23,11 @@ import {
 import type { AppDispatch, RootState } from "../../../app/store";
 import { type SystemPrompts } from "../../../services/refact/prompts";
 import { formatMessagesForLsp, consumeStream } from "./utils";
-import { generateChatTitle, sendChat } from "../../../services/refact/chat";
+import {
+  DEFAULT_MAX_NEW_TOKENS,
+  generateChatTitle,
+  sendChat,
+} from "../../../services/refact/chat";
 import { ToolCommand } from "../../../services/refact/tools";
 import { scanFoDuplicatesWith, takeFromEndWhile } from "../../../utils";
 import { debugApp } from "../../../debugConfig";
@@ -88,6 +92,10 @@ export const setPreventSend = createAction<PayloadWithId>(
 
 export const setToolUse = createAction<ToolUse>("chatThread/setToolUse");
 
+export const setAutomaticPatch = createAction<boolean>(
+  "chat/setAutomaticPatch",
+);
+
 export const saveTitle = createAction<PayloadWithIdAndTitle>(
   "chatThread/saveTitle",
 );
@@ -98,8 +106,16 @@ export const setSendImmediately = createAction<boolean>(
 
 export const setChatMode = createAction<LspChatMode>("chatThread/setChatMode");
 
-export const setIntegrationData = createAction<Partial<IntegrationMeta>>(
+export const setIntegrationData = createAction<Partial<IntegrationMeta> | null>(
   "chatThread/setIntegrationData",
+);
+
+export const setIsWaitingForResponse = createAction<boolean>(
+  "chatThread/setIsWaiting",
+);
+
+export const setMaxNewTokens = createAction<number>(
+  "chatThread/setMaxNewTokens",
 );
 
 // TODO: This is the circular dep when imported from hooks :/
@@ -145,7 +161,8 @@ export const chatGenerateTitleThunk = createAppAsyncThunk<
   return generateChatTitle({
     messages: messagesForLsp,
     model: state.chat.thread.model,
-    stream: false,
+    stream: true,
+    abortSignal: thunkAPI.signal,
     chatId,
     apiKey: state.config.apiKey,
     port: state.config.lspPort,
@@ -238,61 +255,70 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
     messages: ChatMessages;
     chatId: string;
     tools: ToolCommand[] | null;
+    toolsConfirmed?: boolean;
     mode?: LspChatMode; // used once for actions
     // TODO: make a separate function for this... and it'll need to be saved.
   }
->("chatThread/sendChat", ({ messages, chatId, tools, mode }, thunkAPI) => {
-  const state = thunkAPI.getState();
+>(
+  "chatThread/sendChat",
+  ({ messages, chatId, tools, mode, toolsConfirmed }, thunkAPI) => {
+    const state = thunkAPI.getState();
 
-  const thread =
-    chatId in state.chat.cache
-      ? state.chat.cache[chatId]
-      : state.chat.thread.id === chatId
-        ? state.chat.thread
-        : null;
+    const thread =
+      chatId in state.chat.cache
+        ? state.chat.cache[chatId]
+        : state.chat.thread.id === chatId
+          ? state.chat.thread
+          : null;
 
-  // TODO: stops the stream.
-  // const onlyDeterministicMessages =
-  //   checkForToolLoop(messages) || !messages.some(isSystemMessage);
+    // TODO: stops the stream.
+    // const onlyDeterministicMessages =
+    //   checkForToolLoop(messages) || !messages.some(isSystemMessage);
 
-  const onlyDeterministicMessages = checkForToolLoop(messages);
+    const onlyDeterministicMessages = checkForToolLoop(messages);
 
-  const messagesForLsp = formatMessagesForLsp(messages);
-  const realMode = mode ?? thread?.mode;
-
-  return sendChat({
-    messages: messagesForLsp,
-    model: state.chat.thread.model,
-    tools,
-    stream: true,
-    abortSignal: thunkAPI.signal,
-    chatId,
-    apiKey: state.config.apiKey,
-    port: state.config.lspPort,
-    onlyDeterministicMessages,
-    integration: thread?.integration,
-    mode: realMode,
-  })
-    .then((response) => {
-      if (!response.ok) {
-        return Promise.reject(new Error(response.statusText));
-      }
-      const reader = response.body?.getReader();
-      if (!reader) return;
-      const onAbort = () => thunkAPI.dispatch(setPreventSend({ id: chatId }));
-      const onChunk = (json: Record<string, unknown>) => {
-        const action = chatResponse({ ...(json as ChatResponse), id: chatId });
-        return thunkAPI.dispatch(action);
-      };
-      return consumeStream(reader, thunkAPI.signal, onAbort, onChunk);
+    const messagesForLsp = formatMessagesForLsp(messages);
+    const realMode = mode ?? thread?.mode;
+    return sendChat({
+      messages: messagesForLsp,
+      model: state.chat.thread.model,
+      tools,
+      stream: true,
+      abortSignal: thunkAPI.signal,
+      max_new_tokens: state.chat.max_new_tokens,
+      chatId,
+      apiKey: state.config.apiKey,
+      port: state.config.lspPort,
+      onlyDeterministicMessages,
+      toolsConfirmed: toolsConfirmed,
+      integration: thread?.integration,
+      mode: realMode,
     })
-    .catch((err: Error) => {
-      // console.log("Catch called");
-      thunkAPI.dispatch(doneStreaming({ id: chatId }));
-      thunkAPI.dispatch(chatError({ id: chatId, message: err.message }));
-      return thunkAPI.rejectWithValue(err.message);
-    })
-    .finally(() => {
-      thunkAPI.dispatch(doneStreaming({ id: chatId }));
-    });
-});
+      .then((response) => {
+        if (!response.ok) {
+          return Promise.reject(new Error(response.statusText));
+        }
+        const reader = response.body?.getReader();
+        if (!reader) return;
+        const onAbort = () => thunkAPI.dispatch(setPreventSend({ id: chatId }));
+        const onChunk = (json: Record<string, unknown>) => {
+          const action = chatResponse({
+            ...(json as ChatResponse),
+            id: chatId,
+          });
+          return thunkAPI.dispatch(action);
+        };
+        return consumeStream(reader, thunkAPI.signal, onAbort, onChunk);
+      })
+      .catch((err: Error) => {
+        // console.log("Catch called");
+        thunkAPI.dispatch(doneStreaming({ id: chatId }));
+        thunkAPI.dispatch(chatError({ id: chatId, message: err.message }));
+        return thunkAPI.rejectWithValue(err.message);
+      })
+      .finally(() => {
+        thunkAPI.dispatch(setMaxNewTokens(DEFAULT_MAX_NEW_TOKENS));
+        thunkAPI.dispatch(doneStreaming({ id: chatId }));
+      });
+  },
+);

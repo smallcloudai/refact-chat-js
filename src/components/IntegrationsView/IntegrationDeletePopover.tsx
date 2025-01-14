@@ -1,7 +1,16 @@
-import { Button, Popover, Box, Flex, Heading, Text } from "@radix-ui/themes";
+import {
+  Button,
+  Popover,
+  Box,
+  Flex,
+  Heading,
+  Text,
+  IconButton,
+} from "@radix-ui/themes";
 import classNames from "classnames";
 import { FC } from "react";
 import styles from "./IntegrationForm/IntegrationForm.module.css";
+import { TrashIcon } from "@radix-ui/react-icons";
 
 type IntegrationDeletePopoverProps = {
   isApplying: boolean;
@@ -21,9 +30,9 @@ export const IntegrationDeletePopover: FC<IntegrationDeletePopoverProps> = ({
   return (
     <Popover.Root>
       <Popover.Trigger>
-        <Button
+        <IconButton
           color="red"
-          variant="solid"
+          variant="outline"
           type="button"
           size="2"
           title={"Delete configuration data of this integration"}
@@ -31,14 +40,15 @@ export const IntegrationDeletePopover: FC<IntegrationDeletePopoverProps> = ({
             {
               [styles.disabledButton]: isDeletingIntegration || isApplying,
             },
-            styles.button,
+            // styles.button,
           )}
           disabled={isDeletingIntegration || isApplying}
         >
-          {isDeletingIntegration
+          {/* {isDeletingIntegration
             ? "Deleting configuration..."
-            : "Delete configuration"}
-        </Button>
+            : "Delete configuration"} */}
+          <TrashIcon width={20} height={20} />
+        </IconButton>
       </Popover.Trigger>
       <Popover.Content width="360px">
         <Flex gap="3">

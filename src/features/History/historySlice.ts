@@ -77,7 +77,8 @@ export const historySlice = createSlice({
           : getFirstUserContentFromChat(action.payload.messages),
         createdAt: action.payload.createdAt ?? now,
         updatedAt: now,
-        integration: null,
+        // TODO: check if this integration may cause any issues
+        integration: action.payload.integration,
         isTitleGenerated: action.payload.isTitleGenerated,
       };
 
@@ -130,6 +131,9 @@ export const historySlice = createSlice({
         {},
       );
     },
+    clearHistory: () => {
+      return {};
+    },
   },
   selectors: {
     getChatById: (state, id: string): ChatHistoryItem | null => {
@@ -150,6 +154,7 @@ export const {
   markChatAsUnread,
   markChatAsRead,
   setTitleGenerationCompletionForChat,
+  clearHistory,
 } = historySlice.actions;
 export const { getChatById, getHistory } = historySlice.selectors;
 

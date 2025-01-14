@@ -2,10 +2,12 @@ import { useCallback } from "react";
 import { useEventsBusForIDE } from "./useEventBusForIDE";
 import { isAbsolutePath } from "../utils/isAbsolutePath";
 import { useAppDispatch } from "./useAppDispatch";
-import { popBackTo } from "../features/Pages/pagesSlice";
+import { popBackTo, push } from "../features/Pages/pagesSlice";
 import { useAppSelector } from "./useAppSelector";
 import { selectIntegration } from "../features/Chat/Thread/selectors";
 import { debugIntegrations } from "../debugConfig";
+import { newChatAction } from "../features/Chat/Thread/actions";
+import { clearPauseReasonsAndHandleToolsStatus } from "../features/ToolConfirmation/confirmationSlice";
 
 export function useGoToLink() {
   const dispatch = useAppDispatch();
@@ -16,8 +18,8 @@ export function useGoToLink() {
     ({ goto }: { goto?: string }) => {
       if (!goto) return;
       // TODO:  duplicated in smart links.
-      const [action, payload] = goto.split(":");
-
+      const [action, ...payloadParts] = goto.split(":");
+      const payload = payloadParts.join(":");
       switch (action.toLowerCase()) {
         case "editor": {
           void queryPathThenOpenFile({ file_name: payload });
@@ -44,9 +46,23 @@ export function useGoToLink() {
                 payload !== "DEFAULT"
                   ? maybeIntegration.shouldIntermediatePageShowUp
                   : false,
+              wasOpenedThroughChat: true,
             }),
           );
           // TODO: open in the integrations
+          return;
+        }
+
+        case "newchat": {
+          dispatch(newChatAction());
+          dispatch(
+            clearPauseReasonsAndHandleToolsStatus({
+              wasInteracted: false,
+              confirmationStatus: true,
+            }),
+          );
+          dispatch(popBackTo({ name: "history" }));
+          dispatch(push({ name: "chat" }));
           return;
         }
         default: {

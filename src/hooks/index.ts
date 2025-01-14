@@ -25,3 +25,7 @@ export * from "./useGetUserSurvey";
 export * from "./useLinksFromLsp";
 export * from "./useGoToLink";
 export * from "./useSmartLinks";
+export * from "./useAgentUsage";
+export * from "./useOpenUrl";
+export * from "./useCapsForToolUse";
+export * from "./useCanUseTools";

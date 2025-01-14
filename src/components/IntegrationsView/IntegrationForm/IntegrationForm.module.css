@@ -5,8 +5,8 @@
 }
 
 .disabledButton {
-  opacity: 0.8;
   cursor: not-allowed;
+  backdrop-filter: blur(1000px);
 }
 
 .DockerIcon {
@@ -45,6 +45,6 @@
 }
 
 .gridContainer {
-  grid-template-columns: repeat(1, 1fr);
+  grid-template-columns: repeat(1, minmax(0, 1fr));
   gap: 10px;
 }

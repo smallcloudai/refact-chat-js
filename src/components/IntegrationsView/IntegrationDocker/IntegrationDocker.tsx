@@ -10,12 +10,17 @@ import type {
 } from "../../../services/refact";
 import { Spinner } from "../../Spinner";
 import { useExecuteActionForDockerContainerMutation } from "../../../hooks/useExecuteActionForDockerContainer";
-import { useAppDispatch } from "../../../hooks";
+import { useAppDispatch, useAppSelector } from "../../../hooks";
 import { setInformation } from "../../../features/Errors/informationSlice";
 import { setError } from "../../../features/Errors/errorsSlice";
-import { Button, Card, Flex, Heading, Text } from "@radix-ui/themes";
+import { Card, Flex, Heading, Text } from "@radix-ui/themes";
 import { DockerContainerCard } from "./DockerContainerCard";
 import { SmartLink } from "../../SmartLink";
+import { Link } from "../../Link";
+import styles from "./IntegrationDocker.module.css";
+import { toPascalCase } from "../../../utils/toPascalCase";
+import { selectThemeMode } from "../../../features/Config/configSlice";
+import { iconMap } from "../icons/iconMap";
 
 type IntegrationDockerProps = {
   dockerData: SchemaDocker;
@@ -36,6 +41,12 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
   handleSwitchIntegration,
 }) => {
   const dispatch = useAppDispatch();
+
+  const theme = useAppSelector(selectThemeMode);
+  const icons = iconMap(
+    theme ? (theme === "inherit" ? "light" : theme) : "light",
+  );
+
   const { dockerContainersResponse } = useGetDockerContainersByImageQuery(
     dockerData.filter_image,
   );
@@ -79,6 +90,7 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
       <DockerErrorCard
         errorType="no-connection"
         integrationPath={integrationPath}
+        dockerIcon={icons.docker}
         handleSwitchIntegration={handleSwitchIntegration}
       />
     );
@@ -90,6 +102,7 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
         <DockerErrorCard
           errorType="no-containers"
           integrationPath={integrationPath}
+          dockerIcon={icons.docker}
           handleSwitchIntegration={handleSwitchIntegration}
         />
         {/* TODO: duplicative code */}
@@ -162,6 +175,12 @@ export const IntegrationDocker: FC<IntegrationDockerProps> = ({
 
   return (
     <Flex direction="column" gap="4" width="100%">
+      <Flex gap="2" align="center" justify="center" width="100%">
+        <img src={icons.docker} className={styles.DockerIcon} alt={"Docker"} />
+        <Heading as="h3" align="left">
+          {toPascalCase(integrationName)} Containers
+        </Heading>
+      </Flex>
       <Flex direction="column" gap="2">
         {dockerContainersList.map((el) => (
           <DockerContainerCard
@@ -206,6 +225,7 @@ type DockerErrorCardProps = {
     integrationConfigPath: string,
   ) => void;
   integrationPath: string;
+  dockerIcon: string;
 };
 
 const NoConnectionError: FC<{
@@ -214,45 +234,71 @@ const NoConnectionError: FC<{
     integrationConfigPath: string,
   ) => void;
   integrationPath: string;
-}> = ({ handleSwitchIntegration, integrationPath }) => (
+  dockerIcon: string;
+}> = ({ handleSwitchIntegration, integrationPath, dockerIcon }) => (
   <>
-    <Heading as="h6" size="3" weight="bold" align="center">
-      No connection to Docker Daemon
-    </Heading>
-    <Text size="2">
-      Seems, that there is no connection to Docker Daemon. Please, setup Docker
-      properly or check if Docker Engine is running
-    </Text>
-    <Button
-      variant="outline"
-      color="gray"
-      onClick={() => handleSwitchIntegration("docker", integrationPath)}
-    >
-      Setup docker
-    </Button>
+    <Flex gap="3" align="center" justify="start" width="100%">
+      <img src={dockerIcon} className={styles.DockerIcon} alt={"Docker"} />
+      <Text as="p" size="3">
+        You can set up docker integration{" "}
+        <Link
+          color="indigo"
+          weight="bold"
+          onClick={() => handleSwitchIntegration("docker", integrationPath)}
+        >
+          here
+        </Link>
+      </Text>
+    </Flex>
   </>
 );
 
 const UnexpectedError: FC = () => (
-  <>
-    <Heading as="h6" size="3" weight="bold" align="center">
-      Unexpected error
-    </Heading>
-    <Text size="2">
-      Something went wrong during connection or listing containers
-    </Text>
-  </>
+  <Card
+    style={{
+      margin: "1rem auto 0",
+      width: "100%",
+    }}
+  >
+    <Flex
+      direction="column"
+      align="stretch"
+      justify="center"
+      gap="4"
+      width="100%"
+    >
+      <Heading as="h6" size="3" weight="bold" align="center">
+        Unexpected error
+      </Heading>
+      <Text size="2">
+        Something went wrong during connection or listing containers
+      </Text>
+    </Flex>
+  </Card>
 );
 
 const NoContainersError: FC = () => (
-  <>
-    <Heading as="h6" size="3" weight="bold" align="center">
-      No containers
-    </Heading>
-    <Text size="2">
-      No Docker containers found. Please, ensure that containers are running.
-    </Text>
-  </>
+  <Card
+    style={{
+      margin: "1rem auto 0",
+      width: "100%",
+    }}
+  >
+    <Flex
+      direction="column"
+      align="stretch"
+      justify="center"
+      gap="4"
+      width="100%"
+    >
+      <Heading as="h6" size="3" weight="bold" align="center">
+        No containers
+      </Heading>
+      <Text size="2">
+        No Docker containers found. Please, ensure that containers are running.
+      </Text>
+    </Flex>
+  </Card>
 );
 
 const errorComponents = {
@@ -265,27 +311,14 @@ const DockerErrorCard: FC<DockerErrorCardProps> = ({
   errorType,
   integrationPath,
   handleSwitchIntegration,
+  dockerIcon,
 }) => {
   const ErrorComponent = errorComponents[errorType];
   return (
-    <Card
-      style={{
-        margin: "1rem auto 0",
-        width: "100%",
-      }}
-    >
-      <Flex
-        direction="column"
-        align="stretch"
-        justify="center"
-        gap="4"
-        width="100%"
-      >
-        <ErrorComponent
-          handleSwitchIntegration={handleSwitchIntegration}
-          integrationPath={integrationPath}
-        />
-      </Flex>
-    </Card>
+    <ErrorComponent
+      integrationPath={integrationPath}
+      dockerIcon={dockerIcon}
+      handleSwitchIntegration={handleSwitchIntegration}
+    />
   );
 };

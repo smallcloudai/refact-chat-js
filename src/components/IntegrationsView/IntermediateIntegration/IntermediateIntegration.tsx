@@ -6,30 +6,13 @@ import {
   useEffect,
 } from "react";
 import { NotConfiguredIntegrationWithIconRecord } from "../../../services/refact";
-import {
-  Button,
-  Card,
-  Flex,
-  Heading,
-  RadioGroup,
-  Text,
-} from "@radix-ui/themes";
-import { iconMap } from "../icons/iconMap";
-import styles from "./IntermediateIntegration.module.css";
-import { toPascalCase } from "../../../utils/toPascalCase";
+import { Button, Card, Flex, RadioGroup, Text } from "@radix-ui/themes";
 import { formatProjectName } from "../../../utils/formatProjectName";
 import { CustomInputField } from "../CustomFieldsAndWidgets";
 import { Link } from "../../Link";
 import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrationDataByPathQuery";
 import { debugIntegrations } from "../../../debugConfig";
-import { useAppSelector } from "../../../hooks";
-import { selectThemeMode } from "../../../features/Config/configSlice";
-
-const validateSnakeCase = (value: string) => {
-  // TODO: include numbers 0-9
-  const snakeCaseRegex = /^[a-z]+(_[a-z]+)*$/;
-  return snakeCaseRegex.test(value);
-};
+import { validateSnakeCase } from "../../../utils/validateSnakeCase";
 
 type IntegrationCmdlineProps = {
   integration: NotConfiguredIntegrationWithIconRecord;
@@ -59,20 +42,12 @@ const renderIntegrationCmdlineField = ({
   );
 };
 
-const CMDLINE_TOOLS = ["cmdline", "service"];
-
 export const IntermediateIntegration: FC<IntegrationCmdlineProps> = ({
   integration,
   handleSubmit,
 }) => {
-  const theme = useAppSelector(selectThemeMode);
-  const icons = iconMap(
-    theme ? (theme === "inherit" ? "light" : theme) : "light",
-  );
-
   const [integrationType, integrationTemplate] =
     integration.integr_name.split("_");
-  const isIntegrationAComamndLine = CMDLINE_TOOLS.includes(integrationType);
   const [commandName, setCommandName] = useState(
     integrationType === "cmdline" || integrationType === "service"
       ? integration.commandName
@@ -102,26 +77,14 @@ export const IntermediateIntegration: FC<IntegrationCmdlineProps> = ({
 
   return (
     <Flex direction="column" gap="4" width="100%">
-      <Heading as="h3" size="4">
-        <Flex align="center" gap="3">
-          <img
-            src={icons[isIntegrationAComamndLine ? "cmdline" : integrationType]}
-            className={styles.integrationIcon}
-          />
-          {isIntegrationAComamndLine
-            ? `Command Line ${
-                integrationType.includes("cmdline") ? "Tool" : "Service"
-              }`
-            : toPascalCase(integrationType)}
-        </Flex>
-      </Heading>
       {relatedIntegration.data?.integr_schema.description && (
         <Text size="2" color="gray" mb="2">
           {relatedIntegration.data.integr_schema.description}
         </Text>
       )}
       <Text size="2" color="gray">
-        Choose where you want to configure your integration:
+        Where do you want to configure this integration? Any project that has
+        version control can have its own integrations configured.
       </Text>
       <form onSubmit={handleSubmit} id={`form-${integration.integr_name}`}>
         <Flex gap="5" direction="column" width="100%">

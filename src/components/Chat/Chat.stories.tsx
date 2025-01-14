@@ -2,7 +2,7 @@ import React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { Chat } from "./Chat";
 import { ChatThread } from "../../features/Chat/Thread/types";
-import { setUpStore } from "../../app/store";
+import { RootState, setUpStore } from "../../app/store";
 import { Provider } from "react-redux";
 import { Theme } from "../Theme";
 import { AbortControllerProvider } from "../../contexts/AbortControllers";
@@ -15,13 +15,15 @@ import {
   goodUser,
   chatLinks,
   goodTools,
+  noTools,
 } from "../../__fixtures__/msw";
 import { TourProvider } from "../../features/Tour";
 import { Flex } from "@radix-ui/themes";
 
 const Template: React.FC<{
   thread?: ChatThread;
-}> = ({ thread }) => {
+  config?: RootState["config"];
+}> = ({ thread, config }) => {
   const threadData = thread ?? {
     id: "test",
     model: "gpt-4o", // or any model from STUB CAPS REQUEst
@@ -35,6 +37,7 @@ const Template: React.FC<{
       streaming: false,
       prevent_send: false,
       waiting_for_response: false,
+      max_new_tokens: 4096,
       tool_use: "agent",
       send_immediately: false,
       error: null,
@@ -42,6 +45,7 @@ const Template: React.FC<{
       system_prompt: {},
       thread: threadData,
     },
+    config,
   });
 
   return (
@@ -55,70 +59,6 @@ const Template: React.FC<{
                 host="web"
                 tabbed={false}
                 backFromChat={() => ({})}
-                caps={{
-                  error: null,
-                  fetching: false,
-                  default_cap: "gpt-4o-mini",
-                  available_caps: {
-                    "groq-llama-3.1-70b": {
-                      n_ctx: 32000,
-                      default_scratchpad: "",
-                      supports_scratchpads: {},
-                      similar_models: [
-                        "groq-llama-3.1-70b",
-                        "groq-llama-3.2-1b",
-                        "groq-l…",
-                      ],
-                      supports_tools: true,
-                    },
-                    "gpt-3.5-turbo": {
-                      n_ctx: 16000,
-                      default_scratchpad: "",
-                      supports_scratchpads: {},
-                      similar_models: [
-                        "gpt-3.5-turbo-1106",
-                        "gpt-3.5-turbo-0125",
-                        "gpt-4…",
-                      ],
-                      supports_tools: true,
-                    },
-                    "gpt-4o": {
-                      n_ctx: 32000,
-                      supports_scratchpads: {},
-                      default_scratchpad: "",
-                      similar_models: [],
-                      supports_tools: true,
-                    },
-                    "gpt-4o-mini": {
-                      n_ctx: 32000,
-                      supports_scratchpads: {},
-                      default_scratchpad: "",
-                      similar_models: [],
-                      supports_tools: true,
-                    },
-                    "claude-3-5-sonnet": {
-                      n_ctx: 32000,
-                      supports_scratchpads: {},
-                      default_scratchpad: "",
-                      similar_models: [],
-                      supports_tools: true,
-                    },
-                    "groq-llama-3.1-8b": {
-                      n_ctx: 32000,
-                      supports_scratchpads: {},
-                      default_scratchpad: "",
-                      similar_models: [],
-                      supports_tools: true,
-                    },
-                    "gpt-4-turbo": {
-                      n_ctx: 16000,
-                      supports_scratchpads: {},
-                      default_scratchpad: "",
-                      similar_models: [],
-                      supports_tools: true,
-                    },
-                  },
-                }}
                 maybeSendToSidebar={() => ({})}
               />
             </Flex>
@@ -157,12 +97,21 @@ export const Configuration: Story = {
   args: {
     thread: CHAT_CONFIG_THREAD.thread,
   },
+};
 
-  //   parameters: {
-  //     parameters: {
-  //       msw: {
-  //         handlers: [goodCaps, goodPing, goodPrompts, goodUser, chatLinks],
-  //       },
-  //     },
-  //   },
+export const IDE: Story = {
+  args: {
+    config: {
+      host: "ide",
+      lspPort: 8001,
+      themeProps: {},
+      features: { vecdb: true },
+    },
+  },
+
+  parameters: {
+    msw: {
+      handlers: [goodCaps, goodPing, goodPrompts, goodUser, chatLinks, noTools],
+    },
+  },
 };

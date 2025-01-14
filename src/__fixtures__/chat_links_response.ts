@@ -1,35 +1,64 @@
 import { LinksForChatResponse } from "../services/refact/links";
 
 export const STUB_LINKS_FOR_CHAT_RESPONSE: LinksForChatResponse = {
+  uncommited_changes_warning:
+    "You have uncommitted changes:\n```\nIn project refact-lsp: A tests/emergency_frog_situation/.refact/project_summary.yaml, M tests/emergency_frog_situation/frog.py, M tests/emergency_frog_situation/jump_to_conclusions.py, ...\n```\n⚠️ You might have a problem rolling back agent's changes.",
+
   links: [
     {
-      text: "Save and return",
-      action: "patch-all",
-      goto: "SETTINGS:/path/to/config/file.yaml",
+      link_text: "Save and return",
+      link_action: "patch-all",
+      link_goto: "SETTINGS:/path/to/config/file.yaml",
       link_tooltip: "",
     },
     {
-      text: "Can you fix it?",
-      action: "follow-up",
+      link_text: "Save and Continue",
+      link_action: "patch-all",
+      link_goto: "NEWCHAT",
+      link_tooltip: "",
+    },
+    {
+      link_text: "Can you fix it?",
+      link_action: "follow-up",
       link_tooltip: "a nice tool tip message",
     },
     // { text: 'git commit -m "message"', action: "commit", link_tooltip: "" },
     // { text: "Save and return", goto: "SETTINGS:postgres", link_tooltip: "" },
     {
-      text: "Investigate Project",
-      action: "summarize-project",
+      link_text: "Investigate Project",
+      link_action: "summarize-project",
       link_tooltip: "",
     },
-
+    {
+      link_action: "post-chat",
+      link_text: "Stop recommending integrations",
+      link_tooltip: "",
+      link_payload: {
+        chat_meta: {
+          chat_id: "",
+          chat_remote: false,
+          chat_mode: "CONFIGURE",
+          current_config_file:
+            "/Users/kot/code_aprojects/demotest/.refact/project_summary.yaml",
+        },
+        messages: [
+          {
+            role: "user",
+            content:
+              "Make recommended_integrations an empty list, follow the system prompt.",
+          },
+        ],
+      },
+    },
     // {
     //   text: "long long long long long long long long long long long long long long long long long long ",
     //   action: "summarize-project",
     //   link_tooltip: "",
     // },
     {
-      action: "commit",
-      text: "Commit 4 files in `refact-lsp`",
-      goto: "LINKS_AGAIN",
+      link_action: "commit",
+      link_text: "Commit 4 files in `refact-lsp`",
+      link_goto: "LINKS_AGAIN",
       link_tooltip:
         'git commmit -m "Add build script and test files for Docker image deployment and output generation..."\nA build-remote.sh\nA long-array.py\nA long-output.py\nA test.py',
       link_payload: {
