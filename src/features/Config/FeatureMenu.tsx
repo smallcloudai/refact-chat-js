@@ -40,6 +40,8 @@ const useKonamiCode = () => {
   useEffect(() => {
     if (success) {
       return;
+    } else if (document.activeElement !== document.body) {
+      return;
     } else if (count === konamiCode.length) {
       setSuccess(true);
     } else if (key === konamiCode[count]) {
