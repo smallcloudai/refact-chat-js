@@ -34,8 +34,6 @@ import { getPauseReasonsWithPauseStatus } from "../../features/ToolConfirmation/
 import { AttachFileButton, FileList } from "../Dropzone";
 import { useAttachedImages } from "../../hooks/useAttachedImages";
 import {
-  enableSend,
-  selectChatId,
   selectIsStreaming,
   selectIsWaiting,
   selectMessages,
@@ -66,7 +64,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   const onClearError = useCallback(() => dispatch(clearError()), [dispatch]);
   const { disableInput } = useAgentUsage();
   const isOnline = useIsOnline();
-  const chatId = useAppSelector(selectChatId);
   const messages = useAppSelector(selectMessages);
   const preventSend = useAppSelector(selectPreventSend);
 
@@ -194,13 +191,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     },
     [handleHelpInfo, setValue, setFileInteracted, setLineSelectionInteracted],
   );
-
-  useEffect(() => {
-    // this use effect is required to reset preventSend when chat was restored
-    if (preventSend && !isStreaming && !isWaiting && isOnline) {
-      dispatch(enableSend({ id: chatId }));
-    }
-  }, [dispatch, isOnline, isWaiting, isStreaming, preventSend, chatId]);
 
   useEffect(() => {
     if (isSendImmediately && !isWaiting && !isStreaming) {
