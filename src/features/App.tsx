@@ -6,7 +6,12 @@ import { SelfHostingSetup } from "../components/SelfHostingSetup";
 import { Flex } from "@radix-ui/themes";
 import { Chat, newChatAction, selectChatId, selectIsStreaming } from "./Chat";
 import { Sidebar } from "../components/Sidebar/Sidebar";
-import { useEventsBusForIDE, useConfig, useEffectOnce } from "../hooks";
+import {
+  useEventsBusForIDE,
+  useConfig,
+  useEffectOnce,
+  useLogout,
+} from "../hooks";
 
 import { useAppSelector, useAppDispatch } from "../hooks";
 import { FIMDebug } from "./FIM";
@@ -36,6 +41,7 @@ import { ThreadHistory } from "./ThreadHistory";
 import { Integrations } from "./Integrations";
 import { UserSurvey } from "./UserSurvey";
 import { integrationsApi } from "../services/refact";
+import { getErrorMessage } from "./Errors/errorsSlice";
 
 export interface AppProps {
   style?: React.CSSProperties;
@@ -45,12 +51,15 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
   const dispatch = useAppDispatch();
   const pages = useAppSelector(selectPages);
   const isStreaming = useAppSelector(selectIsStreaming);
+  const chatError = useAppSelector(getErrorMessage);
   const isPageInHistory = useCallback(
     (pageName: string) => {
       return pages.some((page) => page.name === pageName);
     },
     [pages],
   );
+
+  const logout = useLogout();
 
   const { setupHost, chatPageChange, setIsChatStreaming, setIsChatReady } =
     useEventsBusForIDE();
@@ -111,6 +120,15 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
   useEffectOnce(() => {
     setIsChatReady(true);
   });
+
+  useEffect(() => {
+    if (chatError && chatError.includes("401")) {
+      const timeoutId = setTimeout(() => {
+        logout();
+        clearTimeout(timeoutId);
+      }, 1000);
+    }
+  }, [chatError, logout]);
 
   const onPressNext = (host: Host) => {
     if (host === "cloud") {
