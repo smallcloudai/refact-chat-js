@@ -469,5 +469,6 @@ export const CHAT_CONFIG_THREAD: Chat = {
   cache: {},
   system_prompt: {},
   tool_use: "agent",
+  agent_usage: null,
   send_immediately: false,
 };

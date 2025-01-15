@@ -123,14 +123,9 @@ function replaceLastUserMessage(
     isUserMessage,
   );
 
-  const result = messages.map((msg, index) => {
-    if (isUserMessage(msg) && index === lastUserMessageIndex) {
-      return { ...userMessage, message_id: msg.message_id };
-    }
-    return msg;
-  });
+  const result = messages.filter((_, index) => index !== lastUserMessageIndex);
 
-  return result;
+  return result.concat([userMessage]);
 }
 
 export function getAgentUsageCounter(response: ChatResponse): null | number {

@@ -132,7 +132,6 @@ export interface UserMessage extends BaseMessage {
   content:
     | string
     | (UserMessageContentWithImage | ProcessedUserMessageContentWithImages)[];
-  message_id?: string;
 }
 
 export type ProcessedUserMessageContentWithImages = {

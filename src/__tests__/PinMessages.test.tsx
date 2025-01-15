@@ -45,6 +45,7 @@ describe("Pin messages", () => {
           cache: {},
           system_prompt: {},
           tool_use: "explore",
+          agent_usage: null,
           send_immediately: false,
           thread: {
             id: "8ab48978-3ad3-4387-944c-fedd15bdbc0d",
