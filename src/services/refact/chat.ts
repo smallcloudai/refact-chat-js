@@ -40,6 +40,7 @@ type StreamArgs =
 
 type SendChatArgs = {
   messages: LspChatMessage[];
+  last_user_message_id?: string; // used for `refact-message-id` header
   model: string;
   max_new_tokens?: number;
   lspUrl?: string;
@@ -123,6 +124,7 @@ export async function sendChat({
   toolsConfirmed = true,
   // isConfig = false,
   integration,
+  last_user_message_id = "",
   mode,
 }: SendChatArgs): Promise<Response> {
   // const toolsResponse = await getAvailableTools();
@@ -158,6 +160,7 @@ export async function sendChat({
   //   const apiKey = getApiKey();
   const headers = {
     "Content-Type": "application/json",
+    "refact-message-id": last_user_message_id,
     ...(apiKey ? { Authorization: "Bearer " + apiKey } : {}),
   };
 

@@ -24,6 +24,7 @@ import {
   ChatMessage,
   ChatMessages,
   isAssistantMessage,
+  isUserMessage,
   UserMessage,
   UserMessageContentWithImage,
 } from "../services/refact/types";
@@ -48,7 +49,10 @@ import {
   LspChatMode,
   setChatMode,
   setIsWaitingForResponse,
+  setLastUserMessageId,
 } from "../features/Chat";
+
+import { v4 as uuidv4 } from "uuid";
 
 type SubmitHandlerParams =
   | {
@@ -160,6 +164,12 @@ export const useSendChatRequest = () => {
         isCurrentToolCallAPatch && isPatchAutomatic
           ? isPatchAutomatic
           : areToolsConfirmed;
+
+      const maybeLastUserMessageIsFromUser = isUserMessage(lastMessage);
+      if (maybeLastUserMessageIsFromUser) {
+        // user_message_id = uuidv4();
+        dispatch(setLastUserMessageId({ chatId: chatId, messageId: uuidv4() }));
+      }
 
       const action = chatAskQuestionThunk({
         messages,

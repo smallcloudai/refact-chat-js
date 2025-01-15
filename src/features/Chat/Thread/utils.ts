@@ -100,7 +100,7 @@ export function mergeToolCalls(prev: ToolCall[], add: ToolCall[]): ToolCall[] {
   }, prev);
 }
 
-function lastIndexOf<T>(arr: T[], predicate: (a: T) => boolean): number {
+export function lastIndexOf<T>(arr: T[], predicate: (a: T) => boolean): number {
   let index = -1;
   for (let i = arr.length - 1; i >= 0; i--) {
     if (predicate(arr[i])) {
@@ -123,9 +123,21 @@ function replaceLastUserMessage(
     isUserMessage,
   );
 
-  const result = messages.filter((_, index) => index !== lastUserMessageIndex);
+  const result = messages.map((msg, index) => {
+    if (isUserMessage(msg) && index === lastUserMessageIndex) {
+      return { ...userMessage, message_id: msg.message_id };
+    }
+    return msg;
+  });
 
-  return result.concat([userMessage]);
+  return result;
+}
+
+export function getAgentUsageCounter(response: ChatResponse): null | number {
+  if (isChatResponseChoice(response)) {
+    return response.refact_agent_request_available;
+  }
+  return null;
 }
 
 export function formatChatResponse(

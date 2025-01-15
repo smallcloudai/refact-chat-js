@@ -30,8 +30,9 @@ import {
   setIsWaitingForResponse,
   setMaxNewTokens,
   setAutomaticPatch,
+  setLastUserMessageId,
 } from "./actions";
-import { formatChatResponse } from "./utils";
+import { formatChatResponse, getAgentUsageCounter } from "./utils";
 import { DEFAULT_MAX_NEW_TOKENS } from "../../../services/refact";
 
 const createChatThread = (
@@ -44,6 +45,7 @@ const createChatThread = (
     messages: [],
     title: "",
     model: "",
+    last_user_message_id: "",
     tool_use,
     integration,
     mode,
@@ -69,6 +71,7 @@ const createInitialState = (
     system_prompt: {},
     tool_use,
     send_immediately: false,
+    agent_usage: null,
   };
 };
 
@@ -123,6 +126,10 @@ export const chatReducer = createReducer(initialState, (builder) => {
       return state;
     }
 
+    // saving to store agent_usage counter from the backend
+    const agentUsageCounter = getAgentUsageCounter(action.payload);
+    state.agent_usage = agentUsageCounter;
+
     if (action.payload.id in state.cache) {
       const thread = state.cache[action.payload.id];
       // TODO: this might not be needed any more, because we can mutate the last message.
@@ -161,6 +168,11 @@ export const chatReducer = createReducer(initialState, (builder) => {
 
   builder.addCase(setAutomaticPatch, (state, action) => {
     state.automatic_patch = action.payload;
+  });
+
+  builder.addCase(setLastUserMessageId, (state, action) => {
+    if (state.thread.id !== action.payload.chatId) return state;
+    state.thread.last_user_message_id = action.payload.messageId;
   });
 
   builder.addCase(chatAskedQuestion, (state, action) => {

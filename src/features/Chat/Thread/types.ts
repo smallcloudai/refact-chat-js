@@ -20,6 +20,7 @@ export type ChatThread = {
   isTitleGenerated?: boolean;
   integration?: IntegrationMeta | null;
   mode?: LspChatMode;
+  last_user_message_id?: string;
 };
 
 export type ToolUse = "quick" | "explore" | "agent";
@@ -30,6 +31,7 @@ export type Chat = {
   error: null | string;
   prevent_send: boolean;
   automatic_patch?: boolean;
+  agent_usage: null | number; // null if PRO or ROBOT plans
   waiting_for_response: boolean;
   max_new_tokens?: number;
   cache: Record<string, ChatThread>;
@@ -39,6 +41,7 @@ export type Chat = {
 };
 
 export type PayloadWithId = { id: string };
+export type PayloadWithChatAndMessageId = { chatId: string; messageId: string };
 export type PayloadWithIdAndTitle = {
   title: string;
   isTitleGenerated: boolean;

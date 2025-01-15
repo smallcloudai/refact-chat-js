@@ -6,6 +6,7 @@ import {
   type ToolUse,
   IntegrationMeta,
   LspChatMode,
+  PayloadWithChatAndMessageId,
 } from "./types";
 import {
   isAssistantDelta,
@@ -32,6 +33,8 @@ import { ToolCommand } from "../../../services/refact/tools";
 import { scanFoDuplicatesWith, takeFromEndWhile } from "../../../utils";
 import { debugApp } from "../../../debugConfig";
 
+import { v4 as uuidv4 } from "uuid";
+
 export const newChatAction = createAction("chatThread/new");
 
 export const newIntegrationChat = createAction<{
@@ -49,6 +52,10 @@ export const chatTitleGenerationResponse = createAction<
 
 export const chatAskedQuestion = createAction<PayloadWithId>(
   "chatThread/askQuestion",
+);
+
+export const setLastUserMessageId = createAction<PayloadWithChatAndMessageId>(
+  "chatThread/setLastUserMessageId",
 );
 
 export const backUpMessages = createAction<
@@ -153,6 +160,7 @@ export const chatGenerateTitleThunk = createAppAsyncThunk<
       role: "user",
       content:
         "Generate a short 2-3 word title for the current chat that reflects the context of the user's query. The title should be specific, avoiding generic terms, and should relate to relevant files, symbols, or objects. If user message contains filename, please make sure that filename remains inside of a generated title. Please ensure the answer is strictly 2-3 words, not paragraphs of text.\nOutput should be STRICTLY 2-3 words, not explanation.",
+      message_id: uuidv4(),
     },
   ]);
 
@@ -279,8 +287,11 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
 
     const messagesForLsp = formatMessagesForLsp(messages);
     const realMode = mode ?? thread?.mode;
+    const maybeLastUserMessageId = thread?.last_user_message_id;
+
     return sendChat({
       messages: messagesForLsp,
+      last_user_message_id: maybeLastUserMessageId,
       model: state.chat.thread.model,
       tools,
       stream: true,

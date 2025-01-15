@@ -132,6 +132,7 @@ export interface UserMessage extends BaseMessage {
   content:
     | string
     | (UserMessageContentWithImage | ProcessedUserMessageContentWithImages)[];
+  message_id?: string;
 }
 
 export type ProcessedUserMessageContentWithImages = {
@@ -518,6 +519,7 @@ type ChatResponseChoice = {
   created: number;
   model: string;
   id: string;
+  refact_agent_request_available: null | number;
 };
 
 export function isChatResponseChoice(
