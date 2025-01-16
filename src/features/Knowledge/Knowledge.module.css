@@ -1,12 +1,12 @@
 .knowledge__form {
-  animation: rollin_from_top 0.2s ease-out;
+  animation: rollin_from_side 0.2s ease-out;
 }
 
-@keyframes rollin_from_top {
+@keyframes rollin_from_side {
   0% {
-    transform: translateY(-100%);
+    transform: translateX(-100%);
   }
   100% {
-    transform: translateY(0);
+    transform: translateX(0);
   }
 }

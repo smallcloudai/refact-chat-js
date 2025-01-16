@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Dialog, Flex, Button, Checkbox, Text } from "@radix-ui/themes";
-import { useAppDispatch, useAppSelector } from "../../hooks";
+import {
+  useAppDispatch,
+  useAppSelector,
+  useEventsBusForIDE,
+} from "../../hooks";
 import { selectFeatures, changeFeature } from "./configSlice";
+import { Link } from "../../components/Link";
 
 const useInputEvent = () => {
   const [key, setKey] = useState<string | null>(null);
@@ -62,6 +67,16 @@ export const FeatureMenu: React.FC = () => {
   const dispatch = useAppDispatch();
   const features = useAppSelector(selectFeatures);
 
+  const { openSettings } = useEventsBusForIDE();
+
+  const handleSettingsClick = useCallback(
+    (event: React.MouseEvent<HTMLAnchorElement>) => {
+      event.preventDefault();
+      openSettings();
+    },
+    [openSettings],
+  );
+
   // if (!success) return false;
 
   const keysAndValues = Object.entries(features ?? {});
@@ -75,6 +90,7 @@ export const FeatureMenu: React.FC = () => {
         )}
         <Flex direction="column" gap="3">
           {keysAndValues.map(([feature, value]) => {
+            const setInSettings = feature === "ast" || feature === "vecdb";
             return (
               <Text key={feature} as="label" size="2">
                 <Flex as="span" gap="2">
@@ -83,8 +99,15 @@ export const FeatureMenu: React.FC = () => {
                     onCheckedChange={() => {
                       dispatch(changeFeature({ feature, value: !value }));
                     }}
+                    disabled={setInSettings}
                   />{" "}
                   {feature}
+                  {setInSettings && (
+                    <Text>
+                      Option set in{" "}
+                      <Link onClick={handleSettingsClick}>settings</Link>
+                    </Text>
+                  )}
                 </Flex>
               </Text>
             );
