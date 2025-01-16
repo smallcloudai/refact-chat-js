@@ -125,8 +125,8 @@ function isMemAddResponse(obj: unknown): obj is MemAddResponse {
 
 export type MemQuery = {
   goal: string;
-  project: string;
-  top_n: number;
+  project?: string;
+  top_n?: number;
 };
 
 export type MemoSearchResult = {
@@ -169,6 +169,7 @@ export const knowledgeApi = createApi({
       { memid: string } | undefined
     >({
       queryFn() {
+        // block until vecorized
         return {
           data: {
             loaded: false,
@@ -278,6 +279,8 @@ export const knowledgeApi = createApi({
 
     searchMemories: builder.query<MemoSearchResult, MemQuery>({
       async queryFn(arg, api, extraOptions, baseQuery) {
+        // no longer needed
+        // mem-sub can handle     pub quick_search: Option<String>,
         const state = api.getState() as RootState;
         const port = state.config.lspPort as unknown as number;
         const url = `http://127.0.0.1:${port}${KNOWLEDGE_SEARCH_URL}`;
@@ -285,7 +288,7 @@ export const knowledgeApi = createApi({
           ...extraOptions,
           url,
           method: "POST",
-          body: { memid: arg },
+          body: arg,
         });
 
         if (response.error) {

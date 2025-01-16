@@ -54,6 +54,8 @@ export const KnowledgeList: React.FC = () => {
           Knowledge
         </Heading>
 
+        {/* <SearchKnowledge /> */}
+
         <Box>
           {openForm ? (
             <KnowledgeListForm onClose={() => setOpenForm(false)} />
@@ -272,5 +274,26 @@ const TextAreaInput: React.FC<TextAreaProps & { label: React.ReactNode }> = ({
       {label}
       <TextArea {...props} />
     </Text>
+  );
+};
+
+const _SearchKnowledge: React.FC = () => {
+  const [search, request] = knowledgeApi.useLazySearchMemoriesQuery();
+  const handleSearch = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      void search({ goal: event.target.value, project: "", top_n: 100 });
+    },
+    [search],
+  );
+
+  // console.log({ request });
+
+  // request.data subscribe to /mem-sub
+  // add debounce
+  return (
+    <Box>
+      <TextInput label="Search" onChange={handleSearch} />
+      {JSON.stringify(request.data, null, 2)}
+    </Box>
   );
 };
