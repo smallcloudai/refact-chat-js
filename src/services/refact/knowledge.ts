@@ -177,7 +177,7 @@ export const knowledgeApi = createApi({
         };
       },
       onCacheEntryAdded: async (args, api) => {
-        console.log("knowledgeApi.subscribe.onCacheEntryAdded");
+        // console.log("knowledgeApi.subscribe.onCacheEntryAdded");
         const state = api.getState() as unknown as RootState;
         const token = state.config.apiKey;
         const port = state.config.lspPort;
@@ -187,11 +187,13 @@ export const knowledgeApi = createApi({
 
         const stream = response.body.getReader();
         const abortSignal = new AbortController();
-        const onAbort = () => console.log("Aborted");
+        const onAbort = () => {
+          // console.log("Aborted");
+        };
         const onChunk = (chunk: Record<string, unknown>) => {
           // validate the type
-          console.log("mem-db chunk");
-          console.log(chunk);
+          // console.log("mem-db chunk");
+          // console.log(chunk);
           if (!isMemdbSubEvent(chunk) && !isMemdbSubEventUnparsed(chunk)) {
             return;
           }
@@ -214,6 +216,7 @@ export const knowledgeApi = createApi({
             } else if (chunk.pubevent_action === "UPDATE") {
               draft.memories[data.memid] = data;
             } else {
+              // eslint-disable-next-line no-console
               console.log("Unknown action", chunk.pubevent_action);
             }
           });
@@ -268,7 +271,6 @@ export const knowledgeApi = createApi({
 
         return { data: response.data, meta: response.meta };
       },
-      // TDOD: use the memid in the response to update the cache
     }),
 
     deleteMemory: builder.mutation<unknown, string>({
@@ -304,8 +306,11 @@ export const knowledgeApi = createApi({
     createNewMemoryFromMessages: builder.mutation<unknown, ChatMessages>({
       async queryFn(messages, _api, _extraOptions, _baseQuery) {
         const messagesForLsp = formatMessagesForLsp(messages);
-        console.log("Messages to make a memory out of");
-        console.log(messagesForLsp);
+        // eslint-disable-next-line no-console
+        console.log(
+          "Not implemented: Messages to make a memory out of",
+          messagesForLsp,
+        );
         // TODO: add the call to the endpoint when it's there.
         await new Promise((resolve) => setTimeout(resolve, 3000));
         return { data: null };

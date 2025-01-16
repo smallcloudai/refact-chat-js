@@ -240,7 +240,7 @@ const KnowledgeListForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const memory = Object.fromEntries(formData.entries());
-    console.log({ memory });
+
     if (isAddMemoryRequest(memory)) {
       // TODO: handle errors
       void submit(memory);

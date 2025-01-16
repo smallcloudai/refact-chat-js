@@ -119,9 +119,6 @@ export const chatDb = createApi({
         };
       },
       onCacheEntryAdded: async (args, api) => {
-        console.log("onCacheEntryAdded");
-        console.log({ args });
-
         const state = api.getState() as unknown as RootState;
         const token = state.config.apiKey;
         const port = state.config.lspPort;
@@ -131,11 +128,11 @@ export const chatDb = createApi({
 
         const stream = response.body.getReader();
         const abortSignal = new AbortController();
-        const onAbort = () => console.log("Aborted");
+        const onAbort = () => {
+          // console.log("Aborted");
+        };
         const onChunk = (chunk: Record<string, unknown>) => {
           // validate the type
-          console.log("chat-db chunk");
-          console.log(chunk);
           api.updateCachedData((draft) => {
             draft.loaded = true;
             // TODO: types of chunk

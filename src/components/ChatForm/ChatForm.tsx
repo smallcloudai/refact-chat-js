@@ -137,7 +137,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     disableSend,
     dispatch,
     checkboxes,
-    config.features?.vecdb,
     setFileInteracted,
     setLineSelectionInteracted,
     onSubmit,
