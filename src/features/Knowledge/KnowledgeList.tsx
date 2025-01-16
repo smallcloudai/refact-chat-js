@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { ChangeEvent, useCallback, useEffect, useState } from "react";
 import {
   Card,
   Flex,
@@ -12,11 +12,16 @@ import {
   Box,
   IconButton,
 } from "@radix-ui/themes";
-import { TrashIcon, Pencil1Icon } from "@radix-ui/react-icons";
+import {
+  TrashIcon,
+  Pencil1Icon,
+  MagnifyingGlassIcon,
+} from "@radix-ui/react-icons";
 import {
   isAddMemoryRequest,
   knowledgeApi,
   MemoRecord,
+  SubscribeArgs,
 } from "../../services/refact/knowledge";
 import { pop } from "../../features/Pages/pagesSlice";
 import { useAppDispatch } from "../../hooks";
@@ -24,7 +29,8 @@ import { ScrollArea } from "../../components/ScrollArea";
 import styles from "./Knowledge.module.css";
 
 export const KnowledgeList: React.FC = () => {
-  const request = knowledgeApi.useSubscribeQuery(undefined);
+  const [searchValue, setSearchValue] = useState<SubscribeArgs>(undefined);
+  const request = knowledgeApi.useSubscribeQuery(searchValue);
   const dispatch = useAppDispatch();
 
   const [openForm, setOpenForm] = React.useState<boolean>(false);
@@ -37,6 +43,15 @@ export const KnowledgeList: React.FC = () => {
       dispatch(pop());
     }
   }, [dispatch, openForm]);
+
+  const handleSearch = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    // debounce changes.
+    if (event.target.value) {
+      setSearchValue({ quick_search: event.target.value });
+    } else {
+      setSearchValue(undefined);
+    }
+  }, []);
 
   const memoryCount = Object.keys(request.data?.memories ?? {}).length;
 
@@ -54,7 +69,15 @@ export const KnowledgeList: React.FC = () => {
           Knowledge
         </Heading>
 
-        {/* <SearchKnowledge /> */}
+        <TextField.Root
+          placeholder="Search knowledge"
+          value={searchValue?.quick_search ?? ""}
+          onChange={handleSearch}
+        >
+          <TextField.Slot>
+            <MagnifyingGlassIcon height="16" width="16" />
+          </TextField.Slot>
+        </TextField.Root>
 
         <Box>
           {openForm ? (
@@ -217,6 +240,7 @@ const KnowledgeListForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const memory = Object.fromEntries(formData.entries());
+    console.log({ memory });
     if (isAddMemoryRequest(memory)) {
       // TODO: handle errors
       void submit(memory);
@@ -274,26 +298,5 @@ const TextAreaInput: React.FC<TextAreaProps & { label: React.ReactNode }> = ({
       {label}
       <TextArea {...props} />
     </Text>
-  );
-};
-
-const _SearchKnowledge: React.FC = () => {
-  const [search, request] = knowledgeApi.useLazySearchMemoriesQuery();
-  const handleSearch = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      void search({ goal: event.target.value, project: "", top_n: 100 });
-    },
-    [search],
-  );
-
-  // console.log({ request });
-
-  // request.data subscribe to /mem-sub
-  // add debounce
-  return (
-    <Box>
-      <TextInput label="Search" onChange={handleSearch} />
-      {JSON.stringify(request.data, null, 2)}
-    </Box>
   );
 };

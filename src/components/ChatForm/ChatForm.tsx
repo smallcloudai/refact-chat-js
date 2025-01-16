@@ -124,7 +124,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
       const valueIncludingChecks = addCheckboxValuesToInput(
         trimmedValue,
         checkboxes,
-        config.features?.vecdb ?? false,
       );
       setFileInteracted(false);
       setLineSelectionInteracted(false);

@@ -6,27 +6,12 @@ import {
 } from "../../features/Chat/Thread/utils";
 import {
   KNOWLEDGE_ADD_URL,
-  // KNOWLEDGE_LIST_URL,
   KNOWLEDGE_REMOVE_URL,
-  KNOWLEDGE_SEARCH_URL,
   KNOWLEDGE_SUB_URL,
   KNOWLEDGE_UPDATE_USED_URL,
 } from "./consts";
 import type { ChatMessages } from ".";
-
-/**
- * vecdb
- * .route("/vdb-search", telemetry_post!(handle_v1_vecdb_search))
- * .route("/vdb-status", telemetry_get!(handle_v1_vecdb_status))
- * .route("/mem-query", telemetry_post!(handle_mem_query))
- * .route("/mem-add", telemetry_post!(handle_mem_add))
- * .route("/mem-erase", telemetry_post!(handle_mem_erase))
- * .route("/mem-update-used", telemetry_post!(handle_mem_update_used))
- * .route("/mem-block-until-vectorized", telemetry_get!(handle_mem_block_until_vectorized))
- * .route("/mem-sub", telemetry_get!(handle_mem_sub))
- *
- *
- */
+import { parseOrElse } from "../../utils";
 
 export type MemoRecord = {
   memid: string;
@@ -58,7 +43,7 @@ export type MemdbSubEvent = {
   pubevent_json: MemoRecord;
 };
 
-function isMenudbSubEvent(obj: unknown): obj is MemdbSubEvent {
+function isMemdbSubEvent(obj: unknown): obj is MemdbSubEvent {
   if (!obj) return false;
   if (typeof obj !== "object") return false;
   if (!("pubevent_id" in obj) || typeof obj.pubevent_id !== "number") {
@@ -73,9 +58,37 @@ function isMenudbSubEvent(obj: unknown): obj is MemdbSubEvent {
   return true;
 }
 
+export type MemdbSubEventUnparsed = {
+  pubevent_id: number;
+  pubevent_action: string;
+  pubevent_json: string;
+};
+
+function isMemdbSubEventUnparsed(obj: unknown): obj is MemdbSubEventUnparsed {
+  if (!obj) return false;
+  if (typeof obj !== "object") return false;
+  if (!("pubevent_id" in obj) || typeof obj.pubevent_id !== "number") {
+    return false;
+  }
+  if (!("pubevent_action" in obj) || typeof obj.pubevent_action !== "string") {
+    return false;
+  }
+  if (!("pubevent_json" in obj) || typeof obj.pubevent_json !== "string") {
+    return false;
+  }
+  return true;
+}
+
+export type SubscribeArgs =
+  | {
+      quick_search?: string;
+      limit?: number;
+    }
+  | undefined;
+
 function subscribeToMemories(
   port = 8001,
-  args?: { memid: string },
+  args: SubscribeArgs,
   apiKey?: string | null,
 ): Promise<Response> {
   const url = `http://127.0.0.1:${port}${KNOWLEDGE_SUB_URL}`;
@@ -90,26 +103,26 @@ function subscribeToMemories(
     headers,
     redirect: "follow",
     cache: "no-cache",
-    body: args ? JSON.stringify({ memid: args.memid }) : undefined,
+    body: args ? JSON.stringify(args) : undefined,
   });
 }
 
 export type MemAddRequest = {
-  mem_type: string;
   goal: string;
-  project: string;
   payload: string;
-  origin: string;
+  mem_type?: string;
+  project?: string;
+  origin?: string;
 };
 
 export function isAddMemoryRequest(obj: unknown): obj is MemAddRequest {
   if (!obj) return false;
   if (typeof obj !== "object") return false;
-  if (!("mem_type" in obj) || typeof obj.mem_type !== "string") return false;
+  // if (!("mem_type" in obj) || typeof obj.mem_type !== "string") return false;
   if (!("goal" in obj) || typeof obj.goal !== "string") return false;
-  if (!("project" in obj) || typeof obj.project !== "string") return false;
+  // if (!("project" in obj) || typeof obj.project !== "string") return false;
   if (!("payload" in obj) || typeof obj.payload !== "string") return false;
-  if (!("origin" in obj) || typeof obj.origin !== "string") return false;
+  // if (!("origin" in obj) || typeof obj.origin !== "string") return false;
   return true;
 }
 
@@ -128,20 +141,6 @@ export type MemQuery = {
   project?: string;
   top_n?: number;
 };
-
-export type MemoSearchResult = {
-  query_text: string;
-  results: MemoRecord[];
-};
-
-function isMemoSearchResult(obj: unknown): obj is MemoSearchResult {
-  if (!obj) return false;
-  if (typeof obj !== "object") return false;
-  if (!("query_text" in obj) || typeof obj.query_text !== "string")
-    return false;
-  if (!("results" in obj) || !Array.isArray(obj.results)) return false;
-  return obj.results.every(isMemoRecord);
-}
 
 export type MemUpdateUsedRequest = {
   memid: string;
@@ -166,7 +165,7 @@ export const knowledgeApi = createApi({
         loaded: boolean;
         memories: Record<string, MemoRecord>;
       },
-      { memid: string } | undefined
+      SubscribeArgs
     >({
       queryFn() {
         // block until vecorized
@@ -193,7 +192,15 @@ export const knowledgeApi = createApi({
           // validate the type
           console.log("mem-db chunk");
           console.log(chunk);
-          if (!isMenudbSubEvent(chunk)) {
+          if (!isMemdbSubEvent(chunk) && !isMemdbSubEventUnparsed(chunk)) {
+            return;
+          }
+
+          const data: MemoRecord | null = isMemoRecord(chunk.pubevent_json)
+            ? chunk.pubevent_json
+            : parseOrElse(chunk.pubevent_json, null, isMemoRecord);
+
+          if (data === null) {
             return;
           }
 
@@ -201,14 +208,11 @@ export const knowledgeApi = createApi({
             draft.loaded = true;
             if (chunk.pubevent_action === "DELETE") {
               // delete draft.memories[data.memid]
-              draft.memories = removeFromObject(
-                draft.memories,
-                chunk.pubevent_json.memid,
-              );
+              draft.memories = removeFromObject(draft.memories, data.memid);
             } else if (chunk.pubevent_action === "INSERT") {
-              draft.memories[chunk.pubevent_json.memid] = chunk.pubevent_json;
+              draft.memories[data.memid] = data;
             } else if (chunk.pubevent_action === "UPDATE") {
-              draft.memories[chunk.pubevent_json.memid] = chunk.pubevent_json;
+              draft.memories[data.memid] = data;
             } else {
               console.log("Unknown action", chunk.pubevent_action);
             }
@@ -239,7 +243,12 @@ export const knowledgeApi = createApi({
           ...extraOptions,
           url,
           method: "POST",
-          body: arg,
+          body: {
+            mem_type: "",
+            origin: "",
+            project: "",
+            ...arg,
+          },
         });
 
         if (response.error) {
@@ -274,37 +283,6 @@ export const knowledgeApi = createApi({
           body: { memid: arg },
         });
         return response;
-      },
-    }),
-
-    searchMemories: builder.query<MemoSearchResult, MemQuery>({
-      async queryFn(arg, api, extraOptions, baseQuery) {
-        // no longer needed
-        // mem-sub can handle     pub quick_search: Option<String>,
-        const state = api.getState() as RootState;
-        const port = state.config.lspPort as unknown as number;
-        const url = `http://127.0.0.1:${port}${KNOWLEDGE_SEARCH_URL}`;
-        const response = await baseQuery({
-          ...extraOptions,
-          url,
-          method: "POST",
-          body: arg,
-        });
-
-        if (response.error) {
-          return { error: response.error };
-        }
-
-        if (!isMemoSearchResult(response.data)) {
-          return {
-            error: {
-              status: "CUSTOM_ERROR",
-              error: `Invalid response from ${url}`,
-              data: response.data,
-            },
-          };
-        }
-        return { data: response.data };
       },
     }),
 
