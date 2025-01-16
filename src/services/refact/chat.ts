@@ -145,6 +145,7 @@ export async function sendChat({
     max_tokens: max_new_tokens,
     only_deterministic_messages,
     tools_confirmation: toolsConfirmed,
+    last_user_message_id,
     // chat_id,
     meta: {
       chat_id,
@@ -160,7 +161,6 @@ export async function sendChat({
   //   const apiKey = getApiKey();
   const headers = {
     "Content-Type": "application/json",
-    "refact-message-id": last_user_message_id,
     ...(apiKey ? { Authorization: "Bearer " + apiKey } : {}),
   };
 
