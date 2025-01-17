@@ -37,6 +37,7 @@ export type Chat = {
   cache: Record<string, ChatThread>;
   system_prompt: SystemPrompts;
   tool_use: ToolUse;
+  agent_max_usage_amount: number;
   send_immediately: boolean;
 };
 

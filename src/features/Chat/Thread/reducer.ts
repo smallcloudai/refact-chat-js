@@ -32,7 +32,11 @@ import {
   setAutomaticPatch,
   setLastUserMessageId,
 } from "./actions";
-import { formatChatResponse, getAgentUsageCounter } from "./utils";
+import {
+  formatChatResponse,
+  getAgentUsageCounter,
+  getMaxFreeAgentUsage,
+} from "./utils";
 import { DEFAULT_MAX_NEW_TOKENS } from "../../../services/refact";
 
 const createChatThread = (
@@ -71,7 +75,10 @@ const createInitialState = (
     system_prompt: {},
     tool_use,
     send_immediately: false,
-    agent_usage: null,
+    agent_usage: localStorage.getItem("agent_usage")
+      ? Number(localStorage.getItem("agent_usage"))
+      : null,
+    agent_max_usage_amount: 20,
   };
 };
 
@@ -128,8 +135,26 @@ export const chatReducer = createReducer(initialState, (builder) => {
 
     // saving to store agent_usage counter from the backend, only one chunk has this field.
     if ("refact_agent_request_available" in action.payload) {
+      const maybeLastAgentUsage = localStorage.getItem("agent_usage");
       const agentUsageCounter = getAgentUsageCounter(action.payload);
-      state.agent_usage = agentUsageCounter;
+      if (agentUsageCounter !== null) {
+        state.agent_usage =
+          Number(maybeLastAgentUsage) === agentUsageCounter
+            ? Number(maybeLastAgentUsage)
+            : agentUsageCounter;
+
+        localStorage.setItem(
+          "agent_usage",
+          agentUsageCounter ? agentUsageCounter.toString() : "",
+        );
+      } else {
+        localStorage.removeItem("agent_usage");
+        state.agent_usage = agentUsageCounter;
+      }
+    }
+    if ("refact_agent_max_request_num" in action.payload) {
+      const maxFreeAgentUsage = getMaxFreeAgentUsage(action.payload);
+      state.agent_max_usage_amount = maxFreeAgentUsage;
     }
 
     if (action.payload.id in state.cache) {

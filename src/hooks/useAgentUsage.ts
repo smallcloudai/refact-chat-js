@@ -6,23 +6,27 @@ import {
 import { useGetUser } from "./useGetUser";
 import { useAppSelector } from "./useAppSelector";
 import {
+  selectAgentUsage,
   selectIsStreaming,
   selectIsWaiting,
+  selectMaxFreeAgentUsage,
   selectThreadToolUse,
 } from "../features/Chat";
 import { ChatMessages, isUserMessage } from "../events";
 import { useAppDispatch } from "./useAppDispatch";
 
-const MAX_FREE_USAGE = 20;
+// const MAX_FREE_USAGE = 20;
 const ONE_DAY_IN_MS = 1000 * 60 * 60 * 24;
 
 export function useAgentUsage() {
   const user = useGetUser();
+  const agentUsage = useAppSelector(selectAgentUsage);
   const toolUse = useAppSelector(selectThreadToolUse);
   const allAgentUsageItems = useAppSelector(selectAgentUsageItems);
   const dispatch = useAppDispatch();
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
+  const maxFreeAgentUsage = useAppSelector(selectMaxFreeAgentUsage);
 
   const usersUsage = useMemo(() => {
     if (!user.data?.account) return 0;
@@ -61,8 +65,10 @@ export function useAgentUsage() {
   );
 
   const aboveUsageLimit = useMemo(() => {
-    return usersUsage >= MAX_FREE_USAGE;
-  }, [usersUsage]);
+    if (agentUsage === null) return false;
+    if (agentUsage === 0) return true;
+    return false;
+  }, [agentUsage]);
 
   const [pollingForUser, setPollingForUser] = useState<boolean>(false);
 
@@ -101,9 +107,10 @@ export function useAgentUsage() {
     if (toolUse !== "agent") return false;
     if (isStreaming || isWaiting) return false;
     if (user.data?.inference !== "FREE") return false;
-    if (MAX_FREE_USAGE - usersUsage > 5) return false;
+    if (agentUsage === null) return false;
+    if (agentUsage > 5) return false;
     return true;
-  }, [isStreaming, isWaiting, toolUse, user.data?.inference, usersUsage]);
+  }, [isStreaming, isWaiting, agentUsage, toolUse, user.data?.inference]);
 
   const disableInput = useMemo(() => {
     return shouldShow && aboveUsageLimit;
@@ -113,7 +120,7 @@ export function useAgentUsage() {
     incrementIfLastMessageIsFromUser,
     usersUsage,
     shouldShow,
-    MAX_FREE_USAGE,
+    maxFreeAgentUsage,
     aboveUsageLimit,
     startPollingForUser,
     pollingForUser,

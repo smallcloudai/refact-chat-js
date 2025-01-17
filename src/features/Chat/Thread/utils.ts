@@ -128,11 +128,18 @@ function replaceLastUserMessage(
   return result.concat([userMessage]);
 }
 
-export function getAgentUsageCounter(response: ChatResponse): null | number {
+export function getAgentUsageCounter(response: ChatResponse): number | null {
   if (isChatResponseChoice(response)) {
     return response.refact_agent_request_available;
   }
   return null;
+}
+
+export function getMaxFreeAgentUsage(response: ChatResponse): number {
+  if (isChatResponseChoice(response)) {
+    return response.refact_agent_max_request_num;
+  }
+  return 0;
 }
 
 export function formatChatResponse(
