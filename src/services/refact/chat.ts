@@ -145,10 +145,10 @@ export async function sendChat({
     max_tokens: max_new_tokens,
     only_deterministic_messages,
     tools_confirmation: toolsConfirmed,
-    last_user_message_id,
     // chat_id,
     meta: {
       chat_id,
+      message_id: last_user_message_id,
       // chat_remote,
       // TODO: pass this through
       chat_mode: mode ?? "EXPLORE",

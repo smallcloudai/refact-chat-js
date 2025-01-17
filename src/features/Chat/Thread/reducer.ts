@@ -126,9 +126,11 @@ export const chatReducer = createReducer(initialState, (builder) => {
       return state;
     }
 
-    // saving to store agent_usage counter from the backend
-    const agentUsageCounter = getAgentUsageCounter(action.payload);
-    state.agent_usage = agentUsageCounter;
+    // saving to store agent_usage counter from the backend, only one chunk has this field.
+    if ("refact_agent_request_available" in action.payload) {
+      const agentUsageCounter = getAgentUsageCounter(action.payload);
+      state.agent_usage = agentUsageCounter;
+    }
 
     if (action.payload.id in state.cache) {
       const thread = state.cache[action.payload.id];
