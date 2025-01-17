@@ -14,9 +14,6 @@ export const selectAutomaticPatch = (state: RootState) =>
   state.chat.automatic_patch;
 export const selectIsWaiting = (state: RootState) =>
   state.chat.waiting_for_response;
-export const selectAgentUsage = (state: RootState) => state.chat.agent_usage;
-export const selectMaxFreeAgentUsage = (state: RootState) =>
-  state.chat.agent_max_usage_amount;
 export const selectIsStreaming = (state: RootState) => state.chat.streaming;
 export const selectPreventSend = (state: RootState) => state.chat.prevent_send;
 export const selectChatError = (state: RootState) => state.chat.error;

@@ -4,18 +4,19 @@ import { useAgentUsage, useAppSelector, useGetUser } from "../../hooks";
 import { Flex, Card, Text } from "@radix-ui/themes";
 import { LinkButton } from "../../components/Buttons";
 import styles from "./AgentUsage.module.css";
+import { selectAgentUsage } from "./agentUsageSlice";
 
 export const AgentUsage: React.FC = () => {
   const userRequest = useGetUser();
-  const agentUsageAmount = useAppSelector((state) => state.chat.agent_usage);
+  const agentUsageAmount = useAppSelector(selectAgentUsage);
 
-  const { shouldShow, maxFreeAgentUsage, startPollingForUser, plan } =
+  const { shouldShow, maxAgentUsageAmount, startPollingForUser, plan } =
     useAgentUsage();
 
   const usageMessage = useMemo(() => {
     if (agentUsageAmount === null) return null;
     if (agentUsageAmount === 0) {
-      return `You have reached your usage limit of ${maxFreeAgentUsage} messages a day.
+      return `You have reached your usage limit of ${maxAgentUsageAmount} messages a day.
           You can use agent again tomorrow, or upgrade to PRO.`;
     }
 
@@ -26,7 +27,7 @@ export const AgentUsage: React.FC = () => {
 
     return `You have ${agentUsageAmount} agent messages left on our ${plan}
         plan.`;
-  }, [maxFreeAgentUsage, plan, agentUsageAmount]);
+  }, [maxAgentUsageAmount, plan, agentUsageAmount]);
 
   if (!userRequest.data) return null;
   if (!shouldShow) return null;

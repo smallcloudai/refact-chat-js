@@ -43,7 +43,6 @@ const Template: React.FC<{
       error: null,
       cache: {},
       system_prompt: {},
-      agent_usage: null,
       thread: threadData,
     },
     config,

@@ -38,7 +38,6 @@ const MockedStore: React.FC<{
       tool_use: "quick",
       send_immediately: false,
       error: null,
-      agent_usage: null,
       cache: {},
       system_prompt: {},
       thread: threadData,

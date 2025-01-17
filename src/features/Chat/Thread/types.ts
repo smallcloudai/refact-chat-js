@@ -31,13 +31,11 @@ export type Chat = {
   error: null | string;
   prevent_send: boolean;
   automatic_patch?: boolean;
-  agent_usage: null | number; // null if PRO or ROBOT plans
   waiting_for_response: boolean;
   max_new_tokens?: number;
   cache: Record<string, ChatThread>;
   system_prompt: SystemPrompts;
   tool_use: ToolUse;
-  agent_max_usage_amount: number;
   send_immediately: boolean;
 };
 
