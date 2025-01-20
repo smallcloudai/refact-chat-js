@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo } from "react";
 
-import { Flex, Card, Text, Button } from "@radix-ui/themes";
+import { Flex, Card, Text } from "@radix-ui/themes";
 import styles from "./ChatForm.module.css";
 
 import { PaperPlaneButton, BackToSideBarButton } from "../Buttons/Buttons";
@@ -12,7 +12,6 @@ import {
   useConfig,
   useAgentUsage,
   useSendChatRequest,
-  useLogout,
 } from "../../hooks";
 import { ErrorCallout, Callout } from "../Callout";
 import { ComboBox } from "../ComboBox";
@@ -21,11 +20,7 @@ import { ApplyPatchSwitch, ChatControls } from "./ChatControls";
 import { addCheckboxValuesToInput } from "./utils";
 import { useCommandCompletionAndPreviewFiles } from "./useCommandCompletionAndPreviewFiles";
 import { useAppSelector, useAppDispatch } from "../../hooks";
-import {
-  getErrorMessage,
-  clearError,
-  getIsAuthError,
-} from "../../features/Errors/errorsSlice";
+import { getErrorMessage, clearError } from "../../features/Errors/errorsSlice";
 import { useTourRefs } from "../../features/Tour";
 import { useCheckboxes } from "./useCheckBoxes";
 import { useInputValue } from "./useInputValue";
@@ -67,7 +62,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
   const { retryFromIndex } = useSendChatRequest();
-  const logout = useLogout();
   const config = useConfig();
   const toolUse = useAppSelector(selectToolUse);
   const error = useAppSelector(getErrorMessage);
@@ -76,8 +70,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   const [helpInfo, setHelpInfo] = React.useState<React.ReactNode | null>(null);
   const { disableInput } = useAgentUsage();
   const isOnline = useIsOnline();
-
-  const isAuthError = useAppSelector(getIsAuthError);
 
   const chatId = useAppSelector(selectChatId);
   const messages = useAppSelector(selectMessages);
@@ -261,34 +253,8 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 
   if (error) {
     return (
-      <ErrorCallout
-        mt="2"
-        onClick={onClearError}
-        timeout={null}
-        preventRetry={isAuthError}
-      >
+      <ErrorCallout mt="2" onClick={onClearError} timeout={null}>
         {error}
-        {!isAuthError && (
-          <Text size="1" as="p">
-            Click to retry
-          </Text>
-        )}
-        {isAuthError && (
-          <Flex as="span" gap="2" mt="3">
-            <Button variant="surface" onClick={() => logout()}>
-              Logout
-            </Button>
-            <Button asChild variant="surface" color="brown">
-              <a
-                href="https://discord.gg/Kts7CYg99R"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Get help
-              </a>
-            </Button>
-          </Flex>
-        )}
       </ErrorCallout>
     );
   }

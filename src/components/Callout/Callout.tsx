@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Flex, Callout as RadixCallout, Card } from "@radix-ui/themes";
+import {
+  Flex,
+  Callout as RadixCallout,
+  Card,
+  Text,
+  Button,
+} from "@radix-ui/themes";
 import {
   ExclamationTriangleIcon,
   InfoCircledIcon,
@@ -7,6 +13,8 @@ import {
 import { useTimeout } from "usehooks-ts";
 import styles from "./Callout.module.css";
 import classNames from "classnames";
+import { useAppSelector, useLogout } from "../../hooks";
+import { getIsAuthError } from "../../features/Errors/errorsSlice";
 
 type RadixCalloutProps = React.ComponentProps<typeof RadixCallout.Root>;
 
@@ -82,9 +90,11 @@ export const ErrorCallout: React.FC<Omit<CalloutProps, "type">> = ({
   timeout = null,
   onClick,
   children,
-  preventRetry,
   ...props
 }) => {
+  const logout = useLogout();
+  const isAuthError = useAppSelector(getIsAuthError);
+
   return (
     <Callout
       type="error"
@@ -92,10 +102,31 @@ export const ErrorCallout: React.FC<Omit<CalloutProps, "type">> = ({
       onClick={onClick}
       timeout={timeout}
       itemType={props.itemType}
-      preventRetry={preventRetry}
+      preventRetry={isAuthError}
       {...props}
     >
       Error: {children}
+      {!isAuthError && (
+        <Text size="1" as="p">
+          Click to retry
+        </Text>
+      )}
+      {isAuthError && (
+        <Flex as="span" gap="2" mt="3">
+          <Button variant="surface" onClick={() => logout()}>
+            Logout
+          </Button>
+          <Button asChild variant="surface" color="brown">
+            <a
+              href="https://discord.gg/Kts7CYg99R"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Get help
+            </a>
+          </Button>
+        </Flex>
+      )}
     </Callout>
   );
 };
