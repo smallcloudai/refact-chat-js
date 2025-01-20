@@ -81,7 +81,6 @@ export const useSendChatRequest = () => {
 
   const [triggerGetTools] = useGetToolsLazyQuery();
   const [triggerCheckForConfirmation] = useCheckForConfirmationMutation();
-  // const { incrementIfLastMessageIsFromUser } = useAgentUsage();
 
   const chatId = useAppSelector(selectChatId);
 
@@ -166,7 +165,6 @@ export const useSendChatRequest = () => {
 
       const maybeLastUserMessageIsFromUser = isUserMessage(lastMessage);
       if (maybeLastUserMessageIsFromUser) {
-        // user_message_id = uuidv4();
         dispatch(setLastUserMessageId({ chatId: chatId, messageId: uuidv4() }));
       }
 
@@ -180,7 +178,6 @@ export const useSendChatRequest = () => {
 
       const dispatchedAction = dispatch(action);
       abortControllers.addAbortController(chatId, dispatchedAction.abort);
-      // incrementIfLastMessageIsFromUser(messages);
     },
     [
       triggerGetTools,
@@ -192,7 +189,6 @@ export const useSendChatRequest = () => {
       wasInteracted,
       areToolsConfirmed,
       abortControllers,
-      // incrementIfLastMessageIsFromUser,
       triggerCheckForConfirmation,
       isPatchAutomatic,
     ],

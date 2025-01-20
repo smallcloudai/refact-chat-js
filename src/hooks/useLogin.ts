@@ -7,10 +7,7 @@ import { useGetUser } from "./useGetUser";
 import { useLogout } from "./useLogout";
 import { useOpenUrl } from "./useOpenUrl";
 import { useEventsBusForIDE } from "./useEventBusForIDE";
-import {
-  updateAgentUsage,
-  updateMaxAgentUsageAmount,
-} from "../features/AgentUsage/agentUsageSlice";
+import { setInitialAgentUsage } from "../features/AgentUsage/agentUsageSlice";
 
 export const useLogin = () => {
   const { setupHost } = useEventsBusForIDE();
@@ -59,12 +56,11 @@ export const useLogin = () => {
     if (isGoodResponse(loginPollingResult.data)) {
       const actions = [
         setApiKey(loginPollingResult.data.secret_key),
-        updateAgentUsage(
-          loginPollingResult.data.refact_agent_request_available,
-        ),
-        updateMaxAgentUsageAmount(
-          loginPollingResult.data.refact_agent_max_request_num,
-        ),
+        setInitialAgentUsage({
+          agent_usage: loginPollingResult.data.refact_agent_request_available,
+          agent_max_usage_amount:
+            loginPollingResult.data.refact_agent_max_request_num,
+        }),
       ];
 
       actions.forEach((action) => dispatch(action));

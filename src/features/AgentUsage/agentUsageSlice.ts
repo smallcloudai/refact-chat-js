@@ -25,6 +25,11 @@ export const agentUsageSlice = createSlice({
     updateMaxAgentUsageAmount: (state, action: PayloadAction<number>) => {
       state.agent_max_usage_amount = action.payload;
     },
+    setInitialAgentUsage: (state, action: PayloadAction<AgentUsageMeta>) => {
+      const { agent_max_usage_amount, agent_usage } = action.payload;
+      state.agent_usage = agent_usage;
+      state.agent_max_usage_amount = agent_max_usage_amount;
+    },
   },
 
   selectors: {
@@ -33,7 +38,10 @@ export const agentUsageSlice = createSlice({
   },
 });
 
-export const { updateAgentUsage, updateMaxAgentUsageAmount } =
-  agentUsageSlice.actions;
+export const {
+  updateAgentUsage,
+  updateMaxAgentUsageAmount,
+  setInitialAgentUsage,
+} = agentUsageSlice.actions;
 export const { selectAgentUsage, selectMaxAgentUsageAmount } =
   agentUsageSlice.selectors;
