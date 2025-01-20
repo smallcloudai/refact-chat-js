@@ -14,6 +14,10 @@ const Template: React.FC = () => {
     agentUsage: {
       agent_usage: 5,
       agent_max_usage_amount: 20,
+      _persist: {
+        rehydrated: true,
+        version: 1,
+      },
     },
     config: {
       apiKey: "foo",
