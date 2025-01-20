@@ -6,9 +6,7 @@ export type AgentUsageMeta = {
 };
 
 const initialState: AgentUsageMeta = {
-  agent_usage: localStorage.getItem("agent_usage")
-    ? Number(localStorage.getItem("agent_usage"))
-    : null,
+  agent_usage: null,
   agent_max_usage_amount: 20,
 };
 

@@ -96,7 +96,7 @@ startListening({
       const agentUsageCounter = getAgentUsageCounter(payload);
 
       dispatch(updateAgentUsage(agentUsageCounter ?? null));
-      localStorage.setItem("agent_usage", agentUsageCounter?.toString() ?? "");
+      // localStorage.setItem("agent_usage", agentUsageCounter?.toString() ?? "");
     }
 
     if ("refact_agent_max_request_num" in payload) {
