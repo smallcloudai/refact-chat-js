@@ -14,6 +14,7 @@ export type CalloutProps = Omit<RadixCalloutProps, "onClick"> & {
   type: "info" | "error" | "warning";
   onClick?: () => void;
   timeout?: number | null;
+  preventRetry?: boolean;
   hex?: string;
   message?: string | string[];
 };
@@ -23,6 +24,7 @@ export const Callout: React.FC<CalloutProps> = ({
   type = "info",
   timeout = null,
   onClick = () => void 0,
+  preventRetry,
   ...props
 }) => {
   const [isOpened, setIsOpened] = useState(false);
@@ -38,6 +40,7 @@ export const Callout: React.FC<CalloutProps> = ({
   }, []);
 
   const handleRetryClick = () => {
+    if (preventRetry) return;
     setIsOpened(false);
     const timeoutId = setTimeout(() => {
       onClick();
@@ -79,6 +82,7 @@ export const ErrorCallout: React.FC<Omit<CalloutProps, "type">> = ({
   timeout = null,
   onClick,
   children,
+  preventRetry,
   ...props
 }) => {
   return (
@@ -88,6 +92,7 @@ export const ErrorCallout: React.FC<Omit<CalloutProps, "type">> = ({
       onClick={onClick}
       timeout={timeout}
       itemType={props.itemType}
+      preventRetry={preventRetry}
       {...props}
     >
       Error: {children}

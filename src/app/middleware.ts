@@ -22,7 +22,11 @@ import { commandsApi, isDetailMessage } from "../services/refact/commands";
 import { pathApi } from "../services/refact/path";
 import { diffApi } from "../services/refact/diffs";
 import { pingApi } from "../services/refact/ping";
-import { clearError, setError } from "../features/Errors/errorsSlice";
+import {
+  clearError,
+  setError,
+  setIsAuthError,
+} from "../features/Errors/errorsSlice";
 import { updateConfig } from "../features/Config/configSlice";
 import { resetAttachedImagesSlice } from "../features/AttachedImages";
 import { nextTip } from "../features/TipOfTheDay";
@@ -96,7 +100,6 @@ startListening({
       const agentUsageCounter = getAgentUsageCounter(payload);
 
       dispatch(updateAgentUsage(agentUsageCounter ?? null));
-      // localStorage.setItem("agent_usage", agentUsageCounter?.toString() ?? "");
     }
 
     if ("refact_agent_max_request_num" in payload) {
@@ -114,6 +117,10 @@ startListening({
       capsApi.endpoints.getCaps.matchRejected(action) &&
       !action.meta.condition
     ) {
+      const errorStatus = action.payload?.status;
+      if (errorStatus && errorStatus === 401) {
+        listenerApi.dispatch(setIsAuthError(true));
+      }
       const message = isCapsErrorResponse(action.payload?.data)
         ? action.payload.data.detail
         : `fetching caps from lsp`;
@@ -123,6 +130,10 @@ startListening({
       toolsApi.endpoints.getTools.matchRejected(action) &&
       !action.meta.condition
     ) {
+      const errorStatus = action.payload?.status;
+      if (errorStatus && errorStatus === 401) {
+        listenerApi.dispatch(setIsAuthError(true));
+      }
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : "fetching tools from lsp.";
@@ -132,6 +143,10 @@ startListening({
       toolsApi.endpoints.checkForConfirmation.matchRejected(action) &&
       !action.meta.condition
     ) {
+      const errorStatus = action.payload?.status;
+      if (errorStatus && errorStatus === 401) {
+        listenerApi.dispatch(setIsAuthError(true));
+      }
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : "confirmation check from lsp";
@@ -141,6 +156,10 @@ startListening({
       promptsApi.endpoints.getPrompts.matchRejected(action) &&
       !action.meta.condition
     ) {
+      const errorStatus = action.payload?.status;
+      if (errorStatus && errorStatus === 401) {
+        listenerApi.dispatch(setIsAuthError(true));
+      }
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail.split("\n").slice(0, 2).join("\n")
         : `fetching system prompts.`;
@@ -151,6 +170,10 @@ startListening({
       integrationsApi.endpoints.getAllIntegrations.matchRejected(action) &&
       !action.meta.condition
     ) {
+      const errorStatus = action.payload?.status;
+      if (errorStatus && errorStatus === 401) {
+        listenerApi.dispatch(setIsAuthError(true));
+      }
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : `fetching integrations.`;
@@ -161,6 +184,10 @@ startListening({
       integrationsApi.endpoints.deleteIntegration.matchRejected(action) &&
       !action.meta.condition
     ) {
+      const errorStatus = action.payload?.status;
+      if (errorStatus && errorStatus === 401) {
+        listenerApi.dispatch(setIsAuthError(true));
+      }
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : `deleting integration.`;
@@ -171,6 +198,10 @@ startListening({
       integrationsApi.endpoints.getIntegrationByPath.matchRejected(action) &&
       !action.meta.condition
     ) {
+      const errorStatus = action.payload?.status;
+      if (errorStatus && errorStatus === 401) {
+        listenerApi.dispatch(setIsAuthError(true));
+      }
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : `fetching integrations.`;
@@ -181,6 +212,10 @@ startListening({
       dockerApi.endpoints.getAllDockerContainers.matchRejected(action) &&
       !action.meta.condition
     ) {
+      const errorStatus = action.payload?.status;
+      if (errorStatus && errorStatus === 401) {
+        listenerApi.dispatch(setIsAuthError(true));
+      }
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : `fetching docker containers.`;
@@ -191,6 +226,10 @@ startListening({
       dockerApi.endpoints.getDockerContainersByImage.matchRejected(action) &&
       !action.meta.condition
     ) {
+      const errorStatus = action.payload?.status;
+      if (errorStatus && errorStatus === 401) {
+        listenerApi.dispatch(setIsAuthError(true));
+      }
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : `fetching docker containers.`;
@@ -201,6 +240,10 @@ startListening({
       dockerApi.endpoints.getDockerContainersByLabel.matchRejected(action) &&
       !action.meta.condition
     ) {
+      const errorStatus = action.payload?.status;
+      if (errorStatus && errorStatus === 401) {
+        listenerApi.dispatch(setIsAuthError(true));
+      }
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : `fetching docker containers.`;
@@ -213,6 +256,10 @@ startListening({
       ) &&
       !action.meta.condition
     ) {
+      const errorStatus = action.payload?.status;
+      if (errorStatus && errorStatus === 401) {
+        listenerApi.dispatch(setIsAuthError(true));
+      }
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : `fetching docker containers.`;
@@ -223,6 +270,10 @@ startListening({
       pathApi.endpoints.getFullPath.matchRejected(action) &&
       !action.meta.condition
     ) {
+      const errorStatus = action.payload?.status;
+      if (errorStatus && errorStatus === 401) {
+        listenerApi.dispatch(setIsAuthError(true));
+      }
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : "getting fullpath of file";
@@ -239,6 +290,10 @@ startListening({
     }
 
     if (diffApi.endpoints.applyAllPatchesInMessages.matchRejected(action)) {
+      const errorStatus = action.payload?.status;
+      if (errorStatus && errorStatus === 401) {
+        listenerApi.dispatch(setIsAuthError(true));
+      }
       const errorMessage = isDetailMessage(action.payload?.data)
         ? action.payload.data.detail
         : `Failed to apply diffs: ${action.payload?.status}`;
