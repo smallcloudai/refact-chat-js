@@ -170,6 +170,69 @@ export function isMemUpdateRequest(obj: unknown): obj is MemUpdateRequest {
   return true;
 }
 
+export type VecDbStatus = {
+  files_unprocessed: number;
+  files_total: number; // only valid for status bar in the UI, resets to 0 when done
+  requests_made_since_start: number;
+  vectors_made_since_start: number;
+  db_size: number;
+  db_cache_size: number;
+  state: "starting" | "parsing" | "done" | "cooldown";
+  queue_additions: boolean;
+  vecdb_max_files_hit: boolean;
+  vecdb_errors: Record<string, number>;
+};
+
+function isVecDbStatus(obj: unknown): obj is VecDbStatus {
+  if (!obj) return false;
+  if (typeof obj !== "object") return false;
+  if (
+    !("files_unprocessed" in obj) ||
+    typeof obj.files_unprocessed !== "number"
+  ) {
+    return false;
+  }
+  if (!("files_total" in obj) || typeof obj.files_total !== "number") {
+    return false;
+  }
+  if (
+    !("requests_made_since_start" in obj) ||
+    typeof obj.requests_made_since_start !== "number"
+  ) {
+    return false;
+  }
+  if (
+    !("vectors_made_since_start" in obj) ||
+    typeof obj.vectors_made_since_start !== "number"
+  ) {
+    return false;
+  }
+  if (!("db_size" in obj) || typeof obj.db_size !== "number") {
+    return false;
+  }
+  if (!("db_cache_size" in obj) || typeof obj.db_cache_size !== "number") {
+    return false;
+  }
+
+  if (!("state" in obj) || typeof obj.state !== "string") {
+    return false;
+  }
+  if (!("queue_additions" in obj) || typeof obj.queue_additions !== "boolean") {
+    return false;
+  }
+  if (
+    !("vecdb_max_files_hit" in obj) ||
+    typeof obj.vecdb_max_files_hit !== "boolean"
+  ) {
+    return false;
+  }
+  if (!("vecdb_errors" in obj) || typeof obj.vecdb_errors !== "object") {
+    return false;
+  }
+
+  return true;
+}
+
 export const knowledgeApi = createApi({
   reducerPath: "knowledgeApi",
   baseQuery: fetchBaseQuery({
@@ -186,6 +249,7 @@ export const knowledgeApi = createApi({
       {
         loaded: boolean;
         memories: Record<string, MemoRecord>;
+        status: null | VecDbStatus;
       },
       SubscribeArgs
     >({
@@ -195,6 +259,7 @@ export const knowledgeApi = createApi({
           data: {
             loaded: false,
             memories: {},
+            status: null,
           },
         };
       },
@@ -216,20 +281,30 @@ export const knowledgeApi = createApi({
           // validate the type
           console.log("mem-db chunk");
           console.log(chunk);
-          if (!isMemdbSubEvent(chunk) && !isMemdbSubEventUnparsed(chunk)) {
-            return;
-          }
-
-          const data: MemoRecord | null = isMemoRecord(chunk.pubevent_json)
-            ? chunk.pubevent_json
-            : parseOrElse(chunk.pubevent_json, null, isMemoRecord);
-
-          if (data === null) {
+          if (
+            !isMemdbSubEvent(chunk) &&
+            !isMemdbSubEventUnparsed(chunk) &&
+            !isVecDbStatus(chunk)
+          ) {
             return;
           }
 
           api.updateCachedData((draft) => {
+            // TODO: clean this up a bit
             draft.loaded = true;
+            if (isVecDbStatus(chunk)) {
+              draft.status = chunk;
+              return;
+            }
+
+            const data: MemoRecord | null = isMemoRecord(chunk.pubevent_json)
+              ? chunk.pubevent_json
+              : parseOrElse(chunk.pubevent_json, null, isMemoRecord);
+
+            if (data === null) {
+              return;
+            }
+
             if (chunk.pubevent_action === "DELETE") {
               // delete draft.memories[data.memid]
               draft.memories = removeFromObject(draft.memories, data.memid);
