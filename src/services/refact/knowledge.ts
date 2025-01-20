@@ -8,6 +8,7 @@ import {
   KNOWLEDGE_ADD_URL,
   KNOWLEDGE_REMOVE_URL,
   KNOWLEDGE_SUB_URL,
+  KNOWLEDGE_UPDATE_URL,
   KNOWLEDGE_UPDATE_USED_URL,
 } from "./consts";
 import type { ChatMessages } from ".";
@@ -148,6 +149,27 @@ export type MemUpdateUsedRequest = {
   relevant: number;
 };
 
+export type MemUpdateRequest = {
+  memid: string;
+  mem_type: string;
+  goal: string;
+  project: string;
+  payload: string;
+  origin: string; // TODO: upgrade to serde_json::Value
+};
+
+export function isMemUpdateRequest(obj: unknown): obj is MemUpdateRequest {
+  if (!obj) return false;
+  if (typeof obj !== "object") return false;
+  if (!("memid" in obj) || typeof obj.memid !== "string") return false;
+  if (!("mem_type" in obj) || typeof obj.mem_type !== "string") return false;
+  if (!("goal" in obj) || typeof obj.goal !== "string") return false;
+  if (!("project" in obj) || typeof obj.project !== "string") return false;
+  if (!("payload" in obj) || typeof obj.payload !== "string") return false;
+  if (!("origin" in obj) || typeof obj.origin !== "string") return false;
+  return true;
+}
+
 export const knowledgeApi = createApi({
   reducerPath: "knowledgeApi",
   baseQuery: fetchBaseQuery({
@@ -192,8 +214,8 @@ export const knowledgeApi = createApi({
         };
         const onChunk = (chunk: Record<string, unknown>) => {
           // validate the type
-          // console.log("mem-db chunk");
-          // console.log(chunk);
+          console.log("mem-db chunk");
+          console.log(chunk);
           if (!isMemdbSubEvent(chunk) && !isMemdbSubEventUnparsed(chunk)) {
             return;
           }
@@ -283,6 +305,21 @@ export const knowledgeApi = createApi({
           url,
           method: "POST",
           body: { memid: arg },
+        });
+        return response;
+      },
+    }),
+
+    updateMemory: builder.mutation<unknown, MemUpdateRequest>({
+      async queryFn(arg, api, extraOptions, baseQuery) {
+        const state = api.getState() as RootState;
+        const port = state.config.lspPort as unknown as number;
+        const url = `http://127.0.0.1:${port}${KNOWLEDGE_UPDATE_URL}`;
+        const response = await baseQuery({
+          ...extraOptions,
+          url,
+          method: "POST",
+          body: arg,
         });
         return response;
       },

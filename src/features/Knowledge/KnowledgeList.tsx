@@ -19,8 +19,10 @@ import {
 } from "@radix-ui/react-icons";
 import {
   isAddMemoryRequest,
+  isMemUpdateRequest,
   knowledgeApi,
   MemoRecord,
+  MemUpdateRequest,
   SubscribeArgs,
 } from "../../services/refact/knowledge";
 import { pop } from "../../features/Pages/pagesSlice";
@@ -175,16 +177,24 @@ const EditKnowledgeForm: React.FC<EditKnowledgeFormProps> = ({
   memory,
   onClose,
 }) => {
-  const [submit, result] = knowledgeApi.useAddMemoryMutation();
+  const [submit, result] = knowledgeApi.useUpdateMemoryMutation();
 
   const handleSubmit = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       const formData = Object.fromEntries(new FormData(event.currentTarget));
-      const nextMemory = { ...memory, ...formData };
-      if (isAddMemoryRequest(nextMemory)) {
-        // TODO: handle errors
-        void submit(nextMemory);
+      const oldData: MemUpdateRequest = {
+        memid: memory.memid,
+        mem_type: memory.m_type,
+        goal: memory.m_goal,
+        project: memory.m_goal,
+        payload: memory.m_payload,
+        origin: memory.m_origin,
+      };
+      const updatedMemory = { ...oldData, ...formData };
+      // TODO: handle errors
+      if (isMemUpdateRequest(updatedMemory)) {
+        void submit(updatedMemory);
       }
     },
     [memory, submit],
@@ -201,18 +211,14 @@ const EditKnowledgeForm: React.FC<EditKnowledgeFormProps> = ({
       <form onSubmit={handleSubmit} onReset={onClose}>
         <Flex gap="8" direction="column">
           <Flex direction="column" gap="3">
+            <TextInput name="goal" label="Goal" defaultValue={memory.m_goal} />
             <TextInput
-              name="m_goal"
-              label="Goal"
-              defaultValue={memory.m_goal}
-            />
-            <TextInput
-              name="m_project"
+              name="project"
               label="Project"
               defaultValue={memory.m_project}
             />
             <TextAreaInput
-              name="m_payload"
+              name="payload"
               label="Payload"
               defaultValue={memory.m_payload}
             />
