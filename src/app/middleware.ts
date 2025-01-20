@@ -42,6 +42,9 @@ import {
   updateMaxAgentUsageAmount,
 } from "../features/AgentUsage/agentUsageSlice";
 
+const AUTH_ERROR_MESSAGE =
+  "There is an issue with your API key. Check out your API Key or re-login";
+
 export const listenerMiddleware = createListenerMiddleware();
 const startListening = listenerMiddleware.startListening.withTypes<
   RootState,
@@ -118,52 +121,60 @@ startListening({
       !action.meta.condition
     ) {
       const errorStatus = action.payload?.status;
-      if (errorStatus && errorStatus === 401) {
-        listenerApi.dispatch(setIsAuthError(true));
-      }
-      const message = isCapsErrorResponse(action.payload?.data)
-        ? action.payload.data.detail
-        : `fetching caps from lsp`;
+      const isAuthError = errorStatus === 401;
+      const message = isAuthError
+        ? AUTH_ERROR_MESSAGE
+        : isCapsErrorResponse(action.payload?.data)
+          ? action.payload.data.detail
+          : `fetching caps from lsp`;
+
       listenerApi.dispatch(setError(message));
+      listenerApi.dispatch(setIsAuthError(isAuthError));
     }
     if (
       toolsApi.endpoints.getTools.matchRejected(action) &&
       !action.meta.condition
     ) {
       const errorStatus = action.payload?.status;
-      if (errorStatus && errorStatus === 401) {
-        listenerApi.dispatch(setIsAuthError(true));
-      }
-      const errorMessage = isDetailMessage(action.payload?.data)
-        ? action.payload.data.detail
-        : "fetching tools from lsp.";
-      listenerApi.dispatch(setError(errorMessage));
+      const isAuthError = errorStatus === 401;
+      const message = isAuthError
+        ? AUTH_ERROR_MESSAGE
+        : isDetailMessage(action.payload?.data)
+          ? action.payload.data.detail
+          : `fetching tools from lsp`;
+
+      listenerApi.dispatch(setError(message));
+      listenerApi.dispatch(setIsAuthError(isAuthError));
     }
     if (
       toolsApi.endpoints.checkForConfirmation.matchRejected(action) &&
       !action.meta.condition
     ) {
       const errorStatus = action.payload?.status;
-      if (errorStatus && errorStatus === 401) {
-        listenerApi.dispatch(setIsAuthError(true));
-      }
-      const errorMessage = isDetailMessage(action.payload?.data)
-        ? action.payload.data.detail
-        : "confirmation check from lsp";
-      listenerApi.dispatch(setError(errorMessage));
+      const isAuthError = errorStatus === 401;
+      const message = isAuthError
+        ? AUTH_ERROR_MESSAGE
+        : isDetailMessage(action.payload?.data)
+          ? action.payload.data.detail
+          : `confirmation check from lsp`;
+
+      listenerApi.dispatch(setError(message));
+      listenerApi.dispatch(setIsAuthError(isAuthError));
     }
     if (
       promptsApi.endpoints.getPrompts.matchRejected(action) &&
       !action.meta.condition
     ) {
       const errorStatus = action.payload?.status;
-      if (errorStatus && errorStatus === 401) {
-        listenerApi.dispatch(setIsAuthError(true));
-      }
-      const errorMessage = isDetailMessage(action.payload?.data)
-        ? action.payload.data.detail.split("\n").slice(0, 2).join("\n")
-        : `fetching system prompts.`;
-      listenerApi.dispatch(setError(errorMessage));
+      const isAuthError = errorStatus === 401;
+      const message = isAuthError
+        ? AUTH_ERROR_MESSAGE
+        : isDetailMessage(action.payload?.data)
+          ? action.payload.data.detail.split("\n").slice(0, 2).join("\n")
+          : `fetching system prompts.`;
+
+      listenerApi.dispatch(setError(message));
+      listenerApi.dispatch(setIsAuthError(isAuthError));
     }
 
     if (
@@ -171,13 +182,15 @@ startListening({
       !action.meta.condition
     ) {
       const errorStatus = action.payload?.status;
-      if (errorStatus && errorStatus === 401) {
-        listenerApi.dispatch(setIsAuthError(true));
-      }
-      const errorMessage = isDetailMessage(action.payload?.data)
-        ? action.payload.data.detail
-        : `fetching integrations.`;
-      listenerApi.dispatch(setError(errorMessage));
+      const isAuthError = errorStatus === 401;
+      const message = isAuthError
+        ? AUTH_ERROR_MESSAGE
+        : isDetailMessage(action.payload?.data)
+          ? action.payload.data.detail
+          : `fetching integrations.`;
+
+      listenerApi.dispatch(setError(message));
+      listenerApi.dispatch(setIsAuthError(isAuthError));
     }
 
     if (
@@ -185,13 +198,15 @@ startListening({
       !action.meta.condition
     ) {
       const errorStatus = action.payload?.status;
-      if (errorStatus && errorStatus === 401) {
-        listenerApi.dispatch(setIsAuthError(true));
-      }
-      const errorMessage = isDetailMessage(action.payload?.data)
-        ? action.payload.data.detail
-        : `deleting integration.`;
-      listenerApi.dispatch(setError(errorMessage));
+      const isAuthError = errorStatus === 401;
+      const message = isAuthError
+        ? AUTH_ERROR_MESSAGE
+        : isDetailMessage(action.payload?.data)
+          ? action.payload.data.detail
+          : `deleting integrations.`;
+
+      listenerApi.dispatch(setError(message));
+      listenerApi.dispatch(setIsAuthError(isAuthError));
     }
 
     if (
@@ -199,13 +214,15 @@ startListening({
       !action.meta.condition
     ) {
       const errorStatus = action.payload?.status;
-      if (errorStatus && errorStatus === 401) {
-        listenerApi.dispatch(setIsAuthError(true));
-      }
-      const errorMessage = isDetailMessage(action.payload?.data)
-        ? action.payload.data.detail
-        : `fetching integrations.`;
-      listenerApi.dispatch(setError(errorMessage));
+      const isAuthError = errorStatus === 401;
+      const message = isAuthError
+        ? AUTH_ERROR_MESSAGE
+        : isDetailMessage(action.payload?.data)
+          ? action.payload.data.detail
+          : `fetching integrations.`;
+
+      listenerApi.dispatch(setError(message));
+      listenerApi.dispatch(setIsAuthError(isAuthError));
     }
 
     if (
@@ -213,13 +230,15 @@ startListening({
       !action.meta.condition
     ) {
       const errorStatus = action.payload?.status;
-      if (errorStatus && errorStatus === 401) {
-        listenerApi.dispatch(setIsAuthError(true));
-      }
-      const errorMessage = isDetailMessage(action.payload?.data)
-        ? action.payload.data.detail
-        : `fetching docker containers.`;
-      listenerApi.dispatch(setError(errorMessage));
+      const isAuthError = errorStatus === 401;
+      const message = isAuthError
+        ? AUTH_ERROR_MESSAGE
+        : isDetailMessage(action.payload?.data)
+          ? action.payload.data.detail
+          : `fetching docker containers.`;
+
+      listenerApi.dispatch(setError(message));
+      listenerApi.dispatch(setIsAuthError(isAuthError));
     }
 
     if (
@@ -227,13 +246,15 @@ startListening({
       !action.meta.condition
     ) {
       const errorStatus = action.payload?.status;
-      if (errorStatus && errorStatus === 401) {
-        listenerApi.dispatch(setIsAuthError(true));
-      }
-      const errorMessage = isDetailMessage(action.payload?.data)
-        ? action.payload.data.detail
-        : `fetching docker containers.`;
-      listenerApi.dispatch(setError(errorMessage));
+      const isAuthError = errorStatus === 401;
+      const message = isAuthError
+        ? AUTH_ERROR_MESSAGE
+        : isDetailMessage(action.payload?.data)
+          ? action.payload.data.detail
+          : `fetching docker containers.`;
+
+      listenerApi.dispatch(setError(message));
+      listenerApi.dispatch(setIsAuthError(isAuthError));
     }
 
     if (
@@ -241,13 +262,15 @@ startListening({
       !action.meta.condition
     ) {
       const errorStatus = action.payload?.status;
-      if (errorStatus && errorStatus === 401) {
-        listenerApi.dispatch(setIsAuthError(true));
-      }
-      const errorMessage = isDetailMessage(action.payload?.data)
-        ? action.payload.data.detail
-        : `fetching docker containers.`;
-      listenerApi.dispatch(setError(errorMessage));
+      const isAuthError = errorStatus === 401;
+      const message = isAuthError
+        ? AUTH_ERROR_MESSAGE
+        : isDetailMessage(action.payload?.data)
+          ? action.payload.data.detail
+          : `fetching docker containers.`;
+
+      listenerApi.dispatch(setError(message));
+      listenerApi.dispatch(setIsAuthError(isAuthError));
     }
 
     if (
@@ -257,13 +280,15 @@ startListening({
       !action.meta.condition
     ) {
       const errorStatus = action.payload?.status;
-      if (errorStatus && errorStatus === 401) {
-        listenerApi.dispatch(setIsAuthError(true));
-      }
-      const errorMessage = isDetailMessage(action.payload?.data)
-        ? action.payload.data.detail
-        : `fetching docker containers.`;
-      listenerApi.dispatch(setError(errorMessage));
+      const isAuthError = errorStatus === 401;
+      const message = isAuthError
+        ? AUTH_ERROR_MESSAGE
+        : isDetailMessage(action.payload?.data)
+          ? action.payload.data.detail
+          : `fetching docker containers.`;
+
+      listenerApi.dispatch(setError(message));
+      listenerApi.dispatch(setIsAuthError(isAuthError));
     }
 
     if (
@@ -271,14 +296,15 @@ startListening({
       !action.meta.condition
     ) {
       const errorStatus = action.payload?.status;
-      if (errorStatus && errorStatus === 401) {
-        listenerApi.dispatch(setIsAuthError(true));
-      }
-      const errorMessage = isDetailMessage(action.payload?.data)
-        ? action.payload.data.detail
-        : "getting fullpath of file";
+      const isAuthError = errorStatus === 401;
+      const message = isAuthError
+        ? AUTH_ERROR_MESSAGE
+        : isDetailMessage(action.payload?.data)
+          ? action.payload.data.detail
+          : `getting full path of file.`;
 
-      listenerApi.dispatch(setError(errorMessage));
+      listenerApi.dispatch(setError(message));
+      listenerApi.dispatch(setIsAuthError(isAuthError));
     }
 
     if (
@@ -291,13 +317,15 @@ startListening({
 
     if (diffApi.endpoints.applyAllPatchesInMessages.matchRejected(action)) {
       const errorStatus = action.payload?.status;
-      if (errorStatus && errorStatus === 401) {
-        listenerApi.dispatch(setIsAuthError(true));
-      }
-      const errorMessage = isDetailMessage(action.payload?.data)
-        ? action.payload.data.detail
-        : `Failed to apply diffs: ${action.payload?.status}`;
-      listenerApi.dispatch(setError(errorMessage));
+      const isAuthError = errorStatus === 401;
+      const message = isAuthError
+        ? AUTH_ERROR_MESSAGE
+        : isDetailMessage(action.payload?.data)
+          ? action.payload.data.detail
+          : `Failed to apply diffs: ${action.payload?.status}`;
+
+      listenerApi.dispatch(setError(message));
+      listenerApi.dispatch(setIsAuthError(isAuthError));
     }
   },
 });
