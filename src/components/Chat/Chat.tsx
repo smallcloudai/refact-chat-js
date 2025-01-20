@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ChatForm, ChatFormProps } from "../ChatForm";
 import { ChatContent } from "../ChatContent";
-import { Flex, Button, Text, Container, Card } from "@radix-ui/themes";
+import { Flex, Button, Text, Card } from "@radix-ui/themes";
 import {
   useAppSelector,
   useAppDispatch,
@@ -9,6 +9,7 @@ import {
   useAutoSend,
   useGetCapsQuery,
   useCapsForToolUse,
+  useAgentUsage,
 } from "../../hooks";
 import { type Config } from "../../features/Config/configSlice";
 import {
@@ -51,6 +52,7 @@ export const Chat: React.FC<ChatProps> = ({
   const dispatch = useAppDispatch();
   const messages = useAppSelector(selectMessages);
   const capsForToolUse = useCapsForToolUse();
+  const { disableInput } = useAgentUsage();
 
   const [isDebugChatHistoryVisible, setIsDebugChatHistoryVisible] =
     useState(false);
@@ -106,22 +108,25 @@ export const Chat: React.FC<ChatProps> = ({
           onStopStreaming={abort}
         />
 
-        {!unCalledTools && <AgentUsage />}
+        <AgentUsage />
         {!isStreaming && preventSend && unCalledTools && (
-          <Container py="4" bottom="0" style={{ justifyContent: "flex-end" }}>
-            <Card>
-              <Flex direction="column" align="center" gap="2">
+          <Flex py="4">
+            <Card style={{ width: "100%" }}>
+              <Flex direction="column" align="center" gap="2" width="100%">
                 Chat was interrupted with uncalled tools calls.
-                <Button onClick={onEnableSend}>Resume</Button>
+                <Button onClick={onEnableSend} disabled={disableInput}>
+                  Resume
+                </Button>
               </Flex>
             </Card>
-          </Container>
+          </Flex>
         )}
 
         <ChatForm
           key={chatId} // TODO: think of how can we not trigger re-render on chatId change (checkboxes)
           onSubmit={handleSummit}
           onClose={maybeSendToSidebar}
+          unCalledTools={unCalledTools}
         />
 
         <Flex justify="between" pl="1" pr="1" pt="1">
