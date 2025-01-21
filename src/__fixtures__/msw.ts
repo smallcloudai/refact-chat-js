@@ -8,7 +8,7 @@ import {
   KNOWLEDGE_SUB_URL,
 } from "../services/refact/consts";
 import { STUB_TOOL_RESPONSE } from "./tools_response";
-import { STUB_SUB_RESPONSE } from "./knowledge";
+import { STUB_SUB_RESPONSE, STUB_SUB_RESPONSE_WITH_STATUS } from "./knowledge";
 
 export const goodPing: HttpHandler = http.get(
   "http://127.0.0.1:8001/v1/ping",
@@ -100,7 +100,7 @@ export const goodTools: HttpHandler = http.get(
   },
 );
 
-export const knowLedgeLoading: HttpHandler = http.get(
+export const knowLedgeLoading: HttpHandler = http.post(
   `http://127.0.0.1:8001${KNOWLEDGE_SUB_URL}`,
   async () => {
     const encoder = new TextEncoder();
@@ -117,6 +117,31 @@ export const knowLedgeLoading: HttpHandler = http.get(
     });
 
     await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    return new HttpResponse(stream, {
+      headers: {
+        "Content-Type": "text/plain",
+      },
+    });
+  },
+);
+
+export const KnowledgeWithStatus: HttpHandler = http.post(
+  `http://127.0.0.1:8001${KNOWLEDGE_SUB_URL}`,
+  () => {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        // Encode the string chunks using "TextEncoder".
+        for (const item of STUB_SUB_RESPONSE_WITH_STATUS) {
+          const str = `data: ${JSON.stringify(item)}\n\n`;
+          controller.enqueue(encoder.encode(str));
+          await new Promise((resolve) => setTimeout(resolve, 3000)); // 1-second delay
+        }
+
+        controller.close();
+      },
+    });
 
     return new HttpResponse(stream, {
       headers: {

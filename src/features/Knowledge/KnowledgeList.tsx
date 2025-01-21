@@ -9,13 +9,16 @@ import {
   TextField,
   TextArea,
   TextAreaProps,
-  Box,
   IconButton,
+  HoverCard,
+  DataList,
 } from "@radix-ui/themes";
 import {
   TrashIcon,
   Pencil1Icon,
   MagnifyingGlassIcon,
+  LayersIcon,
+  PlusIcon,
 } from "@radix-ui/react-icons";
 import {
   isAddMemoryRequest,
@@ -24,6 +27,7 @@ import {
   MemoRecord,
   MemUpdateRequest,
   SubscribeArgs,
+  VecDbStatus,
 } from "../../services/refact/knowledge";
 import { pop } from "../../features/Pages/pagesSlice";
 import { useAppDispatch } from "../../hooks";
@@ -57,37 +61,46 @@ export const KnowledgeList: React.FC = () => {
 
   const memoryCount = Object.keys(request.data?.memories ?? {}).length;
 
+  console.log(request.data?.status);
+
   // TBD: should the user be able to add a new memory ?
   return (
     <Flex direction="column" overflowY="hidden" height="100%">
       <Flex direction="column" gap="4" mb="4">
-        <Box>
+        <Flex justify="between">
           <Button variant="outline" onClick={handleBack}>
             Back
           </Button>
-        </Box>
+
+          <Flex gap="3">
+            <TextField.Root
+              placeholder="Search knowledge"
+              value={searchValue?.quick_search ?? ""}
+              onChange={handleSearch}
+            >
+              <TextField.Slot>
+                <MagnifyingGlassIcon height="16" width="16" />
+              </TextField.Slot>
+            </TextField.Root>
+
+            <IconButton
+              variant="outline"
+              title="Add new knowledge"
+              disabled={openForm}
+              onClick={() => setOpenForm(true)}
+            >
+              <PlusIcon />
+            </IconButton>
+
+            <VecDBStatus status={request.data?.status ?? null} />
+          </Flex>
+        </Flex>
 
         <Heading ml="auto" mr="auto" as="h4">
           Knowledge
         </Heading>
 
-        <TextField.Root
-          placeholder="Search knowledge"
-          value={searchValue?.quick_search ?? ""}
-          onChange={handleSearch}
-        >
-          <TextField.Slot>
-            <MagnifyingGlassIcon height="16" width="16" />
-          </TextField.Slot>
-        </TextField.Root>
-
-        <Box>
-          {openForm ? (
-            <KnowledgeListForm onClose={() => setOpenForm(false)} />
-          ) : (
-            <Button onClick={() => setOpenForm(true)}>Add new knowledge</Button>
-          )}
-        </Box>
+        {openForm && <KnowledgeListForm onClose={() => setOpenForm(false)} />}
       </Flex>
       <ScrollArea scrollbars="vertical">
         <Flex direction="column" gap="4">
@@ -304,5 +317,86 @@ const TextAreaInput: React.FC<TextAreaProps & { label: React.ReactNode }> = ({
       {label}
       <TextArea {...props} />
     </Text>
+  );
+};
+
+export const VecDBStatus: React.FC<{ status: null | VecDbStatus }> = ({
+  status,
+}) => {
+  if (status === null) {
+    return (
+      <IconButton disabled loading title="vecdb status">
+        <LayersIcon /> Connecting to VecDB
+      </IconButton>
+    );
+  }
+
+  return (
+    <HoverCard.Root>
+      <HoverCard.Trigger>
+        <IconButton variant="outline" title="vecdb status">
+          <LayersIcon />
+        </IconButton>
+      </HoverCard.Trigger>
+
+      <HoverCard.Content>
+        <Text mx="auto">VecDb</Text>
+        <DataList.Root size="1">
+          <DataList.Item>
+            <DataList.Label>Status</DataList.Label>
+            <DataList.Value>{status.state}</DataList.Value>
+          </DataList.Item>
+
+          <DataList.Item>
+            <DataList.Label>Unprocessed files</DataList.Label>
+            <DataList.Value>{status.files_unprocessed}</DataList.Value>
+          </DataList.Item>
+
+          <DataList.Item>
+            <DataList.Label>Total files</DataList.Label>
+            <DataList.Value>{status.files_total}</DataList.Value>
+          </DataList.Item>
+
+          <DataList.Item>
+            <DataList.Label>Database size</DataList.Label>
+            <DataList.Value>{status.db_size}</DataList.Value>
+          </DataList.Item>
+
+          <DataList.Item>
+            <DataList.Label>Database cache size</DataList.Label>
+            <DataList.Value>{status.db_cache_size}</DataList.Value>
+          </DataList.Item>
+
+          <DataList.Item>
+            <DataList.Label>Request made since start</DataList.Label>
+            <DataList.Value>{status.requests_made_since_start}</DataList.Value>
+          </DataList.Item>
+
+          <DataList.Item>
+            <DataList.Label>Vectors made since start</DataList.Label>
+            <DataList.Value>{status.vectors_made_since_start}</DataList.Value>
+          </DataList.Item>
+
+          <DataList.Item>
+            <DataList.Label>Queue additions</DataList.Label>
+            <DataList.Value>{String(status.queue_additions)}</DataList.Value>
+          </DataList.Item>
+
+          <DataList.Item>
+            <DataList.Label>Max files hit</DataList.Label>
+            <DataList.Value>
+              {String(status.vecdb_max_files_hit)}
+            </DataList.Value>
+          </DataList.Item>
+
+          <DataList.Item>
+            <DataList.Label>Errors</DataList.Label>
+            <DataList.Value>
+              {Object.keys(status.vecdb_errors).length}
+            </DataList.Value>
+          </DataList.Item>
+        </DataList.Root>
+      </HoverCard.Content>
+    </HoverCard.Root>
   );
 };

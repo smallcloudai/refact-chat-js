@@ -279,13 +279,14 @@ export const knowledgeApi = createApi({
         };
         const onChunk = (chunk: Record<string, unknown>) => {
           // validate the type
-          console.log("mem-db chunk");
-          console.log(chunk);
+          // console.log("mem-db chunk");
+          // console.log(chunk);
           if (
             !isMemdbSubEvent(chunk) &&
             !isMemdbSubEventUnparsed(chunk) &&
             !isVecDbStatus(chunk)
           ) {
+            console.log("Invalid chunk", chunk);
             return;
           }
 

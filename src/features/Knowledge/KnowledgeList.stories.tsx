@@ -6,7 +6,7 @@ import { Theme } from "../../components/Theme";
 import { TourProvider } from "../Tour";
 import { AbortControllerProvider } from "../../contexts/AbortControllers";
 import { setUpStore } from "../../app/store";
-import { knowLedgeLoading } from "../../__fixtures__/msw";
+import { knowLedgeLoading, KnowledgeWithStatus } from "../../__fixtures__/msw";
 
 const Template: React.FC = () => {
   const store = setUpStore();
@@ -26,6 +26,13 @@ const Template: React.FC = () => {
 const meta: Meta<typeof KnowledgeList> = {
   title: "KnowledgeList",
   component: Template,
+};
+
+export default meta;
+
+type Story = StoryObj<typeof KnowledgeList>;
+
+export const Primary: Story = {
   parameters: {
     msw: {
       handlers: [knowLedgeLoading],
@@ -33,8 +40,10 @@ const meta: Meta<typeof KnowledgeList> = {
   },
 };
 
-export default meta;
-
-type Story = StoryObj<typeof KnowledgeList>;
-
-export const Primary: Story = {};
+export const LoadingVecDd: Story = {
+  parameters: {
+    msw: {
+      handlers: [KnowledgeWithStatus],
+    },
+  },
+};
