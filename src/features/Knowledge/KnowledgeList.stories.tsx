@@ -7,6 +7,7 @@ import { TourProvider } from "../Tour";
 import { AbortControllerProvider } from "../../contexts/AbortControllers";
 import { setUpStore } from "../../app/store";
 import { knowLedgeLoading, KnowledgeWithStatus } from "../../__fixtures__/msw";
+import { Container } from "@radix-ui/themes";
 
 const Template: React.FC = () => {
   const store = setUpStore();
@@ -15,7 +16,9 @@ const Template: React.FC = () => {
       <Theme>
         <TourProvider>
           <AbortControllerProvider>
-            <KnowledgeList />
+            <Container py="8" px="4">
+              <KnowledgeList />
+            </Container>
           </AbortControllerProvider>
         </TourProvider>
       </Theme>

@@ -33,6 +33,7 @@ import { pop } from "../../features/Pages/pagesSlice";
 import { useAppDispatch } from "../../hooks";
 import { ScrollArea } from "../../components/ScrollArea";
 import styles from "./Knowledge.module.css";
+import classNames from "classnames";
 
 export const KnowledgeList: React.FC = () => {
   const [searchValue, setSearchValue] = useState<SubscribeArgs>(undefined);
@@ -51,7 +52,7 @@ export const KnowledgeList: React.FC = () => {
   }, [dispatch, openForm]);
 
   const handleSearch = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    // debounce changes.
+    // TODO: debounce changes.
     if (event.target.value) {
       setSearchValue({ quick_search: event.target.value });
     } else {
@@ -61,9 +62,6 @@ export const KnowledgeList: React.FC = () => {
 
   const memoryCount = Object.keys(request.data?.memories ?? {}).length;
 
-  console.log(request.data?.status);
-
-  // TBD: should the user be able to add a new memory ?
   return (
     <Flex direction="column" overflowY="hidden" height="100%">
       <Flex direction="column" gap="4" mb="4">
@@ -334,7 +332,14 @@ export const VecDBStatus: React.FC<{ status: null | VecDbStatus }> = ({
   return (
     <HoverCard.Root>
       <HoverCard.Trigger>
-        <IconButton variant="outline" title="vecdb status">
+        <IconButton
+          variant="outline"
+          title="Database status"
+          className={classNames({
+            [styles.vecdb__button__parsing]:
+              status.state === "parsing" || status.state === "starting",
+          })}
+        >
           <LayersIcon />
         </IconButton>
       </HoverCard.Trigger>
