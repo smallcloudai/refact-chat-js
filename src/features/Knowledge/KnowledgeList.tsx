@@ -75,7 +75,7 @@ export const KnowledgeList: React.FC = () => {
         {openForm && <AddKnowledgeForm onClose={() => setOpenForm(false)} />}
       </Flex>
       <ScrollArea scrollbars="vertical">
-        <Flex direction="column" gap="4">
+        <Flex direction="column" gap="4" px="4">
           {searchResult.isLoading && (
             <Spinner loading={searchResult.isLoading} />
           )}

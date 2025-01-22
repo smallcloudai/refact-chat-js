@@ -7,6 +7,7 @@ import {
   TextField,
   TextArea,
   TextAreaProps,
+  Heading,
 } from "@radix-ui/themes";
 import {
   isAddMemoryRequest,
@@ -58,6 +59,7 @@ export const EditKnowledgeForm: React.FC<EditKnowledgeFormProps> = ({
   return (
     <Card asChild>
       <form onSubmit={handleSubmit} onReset={onClose}>
+        <FormTitle>Edit a memory</FormTitle>
         <Flex gap="8" direction="column">
           <Flex direction="column" gap="3">
             <TextInput name="goal" label="Goal" defaultValue={memory.m_goal} />
@@ -114,6 +116,8 @@ export const AddKnowledgeForm: React.FC<{ onClose: () => void }> = ({
   return (
     <Card asChild className={styles.knowledge__form}>
       <form onSubmit={handleSubmit} onReset={onClose}>
+        <FormTitle>Add a new memory</FormTitle>
+
         <Flex gap="8" direction="column">
           <Flex direction="column" gap="4">
             <TextInput name="goal" label="Goal" required />
@@ -155,5 +159,15 @@ const TextAreaInput: React.FC<TextAreaProps & { label: React.ReactNode }> = ({
       {label}
       <TextArea {...props} />
     </Text>
+  );
+};
+
+const FormTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <Flex justify="center">
+      <Heading as="h4" mb="4" size="4">
+        {children}
+      </Heading>
+    </Flex>
   );
 };
