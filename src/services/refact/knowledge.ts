@@ -254,7 +254,6 @@ export const knowledgeApi = createApi({
       SubscribeArgs
     >({
       queryFn() {
-        // block until vecorized
         return {
           data: {
             loaded: false,
@@ -286,7 +285,8 @@ export const knowledgeApi = createApi({
             !isMemdbSubEventUnparsed(chunk) &&
             !isVecDbStatus(chunk)
           ) {
-            console.log("Invalid chunk", chunk);
+            // eslint-disable-next-line no-console
+            console.log("Invalid chunk from mem db", chunk);
             return;
           }
 
