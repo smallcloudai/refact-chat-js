@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useCallback, useEffect, useState } from "react";
+import React from "react";
 import {
   Card,
   Flex,
@@ -7,76 +7,24 @@ import {
   Text,
   Button,
   TextField,
-  TextArea,
-  TextAreaProps,
   IconButton,
-  HoverCard,
-  DataList,
 } from "@radix-ui/themes";
 import {
   TrashIcon,
   Pencil1Icon,
   MagnifyingGlassIcon,
-  LayersIcon,
   PlusIcon,
 } from "@radix-ui/react-icons";
-import {
-  isAddMemoryRequest,
-  isMemUpdateRequest,
-  knowledgeApi,
-  MemoRecord,
-  MemUpdateRequest,
-  SubscribeArgs,
-  VecDbStatus,
-} from "../../services/refact/knowledge";
+import { knowledgeApi, MemoRecord } from "../../services/refact/knowledge";
 import { pop } from "../../features/Pages/pagesSlice";
 import { useAppDispatch } from "../../hooks";
 import { ScrollArea } from "../../components/ScrollArea";
-import styles from "./Knowledge.module.css";
-import classNames from "classnames";
-import { useDebounceCallback } from "usehooks-ts";
-import isEqual from "lodash.isequal";
-
-const useDebouncedSearch = () => {
-  const [searchValue, setSearchValue] = useState<SubscribeArgs>(undefined);
-  const [cachedVecDbStatus, setCachedVecDbStatus] =
-    useState<null | VecDbStatus>(null);
-
-  const searchResult = knowledgeApi.useSubscribeQuery(searchValue);
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedSearch = useCallback(
-    useDebounceCallback(setSearchValue, 250, {
-      leading: true,
-    }),
-    [],
-  );
-
-  useEffect(() => {
-    if (
-      searchResult.data?.status &&
-      !isEqual(searchResult.data.status, cachedVecDbStatus)
-    ) {
-      setCachedVecDbStatus(searchResult.data.status);
-    }
-  }, [searchResult.data, cachedVecDbStatus]);
-
-  const search = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      if (event.target.value) {
-        debouncedSearch({ quick_search: event.target.value });
-      } else {
-        debouncedSearch(undefined);
-      }
-    },
-    [debouncedSearch],
-  );
-
-  return { searchResult, searchValue, search, vecDbStatus: cachedVecDbStatus };
-};
+import { VecDBStatusButton } from "./VecdbStatus";
+import { EditKnowledgeForm, AddKnowledgeForm } from "./KnowledgeForms";
+import { useKnowledgeSearch } from "./useKnowledgeSearch";
 
 export const KnowledgeList: React.FC = () => {
-  const { searchResult, search, vecDbStatus } = useDebouncedSearch();
+  const { searchResult, search, vecDbStatus } = useKnowledgeSearch();
   const dispatch = useAppDispatch();
 
   const [openForm, setOpenForm] = React.useState<boolean>(false);
@@ -116,7 +64,7 @@ export const KnowledgeList: React.FC = () => {
               <PlusIcon />
             </IconButton>
 
-            <VecDBStatus status={vecDbStatus} />
+            <VecDBStatusButton status={vecDbStatus} />
           </Flex>
         </Flex>
 
@@ -124,7 +72,7 @@ export const KnowledgeList: React.FC = () => {
           Knowledge
         </Heading>
 
-        {openForm && <KnowledgeListForm onClose={() => setOpenForm(false)} />}
+        {openForm && <AddKnowledgeForm onClose={() => setOpenForm(false)} />}
       </Flex>
       <ScrollArea scrollbars="vertical">
         <Flex direction="column" gap="4">
@@ -204,232 +152,5 @@ const KnowledgeListItem: React.FC<KnowledgeListItemProps> = ({
         <Text size="2">{memory.m_payload}</Text>
       </Flex>
     </Card>
-  );
-};
-
-type EditKnowledgeFormProps = {
-  memory: MemoRecord;
-  onClose: () => void;
-};
-
-const EditKnowledgeForm: React.FC<EditKnowledgeFormProps> = ({
-  memory,
-  onClose,
-}) => {
-  const [submit, result] = knowledgeApi.useUpdateMemoryMutation();
-
-  const handleSubmit = useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      const formData = Object.fromEntries(new FormData(event.currentTarget));
-      const oldData: MemUpdateRequest = {
-        memid: memory.memid,
-        mem_type: memory.m_type,
-        goal: memory.m_goal,
-        project: memory.m_goal,
-        payload: memory.m_payload,
-        origin: memory.m_origin,
-      };
-      const updatedMemory = { ...oldData, ...formData };
-      // TODO: handle errors
-      if (isMemUpdateRequest(updatedMemory)) {
-        void submit(updatedMemory);
-      }
-    },
-    [memory, submit],
-  );
-
-  useEffect(() => {
-    if (result.isSuccess) {
-      onClose();
-    }
-  }, [onClose, result.isSuccess]);
-
-  return (
-    <Card asChild>
-      <form onSubmit={handleSubmit} onReset={onClose}>
-        <Flex gap="8" direction="column">
-          <Flex direction="column" gap="3">
-            <TextInput name="goal" label="Goal" defaultValue={memory.m_goal} />
-            <TextInput
-              name="project"
-              label="Project"
-              defaultValue={memory.m_project}
-            />
-            <TextAreaInput
-              name="payload"
-              label="Payload"
-              defaultValue={memory.m_payload}
-            />
-          </Flex>
-
-          <Flex gap="3" justify="end">
-            <Button type="submit" color="green">
-              Save
-            </Button>
-            <Button variant="soft" color="gray" type="reset">
-              Close
-            </Button>
-          </Flex>
-        </Flex>
-      </form>
-    </Card>
-  );
-};
-
-// TODO: for adding, will change slightly
-const KnowledgeListForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const [submit, result] = knowledgeApi.useAddMemoryMutation();
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const memory = Object.fromEntries(formData.entries());
-
-    if (isAddMemoryRequest(memory)) {
-      // TODO: handle errors
-      void submit(memory);
-    }
-    // setOpenForm(false);
-    // TBD: should we clear the form after submit?
-    // event.currentTarget.reset();
-  };
-
-  useEffect(() => {
-    result.isSuccess && onClose();
-  }, [result.isSuccess, onClose]);
-
-  return (
-    <Card asChild className={styles.knowledge__form}>
-      <form onSubmit={handleSubmit} onReset={onClose}>
-        <Flex gap="8" direction="column">
-          <Flex direction="column" gap="4">
-            <TextInput name="goal" label="Goal" required />
-            <TextAreaInput name="payload" label="Payload" required />
-          </Flex>
-
-          <Flex gap="3" justify="end">
-            <Button type="submit" color="green">
-              Save
-            </Button>
-            <Button variant="soft" color="gray" type="reset">
-              Close
-            </Button>
-          </Flex>
-        </Flex>
-      </form>
-    </Card>
-  );
-};
-
-const TextInput: React.FC<TextField.RootProps & { label: React.ReactNode }> = ({
-  label,
-  ...props
-}) => {
-  return (
-    <Text as="label" htmlFor={props.name}>
-      {label}
-      <TextField.Root {...props} />
-    </Text>
-  );
-};
-
-const TextAreaInput: React.FC<TextAreaProps & { label: React.ReactNode }> = ({
-  label,
-  ...props
-}) => {
-  return (
-    <Text as="label" htmlFor={props.name}>
-      {label}
-      <TextArea {...props} />
-    </Text>
-  );
-};
-
-export const VecDBStatus: React.FC<{ status: null | VecDbStatus }> = ({
-  status,
-}) => {
-  if (status === null) {
-    return (
-      <IconButton disabled loading title="vecdb status">
-        <LayersIcon /> Connecting to VecDB
-      </IconButton>
-    );
-  }
-
-  return (
-    <HoverCard.Root>
-      <HoverCard.Trigger>
-        <IconButton
-          variant="outline"
-          title="Database status"
-          className={classNames({
-            [styles.vecdb__button__parsing]:
-              status.state === "parsing" || status.state === "starting",
-          })}
-        >
-          <LayersIcon />
-        </IconButton>
-      </HoverCard.Trigger>
-
-      <HoverCard.Content>
-        <Text mx="auto">VecDb</Text>
-        <DataList.Root size="1">
-          <DataList.Item>
-            <DataList.Label>Status</DataList.Label>
-            <DataList.Value>{status.state}</DataList.Value>
-          </DataList.Item>
-
-          <DataList.Item>
-            <DataList.Label>Unprocessed files</DataList.Label>
-            <DataList.Value>{status.files_unprocessed}</DataList.Value>
-          </DataList.Item>
-
-          <DataList.Item>
-            <DataList.Label>Total files</DataList.Label>
-            <DataList.Value>{status.files_total}</DataList.Value>
-          </DataList.Item>
-
-          <DataList.Item>
-            <DataList.Label>Database size</DataList.Label>
-            <DataList.Value>{status.db_size}</DataList.Value>
-          </DataList.Item>
-
-          <DataList.Item>
-            <DataList.Label>Database cache size</DataList.Label>
-            <DataList.Value>{status.db_cache_size}</DataList.Value>
-          </DataList.Item>
-
-          <DataList.Item>
-            <DataList.Label>Request made since start</DataList.Label>
-            <DataList.Value>{status.requests_made_since_start}</DataList.Value>
-          </DataList.Item>
-
-          <DataList.Item>
-            <DataList.Label>Vectors made since start</DataList.Label>
-            <DataList.Value>{status.vectors_made_since_start}</DataList.Value>
-          </DataList.Item>
-
-          <DataList.Item>
-            <DataList.Label>Queue additions</DataList.Label>
-            <DataList.Value>{String(status.queue_additions)}</DataList.Value>
-          </DataList.Item>
-
-          <DataList.Item>
-            <DataList.Label>Max files hit</DataList.Label>
-            <DataList.Value>
-              {String(status.vecdb_max_files_hit)}
-            </DataList.Value>
-          </DataList.Item>
-
-          <DataList.Item>
-            <DataList.Label>Errors</DataList.Label>
-            <DataList.Value>
-              {Object.keys(status.vecdb_errors).length}
-            </DataList.Value>
-          </DataList.Item>
-        </DataList.Root>
-      </HoverCard.Content>
-    </HoverCard.Root>
   );
 };
