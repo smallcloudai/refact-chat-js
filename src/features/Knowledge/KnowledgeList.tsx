@@ -34,10 +34,49 @@ import { useAppDispatch } from "../../hooks";
 import { ScrollArea } from "../../components/ScrollArea";
 import styles from "./Knowledge.module.css";
 import classNames from "classnames";
+import { useDebounceCallback } from "usehooks-ts";
+import isEqual from "lodash.isequal";
+
+const useDebouncedSearch = () => {
+  const [searchValue, setSearchValue] = useState<SubscribeArgs>(undefined);
+  const [cachedVecDbStatus, setCachedVecDbStatus] =
+    useState<null | VecDbStatus>(null);
+
+  const searchResult = knowledgeApi.useSubscribeQuery(searchValue);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedSearch = useCallback(
+    useDebounceCallback(setSearchValue, 250, {
+      leading: true,
+    }),
+    [],
+  );
+
+  useEffect(() => {
+    if (
+      searchResult.data?.status &&
+      !isEqual(searchResult.data.status, cachedVecDbStatus)
+    ) {
+      setCachedVecDbStatus(searchResult.data.status);
+    }
+  }, [searchResult.data, cachedVecDbStatus]);
+
+  const search = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      if (event.target.value) {
+        debouncedSearch({ quick_search: event.target.value });
+      } else {
+        debouncedSearch(undefined);
+      }
+    },
+    [debouncedSearch],
+  );
+
+  return { searchResult, searchValue, search, vecDbStatus: cachedVecDbStatus };
+};
 
 export const KnowledgeList: React.FC = () => {
-  const [searchValue, setSearchValue] = useState<SubscribeArgs>(undefined);
-  const request = knowledgeApi.useSubscribeQuery(searchValue);
+  const { searchResult, search, vecDbStatus } = useDebouncedSearch();
   const dispatch = useAppDispatch();
 
   const [openForm, setOpenForm] = React.useState<boolean>(false);
@@ -51,16 +90,7 @@ export const KnowledgeList: React.FC = () => {
     }
   }, [dispatch, openForm]);
 
-  const handleSearch = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    // TODO: debounce changes.
-    if (event.target.value) {
-      setSearchValue({ quick_search: event.target.value });
-    } else {
-      setSearchValue(undefined);
-    }
-  }, []);
-
-  const memoryCount = Object.keys(request.data?.memories ?? {}).length;
+  const memoryCount = Object.keys(searchResult.data?.memories ?? {}).length;
 
   return (
     <Flex direction="column" overflowY="hidden" height="100%">
@@ -71,11 +101,7 @@ export const KnowledgeList: React.FC = () => {
           </Button>
 
           <Flex gap="3">
-            <TextField.Root
-              placeholder="Search knowledge"
-              value={searchValue?.quick_search ?? ""}
-              onChange={handleSearch}
-            >
+            <TextField.Root placeholder="Search knowledge" onChange={search}>
               <TextField.Slot>
                 <MagnifyingGlassIcon height="16" width="16" />
               </TextField.Slot>
@@ -90,7 +116,7 @@ export const KnowledgeList: React.FC = () => {
               <PlusIcon />
             </IconButton>
 
-            <VecDBStatus status={request.data?.status ?? null} />
+            <VecDBStatus status={vecDbStatus} />
           </Flex>
         </Flex>
 
@@ -102,13 +128,15 @@ export const KnowledgeList: React.FC = () => {
       </Flex>
       <ScrollArea scrollbars="vertical">
         <Flex direction="column" gap="4">
-          {request.isLoading && <Spinner loading={request.isLoading} />}
+          {searchResult.isLoading && (
+            <Spinner loading={searchResult.isLoading} />
+          )}
           {/* TODO: this could happen if theres no knowledge, but may also happen while waiting for the stream */}
-          {request.data?.loaded && memoryCount === 0 && (
+          {searchResult.data?.loaded && memoryCount === 0 && (
             <Text>No knowledge items found</Text>
           )}
 
-          {Object.values(request.data?.memories ?? {}).map((memory) => {
+          {Object.values(searchResult.data?.memories ?? {}).map((memory) => {
             return (
               <KnowledgeListItem
                 key={memory.memid}
