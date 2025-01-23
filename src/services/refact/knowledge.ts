@@ -321,16 +321,15 @@ export const knowledgeApi = createApi({
         };
         try {
           await api.cacheDataLoaded;
-          await consumeStream(stream, abortSignal.signal, onAbort, onChunk);
+          void consumeStream(stream, abortSignal.signal, onAbort, onChunk);
         } catch {
           // no-op in case `cacheEntryRemoved` resolves before `cacheDataLoaded`,
           // in which case `cacheDataLoaded` will throw
         }
-
         await api.cacheEntryRemoved;
-
         await stream.cancel();
       },
+      // keepUnusedDataFor: 0,
       // transformResponse // use this to format the cache using memid
     }),
 
