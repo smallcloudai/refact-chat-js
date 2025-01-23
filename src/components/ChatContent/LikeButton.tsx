@@ -21,7 +21,8 @@ function useCreateMemory() {
     knowledgeApi.useCreateNewMemoryFromMessagesMutation();
 
   const submitLike = React.useCallback(() => {
-    void onLike(messages);
+    // TODO: how to get the project for the chat?
+    void onLike({ project: "", messages });
   }, [messages, onLike]);
 
   const shouldShow = React.useMemo(() => {

@@ -35,3 +35,4 @@ export const KNOWLEDGE_ADD_URL = "/v1/mem-add";
 export const KNOWLEDGE_REMOVE_URL = "/v1/mem-erase";
 export const KNOWLEDGE_UPDATE_USED_URL = "/v1/mem-update-used";
 export const KNOWLEDGE_UPDATE_URL = "/v1/mem-upd";
+export const KNOWLEDGE_CREATE_URL = "/v1/trajectory-save";

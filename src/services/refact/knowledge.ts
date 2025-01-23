@@ -6,6 +6,7 @@ import {
 } from "../../features/Chat/Thread/utils";
 import {
   KNOWLEDGE_ADD_URL,
+  KNOWLEDGE_CREATE_URL,
   KNOWLEDGE_REMOVE_URL,
   KNOWLEDGE_SUB_URL,
   KNOWLEDGE_UPDATE_URL,
@@ -233,6 +234,28 @@ function isVecDbStatus(obj: unknown): obj is VecDbStatus {
   return true;
 }
 
+export type CompressTrajectoryPost = {
+  project: string;
+  messages: ChatMessages;
+};
+
+export type CompressTrajectoryResponse = {
+  memid: string;
+  trajectory: string;
+};
+
+function isCompressTrajectoryResponse(
+  obj: unknown,
+): obj is CompressTrajectoryResponse {
+  if (!obj) return false;
+  if (typeof obj !== "object") return false;
+  if (!("memid" in obj) || typeof obj.memid !== "string") return false;
+  if (!("trajectory" in obj) || typeof obj.trajectory !== "string") {
+    return false;
+  }
+  return true;
+}
+
 export const knowledgeApi = createApi({
   reducerPath: "knowledgeApi",
   baseQuery: fetchBaseQuery({
@@ -415,17 +438,38 @@ export const knowledgeApi = createApi({
       },
     }),
 
-    createNewMemoryFromMessages: builder.mutation<unknown, ChatMessages>({
-      async queryFn(messages, _api, _extraOptions, _baseQuery) {
-        const messagesForLsp = formatMessagesForLsp(messages);
-        // eslint-disable-next-line no-console
-        console.log(
-          "Not implemented: Messages to make a memory out of",
-          messagesForLsp,
-        );
-        // TODO: add the call to the endpoint when it's there.
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-        return { data: null };
+    createNewMemoryFromMessages: builder.mutation<
+      CompressTrajectoryResponse,
+      CompressTrajectoryPost
+    >({
+      async queryFn(arg, api, extraOptions, baseQuery) {
+        const messagesForLsp = formatMessagesForLsp(arg.messages);
+
+        const state = api.getState() as RootState;
+        const port = state.config.lspPort as unknown as number;
+        const url = `http://127.0.0.1:${port}${KNOWLEDGE_CREATE_URL}`;
+        const response = await baseQuery({
+          ...extraOptions,
+          url,
+          method: "POST",
+          body: { project: arg.project, messages: messagesForLsp },
+        });
+
+        if (response.error) {
+          return { error: response.error };
+        }
+
+        if (!isCompressTrajectoryResponse(response.data)) {
+          return {
+            error: {
+              status: "CUSTOM_ERROR",
+              error: `Invalid response from ${url}`,
+              data: response.data,
+            },
+          };
+        }
+
+        return { data: response.data };
       },
     }),
   }),
