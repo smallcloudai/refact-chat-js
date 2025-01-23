@@ -11,19 +11,21 @@ import {
 import styles from "./LikeButton.module.css";
 import { useSelector } from "react-redux";
 import { selectKnowledgeFeature } from "../../features/Config/configSlice";
+import { selectThreadProjectOrCurrentProject } from "../../features/Chat/currentProject";
 
 function useCreateMemory() {
   const messages = useAppSelector(selectMessages);
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
   const knowledgeEnabled = useSelector(selectKnowledgeFeature);
+  const currentProjectName = useSelector(selectThreadProjectOrCurrentProject);
   const [onLike, likeResponse] =
     knowledgeApi.useCreateNewMemoryFromMessagesMutation();
 
   const submitLike = React.useCallback(() => {
     // TODO: how to get the project for the chat?
-    void onLike({ project: "", messages });
-  }, [messages, onLike]);
+    void onLike({ project: currentProjectName, messages });
+  }, [currentProjectName, messages, onLike]);
 
   const shouldShow = React.useMemo(() => {
     if (!knowledgeEnabled) return false;

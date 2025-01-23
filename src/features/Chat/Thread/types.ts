@@ -20,6 +20,7 @@ export type ChatThread = {
   isTitleGenerated?: boolean;
   integration?: IntegrationMeta | null;
   mode?: LspChatMode;
+  project_name?: string;
 };
 
 export type ToolUse = "quick" | "explore" | "agent";

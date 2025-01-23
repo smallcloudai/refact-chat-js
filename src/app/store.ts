@@ -49,6 +49,7 @@ import { userSurveySlice } from "../features/UserSurvey/userSurveySlice";
 import { linksApi } from "../services/refact/links";
 import { integrationsSlice } from "../features/Integrations";
 import { agentUsageSlice } from "../features/AgentUsage/agentUsageSlice";
+import { currentProjectInfoReducer } from "../features/Chat/currentProject";
 
 const tipOfTheDayPersistConfig = {
   key: "totd",
@@ -71,6 +72,7 @@ const rootReducer = combineSlices(
     [tipOfTheDaySlice.reducerPath]: persistedTipOfTheDayReducer,
     config: configReducer,
     active_file: activeFileReducer,
+    current_project: currentProjectInfoReducer,
     selected_snippet: selectedSnippetReducer,
     chat: chatReducer,
     [statisticsApi.reducerPath]: statisticsApi.reducer,
