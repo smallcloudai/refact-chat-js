@@ -1,8 +1,16 @@
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { Container, Flex, Text, Box, Spinner } from "@radix-ui/themes";
+import {
+  Container,
+  Flex,
+  Text,
+  Box,
+  Spinner,
+  IconButton,
+} from "@radix-ui/themes";
 import {
   isMultiModalToolResult,
+  knowledgeApi,
   MultiModalToolResult,
   ToolCall,
   ToolResult,
@@ -20,6 +28,7 @@ import {
 import { ScrollArea } from "../ScrollArea";
 import { takeWhile, fenceBackTicks } from "../../utils";
 import { DialogImage } from "../DialogImage";
+import { CheckIcon, Cross2Icon } from "@radix-ui/react-icons";
 
 type ResultProps = {
   children: string;
@@ -221,6 +230,16 @@ function processToolCalls(
   if (toolCalls.length === 0) return processed;
   const [head, ...tail] = toolCalls;
   const result = toolResults.find((result) => result.tool_call_id === head.id);
+
+  // TODO: handle knowledge differently.
+  // memories are split in content with 🗃️019957b6ff
+
+  if (result && head.function.name === "knowledge") {
+    const elem = (
+      <Knowledge key={`knowledge-tool-${processed.length}`} toolCall={head} />
+    );
+    return processToolCalls(tail, toolResults, [...processed, elem]);
+  }
 
   if (result && isMultiModalToolResult(result)) {
     const restInTail = takeWhile(tail, (toolCall) => {
@@ -451,3 +470,115 @@ const ToolUsageSummary: React.FC<{
     </Flex>
   );
 };
+
+const Knowledge: React.FC<{ toolCall: ToolCall }> = ({ toolCall }) => {
+  // TODO: add voting actions
+  const maybeResult = useAppSelector((state) =>
+    selectToolResultById(state, toolCall.id),
+  );
+
+  const argsString = React.useMemo(() => {
+    return toolCallArgsToString(toolCall.function.arguments);
+  }, [toolCall.function.arguments]);
+
+  const memories = useMemo(() => {
+    if (typeof maybeResult?.content !== "string") return [];
+    return splitMemories(maybeResult.content);
+  }, [maybeResult?.content]);
+
+  const functionCalled = "```python\n" + name + "(" + argsString + ")\n```";
+
+  return (
+    <Container>
+      <Collapsible.Root>
+        <Collapsible.Trigger>
+          <Text>Knowledge</Text>
+        </Collapsible.Trigger>
+        <Collapsible.Content>
+          <Flex direction="column">
+            <ScrollArea scrollbars="horizontal" style={{ width: "100%" }}>
+              <Box>
+                <CommandMarkdown isInsideScrollArea>
+                  {functionCalled}
+                </CommandMarkdown>
+              </Box>
+            </ScrollArea>
+            <Flex gap="4" direction="column" py="4">
+              {memories.map((memory) => {
+                return (
+                  <Memory
+                    key={memory.memid}
+                    id={memory.memid}
+                    content={memory.content}
+                  />
+                );
+              })}
+            </Flex>
+          </Flex>
+        </Collapsible.Content>
+      </Collapsible.Root>
+    </Container>
+  );
+};
+
+const Memory: React.FC<{ id: string; content: string }> = ({ id, content }) => {
+  const [updateUsage, status] = knowledgeApi.useUpdateMemoryUsageMutation();
+  // correct and relevant,
+  const handleGood = useCallback(() => {
+    void updateUsage({ memid: id, correct: 1, relevant: 1 });
+  }, [id, updateUsage]);
+
+  // TODO: not correct but relevant, and incorrect but relevant
+  const handleBad = useCallback(() => {
+    void updateUsage({ memid: id, correct: -1, relevant: -1 });
+  }, [id, updateUsage]);
+
+  return (
+    <Flex direction="column">
+      <Flex justify="between" align="center">
+        <Text size="1" weight="light">
+          Memory: {id}
+        </Text>
+        <Flex gap="2">
+          <IconButton
+            size="1"
+            title="Bad"
+            onClick={handleBad}
+            disabled={status.isLoading}
+            variant="outline"
+            color="tomato"
+          >
+            <Cross2Icon />{" "}
+          </IconButton>
+          <IconButton
+            size="1"
+            title="Good"
+            onClick={handleGood}
+            disabled={status.isLoading}
+            variant="outline"
+            color="grass"
+          >
+            <CheckIcon />
+          </IconButton>
+        </Flex>
+      </Flex>
+      <Text>{content}</Text>
+    </Flex>
+  );
+};
+
+function splitMemories(text: string): { memid: string; content: string }[] {
+  // Split by 🗃️ and filter out empty strings
+  const parts = text.split("🗃️").filter((part) => part.trim());
+
+  return parts.map((part) => {
+    const newlineIndex = part.indexOf("\n");
+    const memid = part.substring(0, newlineIndex);
+    const content = part.substring(newlineIndex + 1);
+
+    return {
+      memid,
+      content,
+    };
+  });
+}
