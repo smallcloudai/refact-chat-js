@@ -6,7 +6,10 @@ import { RootState, setUpStore } from "../../app/store";
 import { Provider } from "react-redux";
 import { Theme } from "../Theme";
 import { AbortControllerProvider } from "../../contexts/AbortControllers";
-import { CHAT_CONFIG_THREAD } from "../../__fixtures__";
+import {
+  CHAT_CONFIG_THREAD,
+  CHAT_WITH_KNOWLEDGE_TOOL,
+} from "../../__fixtures__";
 
 import {
   goodCaps,
@@ -112,5 +115,11 @@ export const IDE: Story = {
     msw: {
       handlers: [goodCaps, goodPing, goodPrompts, goodUser, chatLinks, noTools],
     },
+  },
+};
+
+export const Knowledge: Story = {
+  args: {
+    thread: CHAT_WITH_KNOWLEDGE_TOOL,
   },
 };
