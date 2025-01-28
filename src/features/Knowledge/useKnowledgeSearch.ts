@@ -6,8 +6,10 @@ import {
 } from "../../services/refact/knowledge";
 import { useDebounceCallback } from "usehooks-ts";
 import isEqual from "lodash.isequal";
+import { useAppDispatch } from "../../hooks";
 
 export function useKnowledgeSearch() {
+  const dispatch = useAppDispatch();
   const [searchValue, setSearchValue] = useState<SubscribeArgs>(undefined);
   const [cachedVecDbStatus, setCachedVecDbStatus] =
     useState<null | VecDbStatus>(null);
@@ -32,6 +34,12 @@ export function useKnowledgeSearch() {
     }
   }, [searchResult.data, cachedVecDbStatus]);
 
+  useEffect(() => {
+    return () => {
+      dispatch(knowledgeApi.util.resetApiState());
+    };
+  }, [dispatch]);
+
   const search = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
       if (event.target.value) {
@@ -43,5 +51,10 @@ export function useKnowledgeSearch() {
     [debouncedSearch],
   );
 
-  return { searchResult, searchValue, search, vecDbStatus: cachedVecDbStatus };
+  return {
+    searchResult,
+    searchValue,
+    search,
+    vecDbStatus: cachedVecDbStatus,
+  };
 }
