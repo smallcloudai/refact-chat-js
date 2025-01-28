@@ -1,4 +1,4 @@
-import { RootState } from "../../app/store";
+import { AppDispatch, RootState } from "../../app/store";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import {
   consumeStream,
@@ -14,6 +14,7 @@ import {
 } from "./consts";
 import type { ChatMessages } from ".";
 import { parseOrElse } from "../../utils";
+import { createAsyncThunk } from "@reduxjs/toolkit/react";
 
 export type MemoRecord = {
   memid: string;
@@ -92,6 +93,7 @@ function subscribeToMemories(
   port = 8001,
   args: SubscribeArgs,
   apiKey?: string | null,
+  abortSignal?: AbortSignal,
 ): Promise<Response> {
   const url = `http://127.0.0.1:${port}${KNOWLEDGE_SUB_URL}`;
   const headers = new Headers();
@@ -106,8 +108,47 @@ function subscribeToMemories(
     redirect: "follow",
     cache: "no-cache",
     body: args ? JSON.stringify(args) : undefined,
+    signal: abortSignal,
   });
 }
+
+const createAppAsyncThunk = createAsyncThunk.withTypes<{
+  state: RootState;
+  dispatch: AppDispatch;
+}>();
+
+export const subscribeToMemoriesThunk = createAppAsyncThunk<
+  unknown,
+  SubscribeArgs
+>("knowledge/subscription", (args, thunkApi) => {
+  const state = thunkApi.getState() as unknown as RootState;
+  const port = state.config.lspPort;
+  const apiKey = state.config.apiKey;
+
+  return subscribeToMemories(port, args, apiKey, thunkApi.signal)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(response.statusText);
+      }
+      const reader = response.body?.getReader();
+      if (!reader) return;
+      const onAbort = () => {
+        console.log("knowledge stream aborted");
+      };
+      const onChunk = (chunk: Record<string, unknown>) => {
+        console.log({ chunk });
+        // TODO: dispatch actions here
+      };
+
+      return consumeStream(reader, thunkApi.signal, onAbort, onChunk);
+    })
+    .catch((err) => {
+      console.error(err);
+    })
+    .finally(() => {
+      console.log("done");
+    });
+});
 
 export type MemAddRequest = {
   goal: string;
