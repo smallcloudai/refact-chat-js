@@ -3,16 +3,25 @@ import { useAppSelector } from "./useAppSelector";
 import { useAppDispatch } from "./useAppDispatch";
 import { isGoodResponse, smallCloudApi } from "../services/smallcloud";
 import { selectHost, setApiKey } from "../features/Config/configSlice";
-import { useGetUser } from "./useGetUser";
+// import { useGetUser } from "./useGetUser";
 import { useLogout } from "./useLogout";
 import { useOpenUrl } from "./useOpenUrl";
 import { useEventsBusForIDE } from "./useEventBusForIDE";
 import { setInitialAgentUsage } from "../features/AgentUsage/agentUsageSlice";
 
+function makeTicket() {
+  return (
+    Math.random().toString(36).substring(2, 15) +
+    "-" +
+    Math.random().toString(36).substring(2, 15)
+  );
+}
+
 export const useLogin = () => {
   const { setupHost } = useEventsBusForIDE();
   const dispatch = useAppDispatch();
-  const user = useGetUser();
+  // TBD: is user this needed
+  // const user = useGetUser();
   const logout = useLogout();
   const abortRef = useRef<() => void>(() => ({}));
 
@@ -21,12 +30,27 @@ export const useLogin = () => {
 
   const [loginTrigger, loginPollingResult] = smallCloudApi.useLazyLoginQuery();
 
+  const loginWithProvider = useCallback(
+    (provider: "google" | "github") => {
+      const ticket = makeTicket();
+      const baseUrl = new URL(`https://refact.smallcloud.ai/authentication`);
+      baseUrl.searchParams.set("token", ticket);
+      baseUrl.searchParams.set("utm_source", "plugin");
+      baseUrl.searchParams.set("utm_medium", host);
+      baseUrl.searchParams.set("utm_campaign", "login");
+      baseUrl.searchParams.set("target", provider);
+      const baseUrlString = baseUrl.toString();
+      openUrl(baseUrlString);
+      const thunk = loginTrigger(ticket);
+      abortRef.current = () => thunk.abort();
+    },
+    [host, loginTrigger, openUrl],
+  );
+
+  // TODO: delete this.
   const loginThroughWeb = useCallback(
     (pro: boolean) => {
-      const ticket =
-        Math.random().toString(36).substring(2, 15) +
-        "-" +
-        Math.random().toString(36).substring(2, 15);
+      const ticket = makeTicket();
 
       const baseUrl = pro
         ? "https://refact.smallcloud.ai/pro?sidebar"
@@ -76,9 +100,10 @@ export const useLogin = () => {
   return {
     loginThroughWeb,
     loginWithKey,
-    user,
+    // user,
     polling: loginPollingResult,
     cancelLogin: abortRef,
     logout,
+    loginWithProvider,
   };
 };

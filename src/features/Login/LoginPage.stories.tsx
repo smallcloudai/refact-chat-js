@@ -3,6 +3,7 @@ import { LoginPage } from "./LoginPage";
 import { Provider } from "react-redux";
 import { setUpStore } from "../../app/store";
 import { Theme } from "../../components/Theme";
+import { loginPollingGood, loginPollingWaiting } from "../../__fixtures__/msw";
 // import { CloudLogin } from "../../components/CloudLogin";
 
 const App = () => {
@@ -39,4 +40,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Primary: Story = {
   args: {},
+  parameters: {
+    msw: [loginPollingWaiting, loginPollingWaiting, loginPollingGood],
+  },
 };

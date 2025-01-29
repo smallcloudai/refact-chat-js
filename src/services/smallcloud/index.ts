@@ -32,7 +32,7 @@ function isUser(json: unknown): json is User {
   );
 }
 
-type GoodResponse = User & {
+export type GoodPollingResponse = User & {
   secret_key: string;
   tooltip_message: string;
   login_message: string;
@@ -41,7 +41,7 @@ type GoodResponse = User & {
   "longthink-functions-today-v2": Record<string, LongThinkFunction>;
 };
 
-export function isGoodResponse(json: unknown): json is GoodResponse {
+export function isGoodResponse(json: unknown): json is GoodPollingResponse {
   if (!isUser(json)) return false;
   return "secret_key" in json && typeof json.secret_key === "string";
 }
@@ -51,7 +51,7 @@ type BadResponse = {
   retcode: "FAILED";
 };
 
-export type StreamedLoginResponse = GoodResponse | BadResponse;
+export type StreamedLoginResponse = GoodPollingResponse | BadResponse;
 
 export type LongThinkFunction = {
   label: string;

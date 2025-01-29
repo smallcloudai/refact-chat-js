@@ -9,21 +9,12 @@ import {
   Container,
 } from "@radix-ui/themes";
 import { Accordion } from "../../components/Accordion";
+import { useLogin } from "../../hooks";
 
 export const LoginPage: React.FC = () => {
+  const { loginWithProvider } = useLogin();
   return (
     <Container p="8">
-      {/* <Box>
-        <Flex
-          direction="column"
-          gap="2"
-          maxWidth="540px"
-          m="8px"
-          style={{ alignSelf: "center" }}
-        >
-          <Button>Create Account</Button>
-        </Flex>
-      </Box> */}
       <Accordion.Root type="multiple" defaultValue={["cloud"]}>
         <Accordion.Item value="cloud">
           <Accordion.Trigger>Refact Cloud</Accordion.Trigger>
@@ -46,22 +37,32 @@ export const LoginPage: React.FC = () => {
             </Box>
             <Separator size="4" my="4" />
             <Flex direction="column" gap="3">
-              <Button>Continue with Google</Button>
-              <Button>Continue with GitHub</Button>
-              <Flex justify="center">
-                <Text>or</Text>
-              </Flex>
+              <Button onClick={() => loginWithProvider("google")}>
+                Continue with Google
+              </Button>
+              <Button onClick={() => loginWithProvider("github")}>
+                Continue with GitHub
+              </Button>
+
+              <Text align="center">or</Text>
+
               <Flex asChild direction="column" gap="3">
                 <form
                   onSubmit={(event) => {
                     event.preventDefault();
-                    console.log("submit clicked");
-                    console.log(event);
+                    const formData = new FormData(event.currentTarget);
+                    const email = formData.get("email");
+                    console.log(email);
                   }}
                 >
-                  <TextField.Root placeholder="Email Address" type="email" />
+                  <TextField.Root
+                    placeholder="Email Address"
+                    type="email"
+                    name="email"
+                    required
+                  />
                   <Button type="submit">Send magic link</Button>
-                  <Text size="1">
+                  <Text size="1" align="center">
                     We will send you a one-time login link by email
                   </Text>
                 </form>
@@ -105,4 +106,3 @@ export const LoginPage: React.FC = () => {
     </Container>
   );
 };
-// Accordion
