@@ -3,7 +3,7 @@ import * as RadixAccordion from "@radix-ui/react-accordion";
 import classNames from "classnames";
 import styles from "./Accordion.module.css";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
-import { IconProps } from "@radix-ui/themes";
+import { Box, IconProps } from "@radix-ui/themes";
 
 type AccordionRoot = typeof RadixAccordion.Root;
 type AccordionRootProps =
@@ -48,7 +48,7 @@ export const Header: AccordionHeader = React.forwardRef<
   return (
     <RadixAccordion.Header
       {...props}
-      className={classNames(styles.AccordionHeader, className)}
+      className={classNames(styles.reset, styles.AccordionHeader, className)}
       ref={ref}
     />
   );
@@ -59,13 +59,19 @@ type AccordionTrigger = typeof RadixAccordion.Trigger;
 export const Trigger: AccordionTrigger = React.forwardRef<
   HTMLButtonElement,
   RadixAccordion.AccordionTriggerProps
->(({ className, ...props }, ref) => {
+>(({ className, children, ...props }, ref) => {
+  // TODO: maybe make the chevron optional?
   return (
-    <RadixAccordion.Trigger
-      {...props}
-      className={classNames(styles.AccordionTrigger, className)}
-      ref={ref}
-    />
+    <Header>
+      <RadixAccordion.Trigger
+        {...props}
+        className={classNames(styles.reset, styles.AccordionTrigger, className)}
+        ref={ref}
+      >
+        {" "}
+        {children} <Chevron />
+      </RadixAccordion.Trigger>
+    </Header>
   );
 });
 Trigger.displayName = RadixAccordion.Trigger.displayName;
@@ -74,13 +80,17 @@ type AccordionContent = typeof RadixAccordion.Content;
 export const Content: AccordionContent = React.forwardRef<
   HTMLDivElement,
   RadixAccordion.AccordionContentProps
->(({ className, ...props }, ref) => {
+>(({ className, children, ...props }, ref) => {
   return (
     <RadixAccordion.Content
       {...props}
       className={classNames(styles.AccordionContent, className)}
       ref={ref}
-    />
+    >
+      <Box py="2" px="3">
+        {children}
+      </Box>
+    </RadixAccordion.Content>
   );
 });
 Content.displayName = RadixAccordion.Content.displayName;
