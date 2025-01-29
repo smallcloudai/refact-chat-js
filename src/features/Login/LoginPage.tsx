@@ -12,7 +12,7 @@ import { Accordion } from "../../components/Accordion";
 
 export const LoginPage: React.FC = () => {
   return (
-    <Container>
+    <Container p="8">
       {/* <Box>
         <Flex
           direction="column"

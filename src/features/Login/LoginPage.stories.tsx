@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { LoginPage } from "./LoginPage";
-import { Container, Flex } from "@radix-ui/themes";
-
 import { Provider } from "react-redux";
 import { setUpStore } from "../../app/store";
 import { Theme } from "../../components/Theme";
@@ -23,12 +21,8 @@ const App = () => {
   return (
     <Provider store={store}>
       <Theme>
-        <Container p="4">
-          <Flex direction="column" gap="8">
-            {/* <CloudLogin goBack={() => ({})} /> */}
-            <LoginPage />
-          </Flex>
-        </Container>
+        {/* <CloudLogin goBack={() => ({})} /> */}
+        <LoginPage />
       </Theme>
     </Provider>
   );
