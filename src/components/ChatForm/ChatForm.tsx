@@ -22,7 +22,11 @@ import {
 import { ErrorCallout, Callout } from "../Callout";
 import { ComboBox } from "../ComboBox";
 import { FilesPreview } from "./FilesPreview";
-import { ApplyPatchSwitch, ChatControls } from "./ChatControls";
+import {
+  ApplyPatchSwitch,
+  ChatControls,
+  DeepseekReasoningSwitch,
+} from "./ChatControls";
 import { addCheckboxValuesToInput } from "./utils";
 import { useCommandCompletionAndPreviewFiles } from "./useCommandCompletionAndPreviewFiles";
 import { useAppSelector, useAppDispatch } from "../../hooks";
@@ -316,8 +320,9 @@ export const ChatForm: React.FC<ChatFormProps> = ({
           </Flex>
         )}
         {toolUse === "agent" && (
-          <Flex mb="2">
+          <Flex direction="column" gap="2" mb="2">
             <ApplyPatchSwitch />
+            <DeepseekReasoningSwitch />
           </Flex>
         )}
         <Form

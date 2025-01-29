@@ -21,14 +21,18 @@ import { ToolUseSwitch } from "./ToolUseSwitch";
 import {
   ToolUse,
   selectAutomaticPatch,
+  selectChatId,
   selectIsStreaming,
   selectIsWaiting,
   selectMessages,
+  selectThreadMode,
   selectToolUse,
   setAutomaticPatch,
+  setChatMode,
   setToolUse,
 } from "../../features/Chat/Thread";
 import { useAppSelector, useAppDispatch, useCapsForToolUse } from "../../hooks";
+import { getChatById } from "../../features/History/historySlice";
 
 export const ApplyPatchSwitch: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -70,6 +74,55 @@ export const ApplyPatchSwitch: React.FC = () => {
           <Text as="p" size="2">
             When disabled, Refact Agent will ask for your confirmation before
             applying any unsaved changes.
+          </Text>
+        </HoverCard.Content>
+      </HoverCard.Root>
+    </Flex>
+  );
+};
+
+export const DeepseekReasoningSwitch: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const chatId = useAppSelector(selectChatId);
+  const currentMode = useAppSelector(selectThreadMode);
+  const modeFromHistory =
+    useAppSelector((state) => getChatById(state, chatId), {
+      devModeChecks: { stabilityCheck: "never" },
+    })?.mode ?? "AGENT";
+
+  const isReasoningEnabled = useMemo(() => {
+    return currentMode === "THINKING_AGENT";
+  }, [currentMode]);
+
+  const handleDeepseekReasoningChange = (checked: boolean) => {
+    dispatch(setChatMode(checked ? "THINKING_AGENT" : modeFromHistory));
+  };
+
+  return (
+    <Flex
+      gap="2"
+      align="center"
+      wrap="wrap"
+      flexGrow="1"
+      flexShrink="0"
+      width="100%"
+    >
+      <Text size="2">Use deepseek-reasoner before acting</Text>
+      <Switch
+        size="1"
+        title="Enable/disable deepseek-reasoner for Agent"
+        checked={isReasoningEnabled}
+        onCheckedChange={handleDeepseekReasoningChange}
+      />
+      <HoverCard.Root>
+        <HoverCard.Trigger>
+          <QuestionMarkCircledIcon style={{ marginLeft: 4 }} />
+        </HoverCard.Trigger>
+        <HoverCard.Content size="2" maxWidth="280px">
+          <Text as="p" size="2">
+            If enabled, the Agent will first generate a plan of action using a
+            deepseek reasoning model. This enhances result quality, but may slow
+            down execution due to the additional processing time required
           </Text>
         </HoverCard.Content>
       </HoverCard.Root>

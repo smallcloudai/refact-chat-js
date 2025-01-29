@@ -53,11 +53,17 @@ const createChatThread = (
   return chat;
 };
 
-const createInitialState = (
-  tool_use: ToolUse = "agent",
-  integration?: IntegrationMeta | null,
-  maybeMode?: LspChatMode,
-): Chat => {
+type createInitialStateArgs = {
+  tool_use?: ToolUse;
+  integration?: IntegrationMeta | null;
+  maybeMode?: LspChatMode;
+};
+
+const createInitialState = ({
+  tool_use = "agent",
+  integration,
+  maybeMode,
+}: createInitialStateArgs): Chat => {
   const mode =
     maybeMode ?? integration ? "CONFIGURE" : chatModeToLspMode(tool_use);
   return {
@@ -74,7 +80,7 @@ const createInitialState = (
   };
 };
 
-const initialState = createInitialState();
+const initialState = createInitialState({});
 
 export const chatReducer = createReducer(initialState, (builder) => {
   builder.addCase(setToolUse, (state, action) => {
@@ -107,12 +113,16 @@ export const chatReducer = createReducer(initialState, (builder) => {
   });
 
   builder.addCase(newChatAction, (state) => {
-    const next = createInitialState(state.tool_use);
+    const next = createInitialState({
+      tool_use: state.tool_use,
+      maybeMode: state.thread.mode,
+    });
     next.cache = { ...state.cache };
     if (state.streaming) {
       next.cache[state.thread.id] = { ...state.thread, read: false };
     }
     next.thread.model = state.thread.model;
+    next.thread.mode = state.thread.mode;
     next.system_prompt = state.system_prompt;
     next.automatic_patch = state.automatic_patch;
     return next;
@@ -227,11 +237,11 @@ export const chatReducer = createReducer(initialState, (builder) => {
   builder.addCase(newIntegrationChat, (state, action) => {
     // TODO: find out about tool use
     // TODO: should be CONFIGURE ?
-    const next = createInitialState(
-      "agent",
-      action.payload.integration,
-      "CONFIGURE",
-    );
+    const next = createInitialState({
+      tool_use: "agent",
+      integration: action.payload.integration,
+      maybeMode: "CONFIGURE",
+    });
     next.thread.integration = action.payload.integration;
     next.thread.messages = action.payload.messages;
 
