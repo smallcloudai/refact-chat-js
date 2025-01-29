@@ -17,7 +17,7 @@ type IntegrationDeletePopoverProps = {
   isDeletingIntegration: boolean;
   integrationName: string;
   integrationConfigPath: string;
-  handleDeleteIntegration: (path: string, name: string) => void;
+  handleDeleteIntegration: (path: string, name: string) => Promise<void>;
 };
 
 export const IntegrationDeletePopover: FC<IntegrationDeletePopoverProps> = ({
@@ -71,7 +71,7 @@ export const IntegrationDeletePopover: FC<IntegrationDeletePopoverProps> = ({
                     variant="solid"
                     color="red"
                     onClick={() =>
-                      handleDeleteIntegration(
+                      void handleDeleteIntegration(
                         integrationConfigPath,
                         integrationName,
                       )

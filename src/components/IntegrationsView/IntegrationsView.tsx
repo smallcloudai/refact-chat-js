@@ -23,11 +23,11 @@ import { useAppDispatch, useAppSelector } from "../../hooks";
 import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
 import {
   areAllFieldsBoolean,
-  areIntegrationsNotConfigured,
+  // areIntegrationsNotConfigured,
   areToolConfirmation,
   areToolParameters,
   dockerApi,
-  GroupedIntegrationWithIconRecord,
+  // GroupedIntegrationWithIconRecord,
   Integration,
   integrationsApi,
   IntegrationWithIconRecord,
@@ -37,13 +37,13 @@ import {
   isNotConfiguredIntegrationWithIconRecord,
   isPrimitive,
   NotConfiguredIntegrationWithIconRecord,
-  ToolConfirmation,
+  // ToolConfirmation,
 } from "../../services/refact";
 import { ErrorCallout } from "../Callout";
 import { InformationCallout } from "../Callout/Callout";
-import { Markdown } from "../Markdown";
+// import { Markdown } from "../Markdown";
 import { Spinner } from "../Spinner";
-import { IntegrationCard } from "./IntegrationCard";
+// import { IntegrationCard } from "./IntegrationCard";
 import { IntegrationForm } from "./IntegrationForm";
 import { IntegrationsHeader } from "./IntegrationsHeader";
 import styles from "./IntegrationsView.module.css";
@@ -53,12 +53,16 @@ import { IntermediateIntegration } from "./IntermediateIntegration";
 import { useDeleteIntegrationByPath } from "../../hooks/useDeleteIntegrationByPath";
 import { toPascalCase } from "../../utils/toPascalCase";
 import { selectThemeMode } from "../../features/Config/configSlice";
-import type { ToolParameterEntity } from "../../services/refact";
+// import type { ToolParameterEntity } from "../../services/refact";
 import isEqual from "lodash.isequal";
 import { convertRawIntegrationFormValues } from "../../features/Integrations/convertRawIntegrationFormValues";
 import { validateSnakeCase } from "../../utils/validateSnakeCase";
 import { setIntegrationData } from "../../features/Chat";
-import { formatPathName } from "../../utils/formatPathName";
+// import { formatPathName } from "../../utils/formatPathName";
+import { IntegrationsList } from "./IntegrationsList/IntegrationsList";
+import { useIntegrationFormState } from "../../hooks/useIntegrationFormState";
+import { useIntegrationFiltering } from "../../hooks/useIntegrationFiltering";
+import { useIntegrationSelection } from "../../hooks/useIntegrationSelection";
 
 type IntegrationViewProps = {
   integrationsMap?: IntegrationWithIconResponse;
@@ -69,7 +73,7 @@ type IntegrationViewProps = {
   handleIfInnerIntegrationWasSet: (state: boolean) => void;
 };
 
-const INTEGRATIONS_WITH_TERMINAL_ICON = ["cmdline", "service"];
+const INTEGRATIONS_WITH_TERMINAL_ICON = ["cmdline", "service", "mcp"];
 
 export const IntegrationsView: FC<IntegrationViewProps> = ({
   integrationsMap,
@@ -83,6 +87,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   const information = useAppSelector(getInformationMessage);
   const { saveIntegrationMutationTrigger } = useSaveIntegrationData();
   // const currentThreadIntegration = useAppSelector(selectIntegration);
+
   const currentPage = useAppSelector(selectCurrentPage);
   const currentThreadIntegration = useMemo(() => {
     if (!currentPage) return null;
@@ -90,73 +95,107 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     return currentPage;
   }, [currentPage]);
 
+  const {
+    isApplyingIntegrationForm,
+    setIsApplyingIntegrationForm,
+    isDeletingIntegration,
+    setIsDeletingIntegration,
+    isDisabledIntegrationForm,
+    availabilityValues,
+    setAvailabilityValues,
+    confirmationRules,
+    setConfirmationRules,
+    toolParameters,
+    setToolParameters,
+    validateFormChanges,
+  } = useIntegrationFormState();
+
+  const {
+    globalIntegrations,
+    groupedProjectIntegrations,
+    availableIntegrationsToConfigure,
+  } = useIntegrationFiltering(integrationsMap);
+
+  const {
+    currentIntegration,
+    setCurrentIntegration,
+    currentNotConfiguredIntegration,
+    setCurrentNotConfiguredIntegration,
+    maybeIntegration,
+    // handleIntegrationSelect,
+    currentIntegrationSchema,
+    handleSetCurrentIntegrationSchema,
+    currentIntegrationValues,
+    handleSetCurrentIntegrationValues,
+  } = useIntegrationSelection({ integrationsMap, currentThreadIntegration });
+
   const { deleteIntegrationTrigger } = useDeleteIntegrationByPath();
 
-  const maybeIntegration = useMemo(() => {
-    if (!currentThreadIntegration) return null;
-    if (!integrationsMap) return null;
-    debugIntegrations(
-      `[DEBUG LINKS]: currentThreadIntegration: `,
-      currentThreadIntegration,
-    );
-    const integrationName = currentThreadIntegration.integrationName;
-    const integrationPath = currentThreadIntegration.integrationPath;
-    const isCmdline = integrationName
-      ? integrationName.startsWith("cmdline")
-      : false;
-    const isService = integrationName
-      ? integrationName.startsWith("service")
-      : false;
-    const shouldIntermediatePageShowUp =
-      currentThreadIntegration.shouldIntermediatePageShowUp;
+  // const maybeIntegration = useMemo(() => {
+  //   if (!currentThreadIntegration) return null;
+  //   if (!integrationsMap) return null;
+  //   debugIntegrations(
+  //     `[DEBUG LINKS]: currentThreadIntegration: `,
+  //     currentThreadIntegration,
+  //   );
+  //   const integrationName = currentThreadIntegration.integrationName;
+  //   const integrationPath = currentThreadIntegration.integrationPath;
+  //   const isCmdline = integrationName
+  //     ? integrationName.startsWith("cmdline")
+  //     : false;
+  //   const isService = integrationName
+  //     ? integrationName.startsWith("service")
+  //     : false;
+  //   const shouldIntermediatePageShowUp =
+  //     currentThreadIntegration.shouldIntermediatePageShowUp;
 
-    // TODO: check for extra flag in currentThreadIntegration to return different find() call from notConfiguredGrouped integrations if it's set to true
-    const integration =
-      integrationsMap.integrations.find((integration) => {
-        if (!integrationPath) {
-          if (isCmdline) return integration.integr_name === "cmdline_TEMPLATE";
-          if (isService) return integration.integr_name === "service_TEMPLATE";
-        }
-        if (!shouldIntermediatePageShowUp)
-          return integrationName
-            ? integration.integr_name === integrationName &&
-                integration.integr_config_path === integrationPath
-            : integration.integr_config_path === integrationPath;
-        return integrationName
-          ? integration.integr_name === integrationName
-          : integration.integr_config_path === integrationPath;
-      }) ?? null;
-    if (!integration) {
-      debugIntegrations(`[DEBUG INTEGRATIONS] not found integration`);
-      return null;
-    }
+  //   // TODO: check for extra flag in currentThreadIntegration to return different find() call from notConfiguredGrouped integrations if it's set to true
+  //   const integration =
+  //     integrationsMap.integrations.find((integration) => {
+  //       if (!integrationPath) {
+  //         if (isCmdline) return integration.integr_name === "cmdline_TEMPLATE";
+  //         if (isService) return integration.integr_name === "service_TEMPLATE";
+  //       }
+  //       if (!shouldIntermediatePageShowUp)
+  //         return integrationName
+  //           ? integration.integr_name === integrationName &&
+  //               integration.integr_config_path === integrationPath
+  //           : integration.integr_config_path === integrationPath;
+  //       return integrationName
+  //         ? integration.integr_name === integrationName
+  //         : integration.integr_config_path === integrationPath;
+  //     }) ?? null;
+  //   if (!integration) {
+  //     debugIntegrations(`[DEBUG INTEGRATIONS] not found integration`);
+  //     return null;
+  //   }
 
-    const integrationWithFlag = {
-      ...integration,
-      commandName:
-        (isCmdline || isService) && integrationName
-          ? integrationName.split("_").slice(1).join("_")
-          : undefined,
-      shouldIntermediatePageShowUp: shouldIntermediatePageShowUp ?? false,
-      wasOpenedThroughChat:
-        currentThreadIntegration.wasOpenedThroughChat ?? false,
-    } as IntegrationWithIconRecordAndAddress;
-    debugIntegrations(
-      `[DEBUG NAVIGATE]: integrationWithFlag: `,
-      integrationWithFlag,
-    );
-    return integrationWithFlag;
-  }, [currentThreadIntegration, integrationsMap]);
+  //   const integrationWithFlag = {
+  //     ...integration,
+  //     commandName:
+  //       (isCmdline || isService) && integrationName
+  //         ? integrationName.split("_").slice(1).join("_")
+  //         : undefined,
+  //     shouldIntermediatePageShowUp: shouldIntermediatePageShowUp ?? false,
+  //     wasOpenedThroughChat:
+  //       currentThreadIntegration.wasOpenedThroughChat ?? false,
+  //   } as IntegrationWithIconRecordAndAddress;
+  //   debugIntegrations(
+  //     `[DEBUG NAVIGATE]: integrationWithFlag: `,
+  //     integrationWithFlag,
+  //   );
+  //   return integrationWithFlag;
+  // }, [currentThreadIntegration, integrationsMap]);
 
-  // TBD: what if they went home then came back to integrations?
+  // // TBD: what if they went home then came back to integrations?
 
-  const [currentIntegration, setCurrentIntegration] =
-    useState<IntegrationWithIconRecord | null>(
-      maybeIntegration?.shouldIntermediatePageShowUp ? null : maybeIntegration,
-    );
+  // const [currentIntegration, setCurrentIntegration] =
+  //   useState<IntegrationWithIconRecord | null>(
+  //     maybeIntegration?.shouldIntermediatePageShowUp ? null : maybeIntegration,
+  //   );
 
-  const [currentNotConfiguredIntegration, setCurrentNotConfiguredIntegration] =
-    useState<NotConfiguredIntegrationWithIconRecord | null>(null);
+  // const [currentNotConfiguredIntegration, setCurrentNotConfiguredIntegration] =
+  //   useState<NotConfiguredIntegrationWithIconRecord | null>(null);
 
   // TODO: uncomment when ready
   useEffect(() => {
@@ -201,35 +240,35 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     }
   }, [maybeIntegration, integrationsMap?.integrations]);
 
-  const [currentIntegrationSchema, setCurrentIntegrationSchema] = useState<
-    Integration["integr_schema"] | null
-  >(null);
+  // const [currentIntegrationSchema, setCurrentIntegrationSchema] = useState<
+  //   Integration["integr_schema"] | null
+  // >(null);
 
-  const [currentIntegrationValues, setCurrentIntegrationValues] = useState<
-    Integration["integr_values"] | null
-  >(null);
+  // const [currentIntegrationValues, setCurrentIntegrationValues] = useState<
+  //   Integration["integr_values"] | null
+  // >(null);
 
-  const [isApplyingIntegrationForm, setIsApplyingIntegrationForm] =
-    useState<boolean>(false);
+  // const [isApplyingIntegrationForm, setIsApplyingIntegrationForm] =
+  //   useState<boolean>(false);
 
-  const [isDeletingIntegration, setIsDeletingIntegration] =
-    useState<boolean>(false);
+  // const [isDeletingIntegration, setIsDeletingIntegration] =
+  //   useState<boolean>(false);
 
-  const [isDisabledIntegrationForm, setIsDisabledIntegrationForm] =
-    useState<boolean>(true);
+  // const [isDisabledIntegrationForm, setIsDisabledIntegrationForm] =
+  //   useState<boolean>(true);
 
-  const [availabilityValues, setAvailabilityValues] = useState<
-    Record<string, boolean>
-  >({});
+  // const [availabilityValues, setAvailabilityValues] = useState<
+  //   Record<string, boolean>
+  // >({});
 
-  const [confirmationRules, setConfirmationRules] = useState<ToolConfirmation>({
-    ask_user: [],
-    deny: [],
-  });
+  // const [confirmationRules, setConfirmationRules] = useState<ToolConfirmation>({
+  //   ask_user: [],
+  //   deny: [],
+  // });
 
-  const [toolParameters, setToolParameters] = useState<
-    ToolParameterEntity[] | null
-  >(null);
+  // const [toolParameters, setToolParameters] = useState<
+  //   ToolParameterEntity[] | null
+  // >(null);
 
   useEffect(() => {
     debugIntegrations(`[DEBUG]: integrationsData: `, integrationsMap);
@@ -247,203 +286,203 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     handleIfInnerIntegrationWasSet,
   ]);
 
-  const globalIntegrations = useMemo(() => {
-    if (integrationsMap?.integrations) {
-      return integrationsMap.integrations.filter(
-        (integration) =>
-          integration.project_path === "" && integration.integr_config_exists,
-      );
-    }
-  }, [integrationsMap]);
+  // const globalIntegrations = useMemo(() => {
+  //   if (integrationsMap?.integrations) {
+  //     return integrationsMap.integrations.filter(
+  //       (integration) =>
+  //         integration.project_path === "" && integration.integr_config_exists,
+  //     );
+  //   }
+  // }, [integrationsMap]);
 
-  const projectSpecificIntegrations = useMemo(() => {
-    if (integrationsMap?.integrations) {
-      return integrationsMap.integrations.filter(
-        (integration) => integration.project_path !== "",
-      );
-    }
-  }, [integrationsMap]);
+  // const projectSpecificIntegrations = useMemo(() => {
+  //   if (integrationsMap?.integrations) {
+  //     return integrationsMap.integrations.filter(
+  //       (integration) => integration.project_path !== "",
+  //     );
+  //   }
+  // }, [integrationsMap]);
 
-  const groupedProjectIntegrations = useMemo(() => {
-    if (projectSpecificIntegrations) {
-      return projectSpecificIntegrations.reduce<
-        Record<string, IntegrationWithIconResponse["integrations"]>
-      >((acc, integration) => {
-        if (integration.integr_config_exists) {
-          if (!(integration.project_path in acc)) {
-            acc[integration.project_path] = [];
-          }
-          acc[integration.project_path].push(integration);
-        }
-        return acc;
-      }, {});
-    }
-  }, [projectSpecificIntegrations]);
+  // const groupedProjectIntegrations = useMemo(() => {
+  //   if (projectSpecificIntegrations) {
+  //     return projectSpecificIntegrations.reduce<
+  //       Record<string, IntegrationWithIconResponse["integrations"]>
+  //     >((acc, integration) => {
+  //       if (integration.integr_config_exists) {
+  //         if (!(integration.project_path in acc)) {
+  //           acc[integration.project_path] = [];
+  //         }
+  //         acc[integration.project_path].push(integration);
+  //       }
+  //       return acc;
+  //     }, {});
+  //   }
+  // }, [projectSpecificIntegrations]);
 
-  const availableIntegrationsToConfigure = useMemo(() => {
-    if (integrationsMap?.integrations) {
-      const groupedIntegrations = integrationsMap.integrations.reduce<
-        Record<string, GroupedIntegrationWithIconRecord>
-      >((acc, integration) => {
-        if (!(integration.integr_name in acc)) {
-          acc[integration.integr_name] = {
-            ...integration,
-            project_path: [integration.project_path],
-            integr_config_path: [integration.integr_config_path],
-          };
-        } else {
-          acc[integration.integr_name].project_path.push(
-            integration.project_path,
-          );
-          acc[integration.integr_name].integr_config_path.push(
-            integration.integr_config_path,
-          );
-        }
-        return acc;
-      }, {});
+  // const availableIntegrationsToConfigure = useMemo(() => {
+  //   if (integrationsMap?.integrations) {
+  //     const groupedIntegrations = integrationsMap.integrations.reduce<
+  //       Record<string, GroupedIntegrationWithIconRecord>
+  //     >((acc, integration) => {
+  //       if (!(integration.integr_name in acc)) {
+  //         acc[integration.integr_name] = {
+  //           ...integration,
+  //           project_path: [integration.project_path],
+  //           integr_config_path: [integration.integr_config_path],
+  //         };
+  //       } else {
+  //         acc[integration.integr_name].project_path.push(
+  //           integration.project_path,
+  //         );
+  //         acc[integration.integr_name].integr_config_path.push(
+  //           integration.integr_config_path,
+  //         );
+  //       }
+  //       return acc;
+  //     }, {});
 
-      const filteredIntegrations = Object.values(groupedIntegrations).filter(
-        areIntegrationsNotConfigured,
-      );
+  //     const filteredIntegrations = Object.values(groupedIntegrations).filter(
+  //       areIntegrationsNotConfigured,
+  //     );
 
-      // Sort paths so that paths containing ".config" are first
-      Object.values(filteredIntegrations).forEach((integration) => {
-        integration.project_path.sort((a, _b) => (a === "" ? -1 : 1));
-        integration.integr_config_path.sort((a, _b) =>
-          a.includes(".config") ? -1 : 1,
-        );
-      });
+  //     // Sort paths so that paths containing ".config" are first
+  //     Object.values(filteredIntegrations).forEach((integration) => {
+  //       integration.project_path.sort((a, _b) => (a === "" ? -1 : 1));
+  //       integration.integr_config_path.sort((a, _b) =>
+  //         a.includes(".config") ? -1 : 1,
+  //       );
+  //     });
 
-      return Object.values(filteredIntegrations);
-    }
-  }, [integrationsMap]);
+  //     return Object.values(filteredIntegrations);
+  //   }
+  // }, [integrationsMap]);
 
-  useEffect(() => {
-    debugIntegrations(
-      `[DEBUG]: availableIntegrationsToConfigure: `,
-      availableIntegrationsToConfigure,
-    );
-  }, [availableIntegrationsToConfigure]);
+  // useEffect(() => {
+  //   debugIntegrations(
+  //     `[DEBUG]: availableIntegrationsToConfigure: `,
+  //     availableIntegrationsToConfigure,
+  //   );
+  // }, [availableIntegrationsToConfigure]);
 
   // TODO: make this one in better way, too much of code
-  useEffect(() => {
-    if (
-      currentIntegration &&
-      currentIntegrationSchema &&
-      currentIntegrationValues
-    ) {
-      setIsDisabledIntegrationForm((isDisabled) => {
-        const toolParametersChanged =
-          toolParameters &&
-          areToolParameters(currentIntegrationValues.parameters)
-            ? !isEqual(toolParameters, currentIntegrationValues.parameters)
-            : false;
+  // useEffect(() => {
+  //   if (
+  //     currentIntegration &&
+  //     currentIntegrationSchema &&
+  //     currentIntegrationValues
+  //   ) {
+  //     setIsDisabledIntegrationForm((isDisabled) => {
+  //       const toolParametersChanged =
+  //         toolParameters &&
+  //         areToolParameters(currentIntegrationValues.parameters)
+  //           ? !isEqual(toolParameters, currentIntegrationValues.parameters)
+  //           : false;
 
-        // Manually collecting data from the form
-        const formElement = document.getElementById(
-          `form-${currentIntegration.integr_name}`,
-        ) as HTMLFormElement | null;
+  //       // Manually collecting data from the form
+  //       const formElement = document.getElementById(
+  //         `form-${currentIntegration.integr_name}`,
+  //       ) as HTMLFormElement | null;
 
-        if (!formElement) return true;
-        const formData = new FormData(formElement);
-        const rawFormValues = Object.fromEntries(formData.entries());
+  //       if (!formElement) return true;
+  //       const formData = new FormData(formElement);
+  //       const rawFormValues = Object.fromEntries(formData.entries());
 
-        const formValues = convertRawIntegrationFormValues(
-          rawFormValues,
-          currentIntegrationSchema,
-          currentIntegrationValues,
-        );
+  //       const formValues = convertRawIntegrationFormValues(
+  //         rawFormValues,
+  //         currentIntegrationSchema,
+  //         currentIntegrationValues,
+  //       );
 
-        const otherFieldsChanged = !Object.entries(formValues).every(
-          ([fieldKey, fieldValue]) => {
-            if (isPrimitive(fieldValue)) {
-              return (
-                fieldKey in currentIntegrationValues &&
-                fieldValue === currentIntegrationValues[fieldKey]
-              );
-            }
-            if (typeof fieldValue === "object" || Array.isArray(fieldValue)) {
-              return (
-                fieldKey in currentIntegrationValues &&
-                isEqual(fieldValue, currentIntegrationValues[fieldKey])
-              );
-            }
-            return false;
-          },
-        );
+  //       const otherFieldsChanged = !Object.entries(formValues).every(
+  //         ([fieldKey, fieldValue]) => {
+  //           if (isPrimitive(fieldValue)) {
+  //             return (
+  //               fieldKey in currentIntegrationValues &&
+  //               fieldValue === currentIntegrationValues[fieldKey]
+  //             );
+  //           }
+  //           if (typeof fieldValue === "object" || Array.isArray(fieldValue)) {
+  //             return (
+  //               fieldKey in currentIntegrationValues &&
+  //               isEqual(fieldValue, currentIntegrationValues[fieldKey])
+  //             );
+  //           }
+  //           return false;
+  //         },
+  //       );
 
-        const confirmationRulesChanged = !isEqual(
-          confirmationRules,
-          currentIntegrationValues.confirmation,
-        );
+  //       const confirmationRulesChanged = !isEqual(
+  //         confirmationRules,
+  //         currentIntegrationValues.confirmation,
+  //       );
 
-        debugIntegrations(
-          `[DEBUG confirmationRulesChanged]: confirmationRulesChanged: `,
-          confirmationRulesChanged,
-        );
+  //       debugIntegrations(
+  //         `[DEBUG confirmationRulesChanged]: confirmationRulesChanged: `,
+  //         confirmationRulesChanged,
+  //       );
 
-        const allToolParametersNamesInSnakeCase = toolParameters
-          ? toolParameters.every((param) => validateSnakeCase(param.name))
-          : true;
+  //       const allToolParametersNamesInSnakeCase = toolParameters
+  //         ? toolParameters.every((param) => validateSnakeCase(param.name))
+  //         : true;
 
-        if (!allToolParametersNamesInSnakeCase) {
-          return true; // Disabling form if any of tool parameters names are written not in snake case
-        }
+  //       if (!allToolParametersNamesInSnakeCase) {
+  //         return true; // Disabling form if any of tool parameters names are written not in snake case
+  //       }
 
-        if ((toolParametersChanged || confirmationRulesChanged) && isDisabled) {
-          return false; // Enable form if toolParameters changed and form was disabled
-        }
+  //       if ((toolParametersChanged || confirmationRulesChanged) && isDisabled) {
+  //         return false; // Enable form if toolParameters changed and form was disabled
+  //       }
 
-        if (
-          otherFieldsChanged &&
-          (toolParametersChanged || confirmationRulesChanged)
-        ) {
-          return isDisabled; // Keep the form in the same condition
-        }
+  //       if (
+  //         otherFieldsChanged &&
+  //         (toolParametersChanged || confirmationRulesChanged)
+  //       ) {
+  //         return isDisabled; // Keep the form in the same condition
+  //       }
 
-        if (
-          !otherFieldsChanged &&
-          !toolParametersChanged &&
-          !confirmationRulesChanged
-        ) {
-          return true; // Disable form if all fields are back to original state
-        }
+  //       if (
+  //         !otherFieldsChanged &&
+  //         !toolParametersChanged &&
+  //         !confirmationRulesChanged
+  //       ) {
+  //         return true; // Disable form if all fields are back to original state
+  //       }
 
-        return isDisabled;
-      });
-    }
-  }, [
-    toolParameters,
-    currentIntegrationValues,
-    currentIntegrationSchema,
-    confirmationRules,
-    currentIntegration,
-  ]);
+  //       return isDisabled;
+  //     });
+  //   }
+  // }, [
+  //   toolParameters,
+  //   currentIntegrationValues,
+  //   currentIntegrationSchema,
+  //   confirmationRules,
+  //   currentIntegration,
+  // ]);
 
-  const handleSetCurrentIntegrationSchema = (
-    schema: Integration["integr_schema"],
-  ) => {
-    if (!currentIntegration) return;
+  // const handleSetCurrentIntegrationSchema = (
+  //   schema: Integration["integr_schema"],
+  // ) => {
+  //   if (!currentIntegration) return;
 
-    setCurrentIntegrationSchema(schema);
-  };
+  //   setCurrentIntegrationSchema(schema);
+  // };
 
-  const handleSetCurrentIntegrationValues = (
-    values: Integration["integr_values"],
-  ) => {
-    if (!currentIntegration) return;
+  // const handleSetCurrentIntegrationValues = (
+  //   values: Integration["integr_values"],
+  // ) => {
+  //   if (!currentIntegration) return;
 
-    setCurrentIntegrationValues(values);
-  };
+  //   setCurrentIntegrationValues(values);
+  // };
 
   const handleFormReturn = useCallback(() => {
     if (currentIntegration) {
       setCurrentIntegration(null);
-      setIsDisabledIntegrationForm(true);
+      // setIsDisabledIntegrationForm(true);
     }
     if (currentNotConfiguredIntegration) {
       setCurrentNotConfiguredIntegration(null);
-      setIsDisabledIntegrationForm(true);
+      // setIsDisabledIntegrationForm(true);
     }
     setAvailabilityValues({});
     setToolParameters([]);
@@ -453,8 +492,8 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     });
     information && dispatch(clearInformation());
     globalError && dispatch(clearError());
-    currentIntegrationValues && setCurrentIntegrationValues(null);
-    currentIntegrationSchema && setCurrentIntegrationSchema(null);
+    currentIntegrationValues && handleSetCurrentIntegrationValues(null);
+    currentIntegrationSchema && handleSetCurrentIntegrationSchema(null);
     dispatch(integrationsApi.util.resetApiState());
     dispatch(dockerApi.util.resetApiState());
     // TODO: can cause a loop where integration pages goes back to form
@@ -468,6 +507,13 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     currentNotConfiguredIntegration,
     currentIntegrationValues,
     currentIntegrationSchema,
+    handleSetCurrentIntegrationValues,
+    handleSetCurrentIntegrationSchema,
+    setCurrentIntegration,
+    setCurrentNotConfiguredIntegration,
+    setAvailabilityValues,
+    setConfirmationRules,
+    setToolParameters,
   ]);
 
   const handleSubmit = useCallback(
@@ -525,7 +571,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             `Integration ${currentIntegration.integr_name} saved successfully.`,
           ),
         );
-        setIsDisabledIntegrationForm(true);
+        // setIsDisabledIntegrationForm(true);
       }
       setIsApplyingIntegrationForm(false);
     },
@@ -538,6 +584,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       availabilityValues,
       confirmationRules,
       toolParameters,
+      setIsApplyingIntegrationForm,
     ],
   );
 
@@ -564,7 +611,12 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
         clearTimeout(timeoutId);
       }, 1200);
     },
-    [dispatch, deleteIntegrationTrigger, handleFormReturn],
+    [
+      dispatch,
+      deleteIntegrationTrigger,
+      handleFormReturn,
+      setIsDeletingIntegration,
+    ],
   );
 
   const handleIntegrationFormChange = useCallback(
@@ -852,41 +904,29 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   }
 
   return (
-    <Box
-      style={{
-        width: "inherit",
-        height: "100%",
-      }}
-    >
-      <Flex
-        direction="column"
-        style={{
-          width: "100%",
-          height: "100%",
-        }}
-      >
+    <Box style={{ width: "inherit", height: "100%" }}>
+      <Flex direction="column" style={{ width: "100%", height: "100%" }}>
+        {/* Header Section */}
         {(currentIntegration ?? currentNotConfiguredIntegration) && (
           <IntegrationsHeader
             leftRightPadding={leftRightPadding}
             handleFormReturn={handleFormReturn}
             handleInstantReturn={goBackAndClearError}
             instantBackReturnment={
-              currentNotConfiguredIntegration
-                ? currentNotConfiguredIntegration.wasOpenedThroughChat
-                : currentIntegration
-                  ? currentIntegration.wasOpenedThroughChat
-                  : false
+              currentNotConfiguredIntegration?.wasOpenedThroughChat ??
+              currentIntegration?.wasOpenedThroughChat ??
+              false
             }
             integrationName={
-              currentIntegration
-                ? currentIntegration.integr_name
-                : currentNotConfiguredIntegration
-                  ? currentNotConfiguredIntegration.integr_name
-                  : ""
+              currentIntegration?.integr_name ??
+              currentNotConfiguredIntegration?.integr_name ??
+              ""
             }
             icon={integrationLogo}
           />
         )}
+
+        {/* Integration Setup Forms */}
         {currentNotConfiguredIntegration && (
           <Flex
             direction="column"
@@ -895,13 +935,12 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             height="100%"
           >
             <IntermediateIntegration
-              handleSubmit={(event) =>
-                handleNotConfiguredIntegrationSubmit(event)
-              }
+              handleSubmit={handleNotConfiguredIntegrationSubmit}
               integration={currentNotConfiguredIntegration}
             />
           </Flex>
         )}
+
         {currentIntegration && (
           <Flex
             direction="column"
@@ -910,18 +949,16 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             height="100%"
           >
             <IntegrationForm
-              // TODO: on smart link click or pass the name down
-              handleSubmit={(event) => void handleSubmit(event)}
-              handleDeleteIntegration={(path: string, name: string) =>
-                void handleDeleteIntegration(path, name)
-              }
+              handleSubmit={handleSubmit}
+              handleDeleteIntegration={handleDeleteIntegration}
               integrationPath={currentIntegration.integr_config_path}
               isApplying={isApplyingIntegrationForm}
               isDeletingIntegration={isDeletingIntegration}
               isDisabled={isDisabledIntegrationForm}
-              onSchema={handleSetCurrentIntegrationSchema}
-              onValues={handleSetCurrentIntegrationValues}
-              handleChange={handleIntegrationFormChange}
+              currentThreadIntegration={currentThreadIntegration}
+              // onSchema={handleSetCurrentIntegrationSchema}
+              // onValues={handleSetCurrentIntegrationValues}
+              handleChange={validateFormChanges}
               availabilityValues={availabilityValues}
               confirmationRules={confirmationRules}
               setAvailabilityValues={setAvailabilityValues}
@@ -929,6 +966,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
               setToolParameters={setToolParameters}
               handleSwitchIntegration={handleNavigateToIntegrationSetup}
             />
+            {/*Notifications */}
             {information && (
               <InformationCallout
                 timeout={isDeletingIntegration ? 1000 : 3000}
@@ -951,134 +989,15 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             )}
           </Flex>
         )}
-        {!currentIntegration && !currentNotConfiguredIntegration && (
-          <Flex direction="column" width="100%" gap="4">
-            <Text my="2">
-              Integrations allow Refact.ai Agent to interact with other services
-              and tools
-            </Text>
-            <Flex
-              align="start"
-              direction="column"
-              justify="between"
-              gap="4"
-              width="100%"
-            >
-              <Heading
-                as="h4"
-                size="3"
-                style={{
-                  width: "100%",
-                }}
-              >
-                ⚙️ Globally configured{" "}
-                {globalIntegrations ? globalIntegrations.length : 0}{" "}
-                {globalIntegrations &&
-                  (globalIntegrations.length > 1 ||
-                  globalIntegrations.length === 0
-                    ? "integrations"
-                    : "integration")}
-              </Heading>
-              <Text size="2" color="gray">
-                Global configurations are shared in your IDE and available for
-                all your projects.
-              </Text>
-              {globalIntegrations && (
-                <Flex direction="column" align="start" gap="3" width="100%">
-                  {globalIntegrations.map((integration, index) => (
-                    <IntegrationCard
-                      key={`${index}-${integration.integr_config_path}`}
-                      integration={integration}
-                      handleIntegrationShowUp={handleIntegrationShowUp}
-                    />
-                  ))}
-                </Flex>
-              )}
-            </Flex>
-            {groupedProjectIntegrations &&
-              Object.entries(groupedProjectIntegrations).map(
-                ([projectPath, integrations], index) => {
-                  const formattedProjectName = formatPathName(
-                    projectPath,
-                    "```.../",
-                    "/```",
-                  );
 
-                  return (
-                    <Flex
-                      key={`project-group-${index}`}
-                      direction="column"
-                      gap="4"
-                      align="start"
-                    >
-                      <Heading as="h4" size="3">
-                        <Flex
-                          align="start"
-                          gapX="3"
-                          gapY="1"
-                          justify="start"
-                          wrap="wrap"
-                        >
-                          ⚙️ In
-                          <Markdown>{formattedProjectName}</Markdown>
-                          configured {integrations.length}{" "}
-                          {integrations.length > 1 || integrations.length === 0
-                            ? "integrations"
-                            : "integration"}
-                        </Flex>
-                      </Heading>
-                      <Text size="2" color="gray">
-                        Folder-specific integrations are local integrations,
-                        which are shared only in folder-specific scope.
-                      </Text>
-                      <Flex
-                        direction="column"
-                        align="start"
-                        gap="2"
-                        width="100%"
-                      >
-                        {integrations.map((integration, subIndex) => (
-                          <IntegrationCard
-                            key={`project-${index}-${subIndex}-${integration.integr_config_path}`}
-                            integration={integration}
-                            handleIntegrationShowUp={handleIntegrationShowUp}
-                          />
-                        ))}
-                      </Flex>
-                    </Flex>
-                  );
-                },
-              )}
-            <Flex direction="column" gap="4" align="start">
-              <Heading as="h4" size="3">
-                <Flex align="start" gap="3" justify="center">
-                  Add new integration
-                </Flex>
-              </Heading>
-              <Grid
-                align="stretch"
-                gap="3"
-                columns={{ initial: "2", xs: "3", sm: "4", md: "5" }}
-                width="100%"
-              >
-                {availableIntegrationsToConfigure &&
-                  Object.entries(availableIntegrationsToConfigure).map(
-                    ([_projectPath, integration], index) => {
-                      return (
-                        <IntegrationCard
-                          isNotConfigured
-                          key={`project-${index}-${JSON.stringify(
-                            integration.integr_config_path,
-                          )}`}
-                          integration={integration}
-                          handleIntegrationShowUp={handleIntegrationShowUp}
-                        />
-                      );
-                    },
-                  )}
-              </Grid>
-            </Flex>
-          </Flex>
+        {/* Main Integrations List */}
+        {!currentIntegration && !currentNotConfiguredIntegration && (
+          <IntegrationsList
+            globalIntegrations={globalIntegrations}
+            groupedProjectIntegrations={groupedProjectIntegrations}
+            availableIntegrationsToConfigure={availableIntegrationsToConfigure}
+            onIntegrationSelect={handleIntegrationShowUp}
+          />
         )}
       </Flex>
     </Box>

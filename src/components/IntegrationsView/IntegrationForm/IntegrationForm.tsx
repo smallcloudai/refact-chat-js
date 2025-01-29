@@ -5,8 +5,11 @@ import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrati
 import type { FC, FormEvent, Dispatch } from "react";
 import type {
   Integration,
+  // Integration,
   IntegrationField,
   IntegrationPrimitive,
+  IntegrationWithIconRecord,
+  IntegrationWithIconResponse,
   ToolConfirmation,
 } from "../../../services/refact";
 
@@ -28,6 +31,8 @@ import {
 import { Confirmation } from "../Confirmation";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { useEventsBusForIDE } from "../../../hooks";
+import { useIntegrationSelection } from "../../../hooks/useIntegrationSelection";
+import { IntegrationsSetupPage } from "../../../features/Pages/pagesSlice";
 
 type IntegrationFormProps = {
   integrationPath: string;
@@ -36,11 +41,18 @@ type IntegrationFormProps = {
   isDeletingIntegration: boolean;
   availabilityValues: Record<string, boolean>;
   confirmationRules: ToolConfirmation;
-  handleSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  handleDeleteIntegration: (path: string, name: string) => void;
-  handleChange: (event: FormEvent<HTMLFormElement>) => void;
-  onSchema: (schema: Integration["integr_schema"]) => void;
-  onValues: (values: Integration["integr_values"]) => void;
+  currentThreadIntegration: IntegrationsSetupPage | null;
+  integrationsMap?: IntegrationWithIconResponse;
+  handleSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  handleDeleteIntegration: (path: string, name: string) => Promise<void>;
+  handleChange: (
+    event: FormEvent<HTMLFormElement>,
+    currentIntegration: IntegrationWithIconRecord | null,
+    schema: Integration["integr_schema"] | null,
+    values: Integration["integr_values"],
+  ) => void;
+  // onSchema: (schema: Integration["integr_schema"]) => void;
+  // onValues: (values: Integration["integr_values"]) => void;
   setAvailabilityValues: Dispatch<
     React.SetStateAction<Record<string, boolean>>
   >;
@@ -55,6 +67,8 @@ type IntegrationFormProps = {
 };
 
 export const IntegrationForm: FC<IntegrationFormProps> = ({
+  currentThreadIntegration,
+  integrationsMap,
   integrationPath,
   isApplying,
   isDisabled,
@@ -64,13 +78,21 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   handleSubmit,
   handleDeleteIntegration,
   handleChange,
-  onSchema,
-  onValues,
+  // onSchema,
+  // onValues,
   setAvailabilityValues,
   setConfirmationRules,
   setToolParameters,
   handleSwitchIntegration,
 }) => {
+  const {
+    handleSetCurrentIntegrationSchema,
+    handleSetCurrentIntegrationValues,
+    currentIntegration,
+    currentIntegrationSchema,
+    currentIntegrationValues,
+  } = useIntegrationSelection({ currentThreadIntegration, integrationsMap });
+
   const [areExtraFieldsRevealed, setAreExtraFieldsRevealed] = useState(false);
 
   const { integration } = useGetIntegrationDataByPathQuery(integrationPath);
@@ -132,14 +154,18 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
 
   useEffect(() => {
     if (integration.data?.integr_schema) {
-      onSchema(integration.data.integr_schema);
+      handleSetCurrentIntegrationSchema(integration.data.integr_schema);
     }
 
     if (integration.data?.integr_values) {
-      onValues(integration.data.integr_values);
+      handleSetCurrentIntegrationValues(integration.data.integr_values);
     }
     debugIntegrations(`[DEBUG]: integration.data: `, integration);
-  }, [integration, onSchema, onValues]);
+  }, [
+    integration,
+    handleSetCurrentIntegrationSchema,
+    handleSetCurrentIntegrationValues,
+  ]);
 
   const importantFields = Object.entries(
     integration.data?.integr_schema.fields ?? {},
@@ -222,8 +248,15 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         </Text>
       )}
       <form
-        onSubmit={handleSubmit}
-        onChange={handleChange}
+        onSubmit={(event) => void handleSubmit(event)}
+        onChange={(event) =>
+          handleChange(
+            event,
+            currentIntegration,
+            currentIntegrationSchema,
+            currentIntegrationValues,
+          )
+        }
         id={`form-${integration.data.integr_name}`}
       >
         <Flex direction="column" gap="2">
