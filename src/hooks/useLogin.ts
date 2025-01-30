@@ -17,6 +17,7 @@ function makeTicket() {
 }
 
 export const useEmailLogin = () => {
+  const dispatch = useAppDispatch();
   const [emailLoginTrigger, emailLoginResult] =
     smallCloudApi.useLoginWithEmailLinkMutation();
 
@@ -46,8 +47,10 @@ export const useEmailLogin = () => {
         abortRef.current = () => action.abort();
       }, 5000);
       setTimeoutN(timer);
+    } else if (emailLoginResult.data?.status === "user_logged_in") {
+      dispatch(setApiKey(emailLoginResult.data.key));
     }
-  }, [aborted, emailLoginResult, emailLoginTrigger]);
+  }, [aborted, dispatch, emailLoginResult, emailLoginTrigger]);
 
   useEffect(() => {
     return () => {
