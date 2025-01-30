@@ -147,7 +147,7 @@ export const useLogin = () => {
     if (isGoodResponse(loginPollingResult.data)) {
       const actions = [
         setApiKey(loginPollingResult.data.secret_key),
-        // TODO: this maybe an issue with email login
+        // TODO: this maybe an issue with email login, or maybe move it to getUser ?
         setInitialAgentUsage({
           agent_usage: loginPollingResult.data.refact_agent_request_available,
           agent_max_usage_amount:

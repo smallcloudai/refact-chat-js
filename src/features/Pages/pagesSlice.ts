@@ -54,6 +54,10 @@ export interface ChatThreadHistoryPage {
   chatId: string;
 }
 
+export interface LoginPage {
+  name: "login page";
+}
+
 export interface IntegrationsSetupPage {
   name: "integrations page";
   projectPath?: string;
@@ -77,7 +81,8 @@ export type Page =
   | StatisticsPage
   | DocumentationSettingsPage
   | ChatThreadHistoryPage
-  | IntegrationsSetupPage;
+  | IntegrationsSetupPage
+  | LoginPage;
 
 export function isIntegrationSetupPage(
   page: Page,

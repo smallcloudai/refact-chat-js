@@ -36,6 +36,7 @@ import { ThreadHistory } from "./ThreadHistory";
 import { Integrations } from "./Integrations";
 import { UserSurvey } from "./UserSurvey";
 import { integrationsApi } from "../services/refact";
+import { LoginPage } from "./Login";
 
 import styles from "./App.module.css";
 import classNames from "classnames";
@@ -79,7 +80,8 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
     isPageInHistory("chat");
 
   useEffect(() => {
-    if (config.apiKey && config.addressURL && !isLoggedIn) {
+    // TODO: note sure why but removing isLoggedIn works?
+    if (config.apiKey && config.addressURL /*&& !isLoggedIn*/) {
       if (tourState.type === "in_progress" && tourState.step === 1) {
         dispatch(push({ name: "welcome" }));
       } else if (Object.keys(historyState).length === 0) {
@@ -91,7 +93,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
       }
     }
     if (!config.apiKey && !config.addressURL && isLoggedIn) {
-      dispatch(popBackTo({ name: "initial setup" }));
+      dispatch(popBackTo({ name: "login page" }));
     }
   }, [
     config.apiKey,
@@ -249,6 +251,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
             chatId={page.chatId}
           />
         )}
+        {page.name === "login page" && <LoginPage />}
       </PageWrapper>
       <Tour page={pages[pages.length - 1].name} />
     </Flex>
