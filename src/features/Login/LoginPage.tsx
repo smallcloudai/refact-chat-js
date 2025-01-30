@@ -38,7 +38,7 @@ export const LoginPage: React.FC = () => {
               </Text>
             </Box>
             <Separator size="4" my="4" />
-            <Flex direction="column" gap="3">
+            <Flex direction="column" gap="3" align="center">
               <Button onClick={() => loginWithProvider("google")}>
                 Continue with Google
               </Button>
@@ -46,7 +46,7 @@ export const LoginPage: React.FC = () => {
                 Continue with GitHub
               </Button>
 
-              <Text align="center">or</Text>
+              <Text>or</Text>
 
               <Flex asChild direction="column" gap="3">
                 <form
@@ -154,7 +154,7 @@ export const LoginPage: React.FC = () => {
               </Text>
             </Box>
             <Separator size="4" my="4" />
-            <Flex asChild direction="column" gap="3" justify="end">
+            <Flex gap="3" justify="end" mb="2">
               <Button
                 onClick={() => {
                   setupHost({ type: "bring-your-own-key" });
