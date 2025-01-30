@@ -3,7 +3,6 @@ import { useAppSelector } from "./useAppSelector";
 import { useAppDispatch } from "./useAppDispatch";
 import { isGoodResponse, smallCloudApi } from "../services/smallcloud";
 import { selectHost, setApiKey } from "../features/Config/configSlice";
-import { useLogout } from "./useLogout";
 import { useOpenUrl } from "./useOpenUrl";
 import { useEventsBusForIDE } from "./useEventBusForIDE";
 import { setInitialAgentUsage } from "../features/AgentUsage/agentUsageSlice";
@@ -87,9 +86,6 @@ export const useEmailLogin = () => {
 export const useLogin = () => {
   const { setupHost } = useEventsBusForIDE();
   const dispatch = useAppDispatch();
-  // TBD: is user this needed
-  // const user = useGetUser();
-  const logout = useLogout();
   const abortRef = useRef<() => void>(() => ({}));
 
   const host = useAppSelector(selectHost);
@@ -112,35 +108,6 @@ export const useLogin = () => {
       abortRef.current = () => thunk.abort();
     },
     [host, loginTrigger, openUrl],
-  );
-
-  // TODO: delete this.
-  const loginThroughWeb = useCallback(
-    (pro: boolean) => {
-      const ticket = makeTicket();
-
-      const baseUrl = pro
-        ? "https://refact.smallcloud.ai/pro?sidebar"
-        : "https://refact.smallcloud.ai/authentication";
-      const initUrl = new URL(baseUrl);
-      initUrl.searchParams.set("token", ticket);
-      initUrl.searchParams.set("utm_source", "plugin");
-      initUrl.searchParams.set("utm_medium", host);
-      initUrl.searchParams.set("utm_campaign", "login");
-      const initUrlString = initUrl.toString();
-      openUrl(initUrlString);
-      const thunk = loginTrigger(ticket);
-      abortRef.current = () => thunk.abort();
-    },
-    [host, loginTrigger, openUrl],
-  );
-
-  // TODO: handle errors
-  const loginWithKey = useCallback(
-    (key: string) => {
-      dispatch(setApiKey(key));
-    },
-    [dispatch],
   );
 
   useEffect(() => {
@@ -166,12 +133,8 @@ export const useLogin = () => {
   }, [dispatch, loginPollingResult.data, setupHost]);
 
   return {
-    loginThroughWeb,
-    loginWithKey,
-    // user,
     polling: loginPollingResult,
     cancelLogin: abortRef,
-    logout,
     loginWithProvider,
   };
 };

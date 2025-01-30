@@ -10,6 +10,7 @@ const initialState: AgentUsageMeta = {
   agent_max_usage_amount: 20,
 };
 
+// TODO: is this needed since aent useage now comes from the getUser request?
 export const agentUsageSlice = createSlice({
   name: "agentUsage",
   initialState,

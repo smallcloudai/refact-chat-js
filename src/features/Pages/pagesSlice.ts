@@ -1,25 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-export interface InitialSetupPage {
-  name: "initial setup";
-}
-
-export interface CloudLogin {
-  name: "cloud login";
-}
-
-export interface EnterpriseSetup {
-  name: "enterprise setup";
-}
-
-export interface SelfHostingSetup {
-  name: "self hosting setup";
-}
-
-export interface BringYourOwnKey {
-  name: "bring your own key";
-}
-
 export interface Welcome {
   name: "welcome";
 }
@@ -68,11 +48,6 @@ export interface IntegrationsSetupPage {
 }
 
 export type Page =
-  | InitialSetupPage
-  | CloudLogin
-  | EnterpriseSetup
-  | SelfHostingSetup
-  | BringYourOwnKey
   | ChatPage
   | Welcome
   | TourEnd
@@ -92,7 +67,7 @@ export function isIntegrationSetupPage(
 
 export type PageSliceState = Page[];
 
-const initialState: PageSliceState = [{ name: "initial setup" }];
+const initialState: PageSliceState = [{ name: "login page" }];
 
 export const pagesSlice = createSlice({
   name: "pages",

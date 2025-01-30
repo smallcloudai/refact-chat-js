@@ -16,7 +16,7 @@ const App: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     </Provider>
   );
 };
-const meta = {
+const meta: Meta<typeof Accordion> = {
   title: "Accordion",
   decorators: [
     (Story) => (
@@ -25,7 +25,7 @@ const meta = {
       </App>
     ),
   ],
-} satisfies Meta<typeof Accordion>;
+};
 
 export default meta;
 
