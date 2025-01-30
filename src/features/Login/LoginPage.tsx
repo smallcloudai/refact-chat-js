@@ -12,12 +12,41 @@ import { Accordion } from "../../components/Accordion";
 import { useEventsBusForIDE, useLogin, useEmailLogin } from "../../hooks";
 
 export const LoginPage: React.FC = () => {
-  const { loginWithProvider } = useLogin();
+  const { loginWithProvider, polling, cancelLogin } = useLogin();
   const { setupHost } = useEventsBusForIDE();
-  const { emailLogin, emailLoginResult: _ } = useEmailLogin();
+  const { emailLogin, emailLoginResult, emailLoginAbort } = useEmailLogin();
+
+  const emailIsLoading = React.useMemo(() => {
+    if (
+      emailLoginResult.isSuccess &&
+      emailLoginResult.data.status !== "user_logged_in"
+    ) {
+      return true;
+    }
+    return emailLoginResult.isLoading;
+  }, [
+    emailLoginResult.data?.status,
+    emailLoginResult.isLoading,
+    emailLoginResult.isSuccess,
+  ]);
+
+  const isLoading = React.useMemo(() => {
+    if (polling.isLoading || polling.isFetching) return true;
+    return emailIsLoading;
+  }, [polling, emailIsLoading]);
+
+  const onCancel = () => {
+    cancelLogin.current();
+    emailLoginAbort();
+  };
+
   return (
     <Container p="8">
-      <Accordion.Root type="multiple" defaultValue={["cloud"]}>
+      <Accordion.Root
+        type="multiple"
+        defaultValue={["cloud"]}
+        disabled={isLoading}
+      >
         <Accordion.Item value="cloud">
           <Accordion.Trigger>Refact Cloud</Accordion.Trigger>
           <Accordion.Content>
@@ -39,10 +68,22 @@ export const LoginPage: React.FC = () => {
             </Box>
             <Separator size="4" my="4" />
             <Flex direction="column" gap="3" align="center">
-              <Button onClick={() => loginWithProvider("google")}>
+              <Button
+                onClick={() => {
+                  onCancel();
+                  loginWithProvider("google");
+                }}
+                disabled={isLoading}
+              >
                 Continue with Google
               </Button>
-              <Button onClick={() => loginWithProvider("github")}>
+              <Button
+                onClick={() => {
+                  onCancel();
+                  loginWithProvider("github");
+                }}
+                disabled={isLoading}
+              >
                 Continue with GitHub
               </Button>
 
@@ -52,6 +93,7 @@ export const LoginPage: React.FC = () => {
                 <form
                   onSubmit={(event) => {
                     event.preventDefault();
+                    if (isLoading) return;
                     const formData = new FormData(event.currentTarget);
                     const email = formData.get("email");
                     if (typeof email === "string") {
@@ -64,13 +106,21 @@ export const LoginPage: React.FC = () => {
                     type="email"
                     name="email"
                     required
+                    disabled={isLoading}
                   />
-                  <Button type="submit">Send magic link</Button>
+                  <Button
+                    type="submit"
+                    loading={emailIsLoading}
+                    disabled={isLoading}
+                  >
+                    Send magic link
+                  </Button>
                   <Text size="1" align="center">
                     We will send you a one-time login link by email
                   </Text>
                 </form>
               </Flex>
+              {isLoading && <Button onClick={onCancel}>Cancel</Button>}
             </Flex>
           </Accordion.Content>
         </Accordion.Item>

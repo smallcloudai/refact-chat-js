@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "./useAppSelector";
 import { useAppDispatch } from "./useAppDispatch";
 import { isGoodResponse, smallCloudApi } from "../services/smallcloud";
 import { selectHost, setApiKey } from "../features/Config/configSlice";
-// import { useGetUser } from "./useGetUser";
 import { useLogout } from "./useLogout";
 import { useOpenUrl } from "./useOpenUrl";
 import { useEventsBusForIDE } from "./useEventBusForIDE";
@@ -19,43 +18,60 @@ function makeTicket() {
 
 export const useEmailLogin = () => {
   const [emailLoginTrigger, emailLoginResult] =
-    smallCloudApi.useLazyLoginWithEmailLinkQuery();
+    smallCloudApi.useLoginWithEmailLinkMutation();
 
-  const loginRef = useRef<ReturnType<typeof emailLoginTrigger> | null>(null);
+  const [aborted, setAborted] = useState<boolean>(false);
+  const [timeoutN, setTimeoutN] = useState<NodeJS.Timeout>();
+  const abortRef = useRef<() => void>(() => ({}));
 
   const emailLogin = useCallback(
     (email: string) => {
-      loginRef.current?.abort();
       const token = makeTicket();
       const action = emailLoginTrigger({ email, token });
-      loginRef.current = action;
+      abortRef.current = () => action.abort();
     },
     [emailLoginTrigger],
   );
 
   useEffect(() => {
+    const args = emailLoginResult.originalArgs;
     if (
-      loginRef.current &&
+      !aborted &&
+      args &&
       emailLoginResult.isSuccess &&
       emailLoginResult.data.status !== "user_logged_in"
     ) {
-      setTimeout(() => {
-        void loginRef.current?.refetch();
+      const timer = setTimeout(() => {
+        const action = emailLoginTrigger(args);
+        abortRef.current = () => action.abort();
       }, 5000);
+      setTimeoutN(timer);
     }
-  }, [emailLoginResult]);
+  }, [aborted, emailLoginResult, emailLoginTrigger]);
 
   useEffect(() => {
     return () => {
-      loginRef.current?.abort();
-      loginRef.current = null;
+      setAborted(false);
+      clearTimeout(timeoutN);
     };
-  }, []);
+  }, [timeoutN]);
+
+  useEffect(() => {
+    if (aborted && timeoutN) {
+      clearTimeout(timeoutN);
+    }
+  }, [timeoutN, aborted]);
+
+  const abort = useCallback(() => {
+    emailLoginResult.reset();
+    abortRef.current();
+    setAborted(true);
+  }, [emailLoginResult]);
 
   return {
     emailLogin,
     emailLoginResult,
-    emailLoginAbort: () => loginRef.current?.abort(),
+    emailLoginAbort: abort,
   };
 };
 

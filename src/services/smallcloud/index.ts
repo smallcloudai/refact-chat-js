@@ -229,13 +229,12 @@ export const smallCloudApi = createApi({
       invalidatesTags: ["User", "Polling"],
     }),
 
-    loginWithEmailLink: builder.query<
+    loginWithEmailLink: builder.mutation<
       EmailLinkResponse,
       { email: string; token: string }
     >({
       async queryFn(arg, api, extraOptions, baseQuery) {
-        // TODO: don't set a token but use cookies
-        // https://www.smallcloud.ai/plugin-magic-link/asjdncijsdnfijsdnfisudhfisudhfisudhfiushdifuh/max@oxyplay.com
+        // TODO: maybe use cookies?
         const url = `https://www.smallcloud.ai/plugin-magic-link/${arg.token.trim()}/${arg.email.trim()}`;
 
         const response = await baseQuery({
