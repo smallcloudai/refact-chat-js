@@ -39,27 +39,15 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
   const dispatch = useAppDispatch();
   const globalError = useAppSelector(getErrorMessage);
   const information = useAppSelector(getInformationMessage);
+
   const {
     currentIntegration,
     availableIntegrationsToConfigure,
     currentNotConfiguredIntegration,
-    confirmationRules,
-    availabilityValues,
-    handleIntegrationFormChange,
-    handleSubmit,
-    handleDeleteIntegration,
     handleNotConfiguredIntegrationSubmit,
-    handleNavigateToIntegrationSetup,
-    handleSetCurrentIntegrationSchema,
-    handleSetCurrentIntegrationValues,
     handleFormReturn,
-    setAvailabilityValues,
-    setConfirmationRules,
     goBackAndClearError,
     handleIntegrationShowUp,
-    setToolParameters,
-    isDisabledIntegrationForm,
-    isApplyingIntegrationForm,
     isDeletingIntegration,
     globalIntegrations,
     groupedProjectIntegrations,
@@ -145,24 +133,7 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             height="100%"
           >
             <IntegrationForm
-              // TODO: on smart link click or pass the name down
-              handleSubmit={(event) => void handleSubmit(event)}
-              handleDeleteIntegration={(path: string, name: string) =>
-                void handleDeleteIntegration(path, name)
-              }
-              integrationPath={currentIntegration.integr_config_path}
-              isApplying={isApplyingIntegrationForm}
-              isDeletingIntegration={isDeletingIntegration}
-              isDisabled={isDisabledIntegrationForm}
-              onSchema={handleSetCurrentIntegrationSchema}
-              onValues={handleSetCurrentIntegrationValues}
-              handleChange={handleIntegrationFormChange}
-              availabilityValues={availabilityValues}
-              confirmationRules={confirmationRules}
-              setAvailabilityValues={setAvailabilityValues}
-              setConfirmationRules={setConfirmationRules}
-              setToolParameters={setToolParameters}
-              handleSwitchIntegration={handleNavigateToIntegrationSetup}
+            // TODO: on smart link click or pass the name down
             />
             {information && (
               <InformationCallout

@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import classNames from "classnames";
 import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrationDataByPathQuery";
 
-import type { FC, FormEvent, Dispatch } from "react";
+// import type { FC } from "react";
 import type {
-  Integration,
   IntegrationField,
   IntegrationPrimitive,
   ToolConfirmation,
@@ -27,82 +26,86 @@ import {
 } from "../../../services/refact";
 import { Confirmation } from "../Confirmation";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
-import { useEventsBusForIDE } from "../../../hooks";
-
-type IntegrationFormProps = {
-  integrationPath: string;
-  isApplying: boolean;
-  isDisabled: boolean;
-  isDeletingIntegration: boolean;
-  availabilityValues: Record<string, boolean>;
-  confirmationRules: ToolConfirmation;
-  handleSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  handleDeleteIntegration: (path: string, name: string) => void;
-  handleChange: (event: FormEvent<HTMLFormElement>) => void;
-  onSchema: (schema: Integration["integr_schema"]) => void;
-  onValues: (values: Integration["integr_values"]) => void;
-  setAvailabilityValues: Dispatch<
-    React.SetStateAction<Record<string, boolean>>
-  >;
-  setConfirmationRules: Dispatch<React.SetStateAction<ToolConfirmation>>;
-  setToolParameters: Dispatch<
-    React.SetStateAction<ToolParameterEntity[] | null>
-  >;
-  handleSwitchIntegration: (
-    integrationName: string,
-    integrationConfigPath: string,
-  ) => void;
-};
-
-export const IntegrationForm: FC<IntegrationFormProps> = ({
-  integrationPath,
-  isApplying,
-  isDisabled,
-  isDeletingIntegration,
-  availabilityValues,
-  confirmationRules,
-  handleSubmit,
-  handleDeleteIntegration,
-  handleChange,
-  onSchema,
-  onValues,
+import {
+  useAppDispatch,
+  useAppSelector,
+  useEventsBusForIDE,
+} from "../../../hooks";
+import { useIntegrations } from "../useIntegrations";
+import {
+  selectAvailabilityValues,
+  selectConfirmationRules,
+  selectCurrentIntegration,
+  selectIsApplyingIntegrationForm,
+  selectIsDeletingIntegration,
+  selectIsDisabledIntegrationForm,
   setAvailabilityValues,
   setConfirmationRules,
   setToolParameters,
-  handleSwitchIntegration,
-}) => {
-  const [areExtraFieldsRevealed, setAreExtraFieldsRevealed] = useState(false);
+} from "../../../features/Integrations";
 
-  const { integration } = useGetIntegrationDataByPathQuery(integrationPath);
+// type IntegrationFormProps = {
+//   integrationsMap?: IntegrationWithIconResponse;
+// };
+
+export const IntegrationForm = () => {
+  const dispatch = useAppDispatch();
+  const [areExtraFieldsRevealed, setAreExtraFieldsRevealed] = useState(false);
+  const currentIntegration = useAppSelector(selectCurrentIntegration);
+  const availabilityValues = useAppSelector(selectAvailabilityValues);
+  const confirmationRules = useAppSelector(selectConfirmationRules);
+  const isDisabledIntegrationForm = useAppSelector(
+    selectIsDisabledIntegrationForm,
+  );
+  const isApplyingIntegrationForm = useAppSelector(
+    selectIsApplyingIntegrationForm,
+  );
+  const isDeletingIntegration = useAppSelector(selectIsDeletingIntegration);
+  const {
+    handleSetCurrentIntegrationSchema,
+    handleSetCurrentIntegrationValues,
+    handleSubmit,
+    handleDeleteIntegration,
+    handleIntegrationFormChange,
+    handleNavigateToIntegrationSetup,
+  } = useIntegrations({});
+
+  const { integration } = useGetIntegrationDataByPathQuery(
+    currentIntegration?.integr_config_path ?? "",
+  );
   const { openFile } = useEventsBusForIDE();
 
   const handleAvailabilityChange = useCallback(
     (fieldName: string, value: boolean) => {
-      setAvailabilityValues((prev) => ({ ...prev, [fieldName]: value }));
+      const newAvailabilityValues = {
+        ...availabilityValues,
+        [fieldName]: value,
+      };
+      dispatch(setAvailabilityValues(newAvailabilityValues));
     },
-    [setAvailabilityValues],
+    [dispatch, availabilityValues],
   );
 
   const handleConfirmationChange = useCallback(
     (fieldName: string, values: string[]) => {
-      setConfirmationRules((prev) => {
-        return { ...prev, [fieldName as keyof ToolConfirmation]: values };
-      });
+      const newConfirmationRules = {
+        ...confirmationRules,
+        [fieldName as keyof ToolConfirmation]: values,
+      };
+
+      dispatch(setConfirmationRules(newConfirmationRules));
     },
-    [setConfirmationRules],
+    [dispatch, confirmationRules],
   );
 
-  const handleToolParameters = useCallback(
-    (value: ToolParameterEntity[]) => {
-      setToolParameters(value);
-    },
-    [setToolParameters],
-  );
+  const handleToolParameters = useCallback((value: ToolParameterEntity[]) => {
+    setToolParameters(value);
+  }, []);
 
   const shouldIntegrationFormBeDisabled = useMemo(() => {
     if (!integration.data?.integr_values) return false;
-    return isDisabled;
-  }, [isDisabled, integration]);
+    return isDisabledIntegrationForm || isApplyingIntegrationForm;
+  }, [isDisabledIntegrationForm, isApplyingIntegrationForm, integration]);
 
   useEffect(() => {
     if (
@@ -132,14 +135,18 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
 
   useEffect(() => {
     if (integration.data?.integr_schema) {
-      onSchema(integration.data.integr_schema);
+      handleSetCurrentIntegrationSchema(integration.data.integr_schema);
     }
 
     if (integration.data?.integr_values) {
-      onValues(integration.data.integr_values);
+      handleSetCurrentIntegrationValues(integration.data.integr_values);
     }
     debugIntegrations(`[DEBUG]: integration.data: `, integration);
-  }, [integration, onSchema, onValues]);
+  }, [
+    integration,
+    handleSetCurrentIntegrationSchema,
+    handleSetCurrentIntegrationValues,
+  ]);
 
   const importantFields = Object.entries(
     integration.data?.integr_schema.fields ?? {},
@@ -205,9 +212,11 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
           <IntegrationDeletePopover
             integrationName={integration.data.integr_name}
             integrationConfigPath={integration.data.integr_config_path}
-            isApplying={isApplying}
+            isApplying={isApplyingIntegrationForm}
             isDeletingIntegration={isDeletingIntegration}
-            handleDeleteIntegration={handleDeleteIntegration}
+            handleDeleteIntegration={(path, name) =>
+              void handleDeleteIntegration(path, name)
+            }
           />
         </Flex>
       </Flex>
@@ -222,8 +231,8 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         </Text>
       )}
       <form
-        onSubmit={handleSubmit}
-        onChange={handleChange}
+        onSubmit={(event) => void handleSubmit(event)}
+        onChange={handleIntegrationFormChange}
         id={`form-${integration.data.integr_name}`}
       >
         <Flex direction="column" gap="2">
@@ -252,9 +261,11 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
                 <IntegrationDeletePopover
                   integrationName={integration.data.integr_name}
                   integrationConfigPath={integration.data.integr_config_path}
-                  isApplying={isApplying}
+                  isApplying={isApplyingIntegrationForm}
                   isDeletingIntegration={isDeletingIntegration}
-                  handleDeleteIntegration={handleDeleteIntegration}
+                  handleDeleteIntegration={(path, name) =>
+                    void handleDeleteIntegration(path, name)
+                  }
                 />
               </Flex>
             )}
@@ -382,15 +393,14 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
                 }
                 className={classNames(
                   {
-                    [styles.disabledButton]:
-                      isApplying || shouldIntegrationFormBeDisabled,
+                    [styles.disabledButton]: shouldIntegrationFormBeDisabled,
                   },
                   styles.button,
                   styles.applyButton,
                 )}
                 disabled={shouldIntegrationFormBeDisabled}
               >
-                {isApplying ? "Applying..." : "Apply"}
+                {isApplyingIntegrationForm ? "Applying..." : "Apply"}
               </Button>
             </Flex>
           </Flex>
@@ -403,7 +413,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
             integrationName={integration.data.integr_name}
             integrationProject={integration.data.project_path}
             integrationPath={integration.data.integr_config_path}
-            handleSwitchIntegration={handleSwitchIntegration}
+            handleSwitchIntegration={handleNavigateToIntegrationSetup}
           />
         </Flex>
       )}

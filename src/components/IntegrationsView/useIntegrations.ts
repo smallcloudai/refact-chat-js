@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo } from "react";
 import {
   areAllFieldsBoolean,
   areIntegrationsNotConfigured,
@@ -15,8 +15,6 @@ import {
   isNotConfiguredIntegrationWithIconRecord,
   isPrimitive,
   NotConfiguredIntegrationWithIconRecord,
-  ToolConfirmation,
-  ToolParameterEntity,
 } from "../../services/refact";
 import {
   IntegrationsSetupPage,
@@ -41,13 +39,32 @@ import { toPascalCase } from "../../utils/toPascalCase";
 import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
 import { useDeleteIntegrationByPath } from "../../hooks/useDeleteIntegrationByPath";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
-import { setIntegrationData } from "../../features/Chat";
 import { selectThemeMode } from "../../features/Config/configSlice";
 import { iconMap } from "./icons/iconMap";
+import {
+  selectAvailabilityValues,
+  selectConfirmationRules,
+  selectCurrentIntegration,
+  selectCurrentIntegrationSchema,
+  selectCurrentIntegrationValues,
+  selectCurrentNotConfiguredIntegration,
+  selectIsApplyingIntegrationForm,
+  selectIsDisabledIntegrationForm,
+  selectIsDeletingIntegration,
+  selectToolParameters,
+  setCurrentIntegration,
+  setCurrentIntegrationSchema,
+  setCurrentIntegrationValues,
+  setCurrentNotConfiguredIntegration,
+  setIsApplyingIntegrationForm,
+  setIsDisabledIntegrationForm,
+  setIsDeletingIntegration,
+  resetIntegrationsState,
+} from "../../features/Integrations/integrationsSlice";
 
 type useIntegrationsViewArgs = {
   integrationsMap?: IntegrationWithIconResponse;
-  handleIfInnerIntegrationWasSet: (state: boolean) => void;
+  handleIfInnerIntegrationWasSet?: (state: boolean) => void;
   goBack?: () => void;
 };
 
@@ -61,6 +78,27 @@ export const useIntegrations = ({
   const dispatch = useAppDispatch();
   const globalError = useAppSelector(getErrorMessage);
   const information = useAppSelector(getInformationMessage);
+
+  const currentIntegration = useAppSelector(selectCurrentIntegration);
+  const currentIntegrationSchema = useAppSelector(
+    selectCurrentIntegrationSchema,
+  );
+  const currentIntegrationValues = useAppSelector(
+    selectCurrentIntegrationValues,
+  );
+  const currentNotConfiguredIntegration = useAppSelector(
+    selectCurrentNotConfiguredIntegration,
+  );
+  const confirmationRules = useAppSelector(selectConfirmationRules);
+  const toolParameters = useAppSelector(selectToolParameters);
+  const availabilityValues = useAppSelector(selectAvailabilityValues);
+  const isApplyingIntegrationForm = useAppSelector(
+    selectIsApplyingIntegrationForm,
+  );
+  const isDeletingIntegration = useAppSelector(selectIsDeletingIntegration);
+  const isDisabledIntegrationForm = useAppSelector(
+    selectIsDisabledIntegrationForm,
+  );
 
   const { saveIntegrationMutationTrigger } = useSaveIntegrationData();
   // const currentThreadIntegration = useAppSelector(selectIntegration);
@@ -176,16 +214,6 @@ export const useIntegrations = ({
     return integrationWithFlag;
   }, [currentThreadIntegration, integrationsMap, findIntegration]);
 
-  // TBD: what if they went home then came back to integrations?
-
-  const [currentIntegration, setCurrentIntegration] =
-    useState<IntegrationWithIconRecord | null>(
-      maybeIntegration?.shouldIntermediatePageShowUp ? null : maybeIntegration,
-    );
-
-  const [currentNotConfiguredIntegration, setCurrentNotConfiguredIntegration] =
-    useState<NotConfiguredIntegrationWithIconRecord | null>(null);
-
   const theme = useAppSelector(selectThemeMode);
   const icons = iconMap(
     theme ? (theme === "inherit" ? "light" : theme) : "light",
@@ -217,83 +245,54 @@ export const useIntegrations = ({
     if (!maybeIntegration) return;
 
     if (maybeIntegration.shouldIntermediatePageShowUp) {
-      setCurrentNotConfiguredIntegration(() => {
-        const similarIntegrations = integrationsMap?.integrations.filter(
-          (integr) => integr.integr_name === maybeIntegration.integr_name,
-        );
-        if (!similarIntegrations) return null;
+      const similarIntegrations = integrationsMap?.integrations.filter(
+        (integr) => integr.integr_name === maybeIntegration.integr_name,
+      );
 
-        const uniqueConfigPaths = Array.from(
-          new Set(
-            similarIntegrations.map((integr) => integr.integr_config_path),
-          ),
-        );
-        const uniqueProjectPaths = Array.from(
-          new Set(similarIntegrations.map((integr) => integr.project_path)),
-        );
+      if (!similarIntegrations) {
+        dispatch(setCurrentNotConfiguredIntegration(null));
+        return;
+      }
 
-        uniqueProjectPaths.sort((a, _b) => (a === "" ? -1 : 1));
-        uniqueConfigPaths.sort((a, _b) => (a.includes(".config") ? -1 : 1));
+      const uniqueConfigPaths = Array.from(
+        new Set(similarIntegrations.map((integr) => integr.integr_config_path)),
+      );
+      const uniqueProjectPaths = Array.from(
+        new Set(similarIntegrations.map((integr) => integr.project_path)),
+      );
 
-        const integrationToConfigure: NotConfiguredIntegrationWithIconRecord = {
-          ...maybeIntegration,
-          commandName: maybeIntegration.commandName
-            ? maybeIntegration.commandName
-            : undefined,
-          wasOpenedThroughChat: maybeIntegration.shouldIntermediatePageShowUp,
-          integr_config_path: uniqueConfigPaths,
-          project_path: uniqueProjectPaths,
-          integr_config_exists: false,
-        };
+      uniqueProjectPaths.sort((a, _b) => (a === "" ? -1 : 1));
+      uniqueConfigPaths.sort((a, _b) => (a.includes(".config") ? -1 : 1));
 
-        return integrationToConfigure;
-      });
-      setCurrentIntegration(null);
+      const integrationToConfigure: NotConfiguredIntegrationWithIconRecord = {
+        ...maybeIntegration,
+        commandName: maybeIntegration.commandName
+          ? maybeIntegration.commandName
+          : undefined,
+        wasOpenedThroughChat: maybeIntegration.shouldIntermediatePageShowUp,
+        integr_config_path: uniqueConfigPaths,
+        project_path: uniqueProjectPaths,
+        integr_config_exists: false,
+      };
+      dispatch(setCurrentNotConfiguredIntegration(integrationToConfigure));
+      dispatch(setCurrentIntegration(null));
     } else {
       setCurrentIntegration(maybeIntegration);
       setCurrentNotConfiguredIntegration(null);
     }
-  }, [maybeIntegration, integrationsMap?.integrations]);
-
-  const [currentIntegrationSchema, setCurrentIntegrationSchema] = useState<
-    Integration["integr_schema"] | null
-  >(null);
-
-  const [currentIntegrationValues, setCurrentIntegrationValues] = useState<
-    Integration["integr_values"] | null
-  >(null);
-
-  const [isApplyingIntegrationForm, setIsApplyingIntegrationForm] =
-    useState<boolean>(false);
-
-  const [isDeletingIntegration, setIsDeletingIntegration] =
-    useState<boolean>(false);
-
-  const [isDisabledIntegrationForm, setIsDisabledIntegrationForm] =
-    useState<boolean>(true);
-
-  const [availabilityValues, setAvailabilityValues] = useState<
-    Record<string, boolean>
-  >({});
-
-  const [confirmationRules, setConfirmationRules] = useState<ToolConfirmation>({
-    ask_user: [],
-    deny: [],
-  });
-
-  const [toolParameters, setToolParameters] = useState<
-    ToolParameterEntity[] | null
-  >(null);
+  }, [dispatch, maybeIntegration, integrationsMap?.integrations]);
 
   useEffect(() => {
     debugIntegrations(`[DEBUG]: integrationsData: `, integrationsMap);
   }, [integrationsMap]);
 
   useEffect(() => {
-    if (currentIntegration ?? currentNotConfiguredIntegration) {
-      handleIfInnerIntegrationWasSet(true);
-    } else {
-      handleIfInnerIntegrationWasSet(false);
+    if (handleIfInnerIntegrationWasSet) {
+      if (currentIntegration ?? currentNotConfiguredIntegration) {
+        handleIfInnerIntegrationWasSet(true);
+      } else {
+        handleIfInnerIntegrationWasSet(false);
+      }
     }
   }, [
     currentIntegration,
@@ -386,85 +385,85 @@ export const useIntegrations = ({
       currentIntegrationSchema &&
       currentIntegrationValues
     ) {
-      setIsDisabledIntegrationForm((isDisabled) => {
-        const toolParametersChanged =
-          toolParameters &&
-          areToolParameters(currentIntegrationValues.parameters)
-            ? !isEqual(toolParameters, currentIntegrationValues.parameters)
-            : false;
+      const toolParametersChanged =
+        toolParameters && areToolParameters(currentIntegrationValues.parameters)
+          ? !isEqual(toolParameters, currentIntegrationValues.parameters)
+          : false;
 
-        // Manually collecting data from the form
-        const formElement = document.getElementById(
-          `form-${currentIntegration.integr_name}`,
-        ) as HTMLFormElement | null;
+      // Manually collecting data from the form
+      const formElement = document.getElementById(
+        `form-${currentIntegration.integr_name}`,
+      ) as HTMLFormElement | null;
 
-        if (!formElement) return true;
-        const formData = new FormData(formElement);
-        const rawFormValues = Object.fromEntries(formData.entries());
+      if (!formElement) {
+        dispatch(setIsDisabledIntegrationForm(true));
+        return;
+      }
 
-        const formValues = convertRawIntegrationFormValues(
-          rawFormValues,
-          currentIntegrationSchema,
-          currentIntegrationValues,
-        );
+      const formData = new FormData(formElement);
+      const rawFormValues = Object.fromEntries(formData.entries());
 
-        const otherFieldsChanged = !Object.entries(formValues).every(
-          ([fieldKey, fieldValue]) => {
-            if (isPrimitive(fieldValue)) {
-              return (
-                fieldKey in currentIntegrationValues &&
-                fieldValue === currentIntegrationValues[fieldKey]
-              );
-            }
-            if (typeof fieldValue === "object" || Array.isArray(fieldValue)) {
-              return (
-                fieldKey in currentIntegrationValues &&
-                isEqual(fieldValue, currentIntegrationValues[fieldKey])
-              );
-            }
-            return false;
-          },
-        );
+      const formValues = convertRawIntegrationFormValues(
+        rawFormValues,
+        currentIntegrationSchema,
+        currentIntegrationValues,
+      );
 
-        const confirmationRulesChanged = !isEqual(
-          confirmationRules,
-          currentIntegrationValues.confirmation,
-        );
+      const otherFieldsChanged = !Object.entries(formValues).every(
+        ([fieldKey, fieldValue]) => {
+          if (isPrimitive(fieldValue)) {
+            return (
+              fieldKey in currentIntegrationValues &&
+              fieldValue === currentIntegrationValues[fieldKey]
+            );
+          }
+          if (typeof fieldValue === "object" || Array.isArray(fieldValue)) {
+            return (
+              fieldKey in currentIntegrationValues &&
+              isEqual(fieldValue, currentIntegrationValues[fieldKey])
+            );
+          }
+          return false;
+        },
+      );
 
-        debugIntegrations(
-          `[DEBUG confirmationRulesChanged]: confirmationRulesChanged: `,
-          confirmationRulesChanged,
-        );
+      const confirmationRulesChanged = !isEqual(
+        confirmationRules,
+        currentIntegrationValues.confirmation,
+      );
 
-        const allToolParametersNamesInSnakeCase = toolParameters
-          ? toolParameters.every((param) => validateSnakeCase(param.name))
-          : true;
+      debugIntegrations(
+        `[DEBUG confirmationRulesChanged]: confirmationRulesChanged: `,
+        confirmationRulesChanged,
+      );
 
-        if (!allToolParametersNamesInSnakeCase) {
-          return true; // Disabling form if any of tool parameters names are written not in snake case
-        }
+      const allToolParametersNamesInSnakeCase = toolParameters
+        ? toolParameters.every((param) => validateSnakeCase(param.name))
+        : true;
 
-        if ((toolParametersChanged || confirmationRulesChanged) && isDisabled) {
-          return false; // Enable form if toolParameters changed and form was disabled
-        }
+      let newIsDisabled = isDisabledIntegrationForm;
 
-        if (
-          otherFieldsChanged &&
-          (toolParametersChanged || confirmationRulesChanged)
-        ) {
-          return isDisabled; // Keep the form in the same condition
-        }
+      if (!allToolParametersNamesInSnakeCase) {
+        newIsDisabled = true; // Disabling form if any of tool parameters names are written not in snake case
+      } else if (
+        (toolParametersChanged || confirmationRulesChanged) &&
+        isDisabledIntegrationForm
+      ) {
+        newIsDisabled = false; // Enable form if toolParameters changed and form was disabled
+      } else if (
+        otherFieldsChanged &&
+        (toolParametersChanged || confirmationRulesChanged)
+      ) {
+        newIsDisabled = isDisabledIntegrationForm; // Keep the form in the same condition
+      } else if (
+        !otherFieldsChanged &&
+        !toolParametersChanged &&
+        !confirmationRulesChanged
+      ) {
+        newIsDisabled = true; // Disable form if all fields are back to original state
+      }
 
-        if (
-          !otherFieldsChanged &&
-          !toolParametersChanged &&
-          !confirmationRulesChanged
-        ) {
-          return true; // Disable form if all fields are back to original state
-        }
-
-        return isDisabled;
-      });
+      dispatch(setIsDisabledIntegrationForm(newIsDisabled));
     }
   }, [
     toolParameters,
@@ -472,6 +471,8 @@ export const useIntegrations = ({
     currentIntegrationSchema,
     confirmationRules,
     currentIntegration,
+    isDisabledIntegrationForm,
+    dispatch,
   ]);
 
   const handleSetCurrentIntegrationSchema = (
@@ -491,38 +492,15 @@ export const useIntegrations = ({
   };
 
   const handleFormReturn = useCallback(() => {
-    if (currentIntegration) {
-      setCurrentIntegration(null);
-      setIsDisabledIntegrationForm(true);
-    }
-    if (currentNotConfiguredIntegration) {
-      setCurrentNotConfiguredIntegration(null);
-      setIsDisabledIntegrationForm(true);
-    }
-    setAvailabilityValues({});
-    setToolParameters([]);
-    setConfirmationRules({
-      ask_user: [],
-      deny: [],
-    });
+    dispatch(resetIntegrationsState());
     information && dispatch(clearInformation());
     globalError && dispatch(clearError());
-    currentIntegrationValues && setCurrentIntegrationValues(null);
-    currentIntegrationSchema && setCurrentIntegrationSchema(null);
     dispatch(integrationsApi.util.resetApiState());
     dispatch(dockerApi.util.resetApiState());
     // TODO: can cause a loop where integration pages goes back to form
     dispatch(pop());
     dispatch(popBackTo({ name: "integrations page" }));
-  }, [
-    dispatch,
-    globalError,
-    information,
-    currentIntegration,
-    currentNotConfiguredIntegration,
-    currentIntegrationValues,
-    currentIntegrationSchema,
-  ]);
+  }, [dispatch, globalError, information]);
 
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -530,7 +508,7 @@ export const useIntegrations = ({
       debugIntegrations(`[DEBUG]: schema: `, currentIntegrationSchema);
       if (!currentIntegrationSchema) return;
       event.preventDefault();
-      setIsApplyingIntegrationForm(true);
+      dispatch(setIsApplyingIntegrationForm(true));
 
       debugIntegrations(`[DEBUG]: event: `, event);
 
@@ -579,9 +557,9 @@ export const useIntegrations = ({
             `Integration ${currentIntegration.integr_name} saved successfully.`,
           ),
         );
-        setIsDisabledIntegrationForm(true);
+        dispatch(setIsDisabledIntegrationForm(true));
       }
-      setIsApplyingIntegrationForm(false);
+      dispatch(setIsApplyingIntegrationForm(false));
     },
     [
       currentIntegration,
@@ -613,7 +591,7 @@ export const useIntegrations = ({
         ),
       );
       const timeoutId = setTimeout(() => {
-        setIsDeletingIntegration(false);
+        dispatch(setIsDeletingIntegration(false));
         handleFormReturn();
         clearTimeout(timeoutId);
       }, 1200);
@@ -716,15 +694,18 @@ export const useIntegrations = ({
 
       debugIntegrations(`[DEBUG CHANGE]: maybeDisabled: `, maybeDisabled);
 
-      setIsDisabledIntegrationForm(
-        toolParameters
-          ? toolParameters.every((param) => validateSnakeCase(param.name))
-            ? maybeDisabled
-            : true
-          : maybeDisabled,
+      dispatch(
+        setIsDisabledIntegrationForm(
+          toolParameters
+            ? toolParameters.every((param) => validateSnakeCase(param.name))
+              ? maybeDisabled
+              : true
+            : maybeDisabled,
+        ),
       );
     },
     [
+      dispatch,
       currentIntegration,
       currentIntegrationValues,
       currentIntegrationSchema,
@@ -780,8 +761,12 @@ export const useIntegrations = ({
           integr_config_exists: false,
         };
 
-        setCurrentIntegration(customIntegration);
-        setCurrentNotConfiguredIntegration(null);
+        const actions = [
+          setCurrentIntegration(customIntegration),
+          setCurrentNotConfiguredIntegration(null),
+        ];
+
+        actions.forEach((action) => dispatch(action));
         return;
       } else if ("integr_config_path" in rawFormValues) {
         // getting config path, opening integration
@@ -793,16 +778,23 @@ export const useIntegrations = ({
           debugIntegrations(`[DEBUG]: integration was not found, error!`);
           return;
         }
-        setCurrentIntegration(foundIntegration);
-        setCurrentNotConfiguredIntegration(null);
+        const actions = [
+          setCurrentIntegration(foundIntegration),
+          setCurrentNotConfiguredIntegration(null),
+        ];
+        actions.forEach((action) => dispatch(action));
       } else {
         debugIntegrations(
           `[DEBUG]: Unexpected error occured. It's mostly a bug`,
         );
       }
     },
-    [currentNotConfiguredIntegration, integrationsMap],
+    [dispatch, currentNotConfiguredIntegration, integrationsMap],
   );
+
+  useEffect(() => {
+    debugIntegrations(`[DEBUG]: currentIntegration: `, currentIntegration);
+  });
 
   const handleNavigateToIntegrationSetup = useCallback(
     (integrationName: string, integrationConfigPath: string) => {
@@ -824,18 +816,19 @@ export const useIntegrations = ({
         );
         return;
       }
-      setIsDisabledIntegrationForm(true);
-      setCurrentIntegration(maybeIntegration);
+      const actions = [
+        setIsDisabledIntegrationForm(true),
+        setCurrentIntegration(maybeIntegration),
+      ];
+      actions.forEach((action) => dispatch(action));
     },
-    [currentIntegration, integrationsMap],
+    [dispatch, currentIntegration, integrationsMap],
   );
 
   const goBackAndClearError = useCallback(() => {
     goBack && goBack();
     dispatch(clearError());
-    setCurrentIntegration(null);
-    setCurrentNotConfiguredIntegration(null);
-    dispatch(setIntegrationData(null));
+    dispatch(resetIntegrationsState());
   }, [dispatch, goBack]);
 
   const handleNotSetupIntegrationShowUp = useCallback(
@@ -847,9 +840,9 @@ export const useIntegrations = ({
         integration,
       );
 
-      setCurrentNotConfiguredIntegration(integration);
+      dispatch(setCurrentNotConfiguredIntegration(integration));
     },
-    [integrationsMap],
+    [dispatch, integrationsMap],
   );
 
   const handleIntegrationShowUp = useCallback(
@@ -862,9 +855,9 @@ export const useIntegrations = ({
         handleNotSetupIntegrationShowUp(integration);
         return;
       }
-      setCurrentIntegration(integration);
+      dispatch(setCurrentIntegration(integration));
     },
-    [handleNotSetupIntegrationShowUp],
+    [dispatch, handleNotSetupIntegrationShowUp],
   );
 
   return {
@@ -886,9 +879,6 @@ export const useIntegrations = ({
     handleSetCurrentIntegrationValues,
     goBackAndClearError,
     handleIntegrationShowUp,
-    setAvailabilityValues,
-    setConfirmationRules,
-    setToolParameters,
     isDisabledIntegrationForm,
     isApplyingIntegrationForm,
     isDeletingIntegration,
