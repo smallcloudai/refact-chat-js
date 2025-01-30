@@ -133,3 +133,30 @@ export const loginPollingWaiting: HttpHandler = http.get(
     return HttpResponse.json(result);
   },
 );
+
+export const emailLogin: HttpHandler = http.get(
+  "https://www.smallcloud.ai/plugin-magic-link/*",
+  async function* () {
+    let count = 0;
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    yield HttpResponse.json({
+      retcode: "OK",
+      status: "sent",
+    });
+
+    while (count < 5) {
+      count++;
+      yield HttpResponse.json({
+        retcode: "OK",
+        status: "not_logged_in",
+      });
+    }
+
+    yield HttpResponse.json({
+      retcode: "OK",
+      status: "user_logged_in",
+      key: "1234567890",
+    });
+  },
+);

@@ -17,6 +17,48 @@ function makeTicket() {
   );
 }
 
+export const useEmailLogin = () => {
+  const [emailLoginTrigger, emailLoginResult] =
+    smallCloudApi.useLazyLoginWithEmailLinkQuery();
+
+  const loginRef = useRef<ReturnType<typeof emailLoginTrigger> | null>(null);
+
+  const emailLogin = useCallback(
+    (email: string) => {
+      loginRef.current?.abort();
+      const token = makeTicket();
+      const action = emailLoginTrigger({ email, token });
+      loginRef.current = action;
+    },
+    [emailLoginTrigger],
+  );
+
+  useEffect(() => {
+    if (
+      loginRef.current &&
+      emailLoginResult.isSuccess &&
+      emailLoginResult.data.status !== "user_logged_in"
+    ) {
+      setTimeout(() => {
+        void loginRef.current?.refetch();
+      }, 5000);
+    }
+  }, [emailLoginResult]);
+
+  useEffect(() => {
+    return () => {
+      loginRef.current?.abort();
+      loginRef.current = null;
+    };
+  }, []);
+
+  return {
+    emailLogin,
+    emailLoginResult,
+    emailLoginAbort: () => loginRef.current?.abort(),
+  };
+};
+
 export const useLogin = () => {
   const { setupHost } = useEventsBusForIDE();
   const dispatch = useAppDispatch();

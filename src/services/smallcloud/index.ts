@@ -228,5 +228,62 @@ export const smallCloudApi = createApi({
       queryFn: () => ({ data: null }),
       invalidatesTags: ["User", "Polling"],
     }),
+
+    loginWithEmailLink: builder.query<
+      EmailLinkResponse,
+      { email: string; token: string }
+    >({
+      async queryFn(arg, api, extraOptions, baseQuery) {
+        // TODO: don't set a token but use cookies
+        // https://www.smallcloud.ai/plugin-magic-link/asjdncijsdnfijsdnfisudhfisudhfisudhfiushdifuh/max@oxyplay.com
+        const url = `https://www.smallcloud.ai/plugin-magic-link/${arg.token.trim()}/${arg.email.trim()}`;
+
+        const response = await baseQuery({
+          ...extraOptions,
+          url,
+          signal: api.signal,
+        });
+        if (response.error) return response;
+
+        if (!isEmailLinkResponse(response.data)) {
+          return {
+            error: {
+              error:
+                "Invalid response from https://www.smallcloud.ai/plugin-magic-link",
+              data: response.data,
+              status: "CUSTOM_ERROR",
+            },
+          };
+        }
+
+        return { data: response.data };
+      },
+    }),
   }),
 });
+
+type EmailLinkResponse =
+  | {
+      retcode: "OK";
+      status: "sent";
+    }
+  | {
+      retcode: "OK";
+      status: "not_logged_in";
+    }
+  | {
+      retcode: "OK";
+      status: "user_logged_in";
+      key: string;
+    };
+
+function isEmailLinkResponse(json: unknown): json is EmailLinkResponse {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  return (
+    "retcode" in json &&
+    typeof json.retcode === "string" &&
+    "status" in json &&
+    typeof json.status === "string"
+  );
+}

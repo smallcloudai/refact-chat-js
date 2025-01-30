@@ -9,10 +9,12 @@ import {
   Container,
 } from "@radix-ui/themes";
 import { Accordion } from "../../components/Accordion";
-import { useLogin } from "../../hooks";
+import { useEventsBusForIDE, useLogin, useEmailLogin } from "../../hooks";
 
 export const LoginPage: React.FC = () => {
   const { loginWithProvider } = useLogin();
+  const { setupHost } = useEventsBusForIDE();
+  const { emailLogin, emailLoginResult: _ } = useEmailLogin();
   return (
     <Container p="8">
       <Accordion.Root type="multiple" defaultValue={["cloud"]}>
@@ -52,7 +54,9 @@ export const LoginPage: React.FC = () => {
                     event.preventDefault();
                     const formData = new FormData(event.currentTarget);
                     const email = formData.get("email");
-                    console.log(email);
+                    if (typeof email === "string") {
+                      emailLogin(email);
+                    }
                   }}
                 >
                   <TextField.Root
@@ -77,13 +81,62 @@ export const LoginPage: React.FC = () => {
               <Text size="2">
                 <ul>
                   <li>
-                    User your own refact server (Enterprise or self-hosted).
+                    User your own Refact server (Enterprise or self-hosted).
                   </li>
                   <li>Fine-tune code completions to your codebase</li>
                   <li>Keep all code and data under your control.</li>
                 </ul>
               </Text>
             </Box>
+            <Separator size="4" my="4" />
+            <Flex asChild direction="column" gap="3" mb="2">
+              {/** TODO: handle these changes */}
+              <form
+                onSubmit={(event) => {
+                  const formData = new FormData(event.currentTarget);
+                  const endpoint = formData.get("endpoint");
+                  const apiKey = formData.get("api-key");
+                  if (
+                    apiKey &&
+                    typeof apiKey === "string" &&
+                    endpoint &&
+                    typeof endpoint === "string"
+                  ) {
+                    setupHost({
+                      type: "enterprise",
+                      apiKey,
+                      endpointAddress: endpoint,
+                    });
+                  } else if (endpoint && typeof endpoint === "string") {
+                    setupHost({ type: "self", endpointAddress: endpoint });
+                  }
+                  // handle setUpHost
+                }}
+              >
+                <Box>
+                  <Text as="label" htmlFor="endpoint">
+                    Endpoint
+                  </Text>
+                  <TextField.Root
+                    type="url"
+                    name="endpoint"
+                    placeholder="http://x.x.x.x:8008/"
+                    required
+                  />
+                </Box>
+
+                <Box>
+                  <Text as="label" htmlFor="api-key">
+                    API Key (optional)
+                  </Text>
+                  <TextField.Root name="api-key" placeholder="your api key" />
+                </Box>
+
+                <Flex justify="end">
+                  <Button type="submit">Open in IDE</Button>
+                </Flex>
+              </form>
+            </Flex>
           </Accordion.Content>
         </Accordion.Item>
         <Accordion.Item value="byok">
@@ -100,6 +153,16 @@ export const LoginPage: React.FC = () => {
                 </ul>
               </Text>
             </Box>
+            <Separator size="4" my="4" />
+            <Flex asChild direction="column" gap="3" justify="end">
+              <Button
+                onClick={() => {
+                  setupHost({ type: "bring-your-own-key" });
+                }}
+              >
+                Open in IDE
+              </Button>
+            </Flex>
           </Accordion.Content>
         </Accordion.Item>
       </Accordion.Root>
