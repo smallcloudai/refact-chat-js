@@ -25,6 +25,8 @@ import { ThreadHistoryButton } from "../Buttons";
 import { push } from "../../features/Pages/pagesSlice";
 import { DropzoneProvider } from "../Dropzone";
 import { AgentUsage } from "../../features/AgentUsage";
+import { useCheckpoints } from "../../hooks/useCheckpoints";
+import { Checkpoints } from "../../features/Checkpoints";
 
 export type ChatProps = {
   host: Config["host"];
@@ -40,6 +42,8 @@ export const Chat: React.FC<ChatProps> = ({
   unCalledTools,
   maybeSendToSidebar,
 }) => {
+  const dispatch = useAppDispatch();
+
   const [isViewingRawJSON, setIsViewingRawJSON] = useState(false);
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
@@ -49,10 +53,11 @@ export const Chat: React.FC<ChatProps> = ({
   const { submit, abort, retryFromIndex } = useSendChatRequest();
 
   const chatToolUse = useAppSelector(getSelectedToolUse);
-  const dispatch = useAppDispatch();
   const messages = useAppSelector(selectMessages);
   const capsForToolUse = useCapsForToolUse();
   const { disableInput } = useAgentUsage();
+
+  const { shouldCheckpointsPopupBeShown } = useCheckpoints();
 
   const [isDebugChatHistoryVisible, setIsDebugChatHistoryVisible] =
     useState(false);
@@ -107,6 +112,8 @@ export const Chat: React.FC<ChatProps> = ({
           onRetry={retryFromIndex}
           onStopStreaming={abort}
         />
+
+        {shouldCheckpointsPopupBeShown && <Checkpoints />}
 
         <AgentUsage />
         {!isStreaming && preventSend && unCalledTools && (

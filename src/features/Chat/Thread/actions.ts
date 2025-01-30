@@ -101,6 +101,10 @@ export const setAutomaticPatch = createAction<boolean>(
   "chat/setAutomaticPatch",
 );
 
+export const setEnabledCheckpoints = createAction<boolean>(
+  "chat/setEnabledCheckpoints",
+);
+
 export const saveTitle = createAction<PayloadWithIdAndTitle>(
   "chatThread/saveTitle",
 );
@@ -158,6 +162,7 @@ export const chatGenerateTitleThunk = createAppAsyncThunk<
       role: "user",
       content:
         "Generate a short 2-3 word title for the current chat that reflects the context of the user's query. The title should be specific, avoiding generic terms, and should relate to relevant files, symbols, or objects. If user message contains filename, please make sure that filename remains inside of a generated title. Please ensure the answer is strictly 2-3 words, not paragraphs of text.\nOutput should be STRICTLY 2-3 words, not explanation.",
+      checkpoints: [],
     },
   ]);
 
@@ -261,12 +266,16 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
     chatId: string;
     tools: ToolCommand[] | null;
     toolsConfirmed?: boolean;
+    checkpointsEnabled?: boolean;
     mode?: LspChatMode; // used once for actions
     // TODO: make a separate function for this... and it'll need to be saved.
   }
 >(
   "chatThread/sendChat",
-  ({ messages, chatId, tools, mode, toolsConfirmed }, thunkAPI) => {
+  (
+    { messages, chatId, tools, mode, toolsConfirmed, checkpointsEnabled },
+    thunkAPI,
+  ) => {
     const state = thunkAPI.getState();
 
     const thread =
@@ -299,6 +308,7 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
       port: state.config.lspPort,
       onlyDeterministicMessages,
       toolsConfirmed: toolsConfirmed,
+      checkpointsEnabled,
       integration: thread?.integration,
       mode: realMode,
     })

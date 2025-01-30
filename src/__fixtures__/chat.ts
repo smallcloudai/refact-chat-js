@@ -63,7 +63,10 @@ export const MARS_ROVER_CHAT: ChatHistoryItem = {
       // "The quadratic formula is given by:\n\n\\[ x = \\frac{{-b \\pm \\sqrt{{b^2 - 4ac}}}}{{2a}} \\]\n\nYou can find more information about the quadratic formula in the following link: [Quadratic Formula - Wikipedia](https://en.wikipedia.org/wiki/Quadratic_formula)",
       content: "block\n\n```math\nC_L\n```\n\ninline: $C_L$\n\n",
     },
-    { role: "user", content: "long message\n" + "a".repeat(10000) },
+    {
+      role: "user",
+      content: "long message\n" + "a".repeat(10000),
+    },
   ],
   title: "mars rover kata",
   isTitleGenerated: true,
@@ -143,7 +146,10 @@ export const CHAT_FUNCTIONS_MESSAGES: ChatMessages = [
     content:
       "Based on the information found in the files:\n\n- Frog seems to be a project related to coding assistance and telemetry.\n- Telemetry is sent based on flags like `--basic-telemetry` and `--snippet-telemetry`.\n- The `Caps File` contains information about models, default models for completion and chat, telemetry destinations, tokenizers, and language models.\n- Tests related to the project include `test_edge_cases.py` and `measure_humaneval_fim.py`.\n- The project credits [@McPatate](https://github.com/McPatate) for the initial version, who is a Rust fan.\n\nFor more specific details about Frog, further exploration into the project's source code or documentation may be needed.",
   },
-  { role: "user", content: "continue searching for the Frog in tests" },
+  {
+    role: "user",
+    content: "continue searching for the Frog in tests",
+  },
   {
     role: "tool",
     content: {
@@ -579,7 +585,10 @@ export const CHAT_WITH_DIFF_ACTIONS: ChatThread = {
 export const LARGE_DIFF: ChatThread = {
   id: "7ebafb62-a701-43a3-9bdd-fd1425b54536",
   messages: [
-    { role: "user", content: "rename the frog class to bird." },
+    {
+      role: "user",
+      content: "rename the frog class to bird.",
+    },
     {
       role: "assistant",
       content: "",
