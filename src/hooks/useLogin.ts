@@ -18,6 +18,7 @@ function makeTicket() {
 
 export const useEmailLogin = () => {
   const dispatch = useAppDispatch();
+  const { setupHost } = useEventsBusForIDE();
   const [emailLoginTrigger, emailLoginResult] =
     smallCloudApi.useLoginWithEmailLinkMutation();
 
@@ -47,10 +48,15 @@ export const useEmailLogin = () => {
         abortRef.current = () => action.abort();
       }, 5000);
       setTimeoutN(timer);
-    } else if (emailLoginResult.data?.status === "user_logged_in") {
+    } else if (args && emailLoginResult.data?.status === "user_logged_in") {
       dispatch(setApiKey(emailLoginResult.data.key));
+      setupHost({
+        type: "cloud",
+        apiKey: emailLoginResult.data.key,
+        userName: args.email,
+      });
     }
-  }, [aborted, dispatch, emailLoginResult, emailLoginTrigger]);
+  }, [aborted, dispatch, emailLoginResult, emailLoginTrigger, setupHost]);
 
   useEffect(() => {
     return () => {
@@ -141,6 +147,7 @@ export const useLogin = () => {
     if (isGoodResponse(loginPollingResult.data)) {
       const actions = [
         setApiKey(loginPollingResult.data.secret_key),
+        // TODO: this maybe an issue with email login
         setInitialAgentUsage({
           agent_usage: loginPollingResult.data.refact_agent_request_available,
           agent_max_usage_amount:

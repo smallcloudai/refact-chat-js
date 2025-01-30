@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import {
   Flex,
   Box,
@@ -35,10 +35,10 @@ export const LoginPage: React.FC = () => {
     return emailIsLoading;
   }, [polling, emailIsLoading]);
 
-  const onCancel = () => {
+  const onCancel = useCallback(() => {
     cancelLogin.current();
     emailLoginAbort();
-  };
+  }, [cancelLogin, emailLoginAbort]);
 
   return (
     <Container p="8">
