@@ -351,7 +351,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
           <Flex gap="2" className={styles.buttonGroup}>
             {toolUse === "agent" && (
               <AgentIntegrationsButton
-                disabled={disableSend || disableInput}
                 title="Set up Agent Integrations"
                 size="1"
                 type="button"
@@ -362,7 +361,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
             {onClose && (
               <BackToSideBarButton
                 disabled={isStreaming}
-                title="return to sidebar"
+                title="Return to sidebar"
                 size="1"
                 onClick={onClose}
               />
@@ -372,7 +371,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
             {/* TODO: Reserved space for microphone button coming later on */}
             <PaperPlaneButton
               disabled={disableSend || disableInput}
-              title="send"
+              title="Send message"
               size="1"
               type="submit"
             />
