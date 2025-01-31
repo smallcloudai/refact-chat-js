@@ -5,7 +5,6 @@ import { isGoodResponse, smallCloudApi } from "../services/smallcloud";
 import { selectHost, setApiKey } from "../features/Config/configSlice";
 import { useOpenUrl } from "./useOpenUrl";
 import { useEventsBusForIDE } from "./useEventBusForIDE";
-import { setInitialAgentUsage } from "../features/AgentUsage/agentUsageSlice";
 
 function makeTicket() {
   return (
@@ -112,17 +111,9 @@ export const useLogin = () => {
 
   useEffect(() => {
     if (isGoodResponse(loginPollingResult.data)) {
-      const actions = [
-        setApiKey(loginPollingResult.data.secret_key),
-        // TODO: this maybe an issue with email login, or maybe move it to getUser ?
-        setInitialAgentUsage({
-          agent_usage: loginPollingResult.data.refact_agent_request_available,
-          agent_max_usage_amount:
-            loginPollingResult.data.refact_agent_max_request_num,
-        }),
-      ];
+      const action = setApiKey(loginPollingResult.data.secret_key);
 
-      actions.forEach((action) => dispatch(action));
+      dispatch(action);
 
       setupHost({
         type: "cloud",

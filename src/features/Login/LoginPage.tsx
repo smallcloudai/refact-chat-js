@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import {
   Flex,
   Box,
@@ -41,6 +41,16 @@ export const LoginPage: React.FC = () => {
     cancelLogin.current();
     emailLoginAbort();
   }, [cancelLogin, emailLoginAbort]);
+
+  const emailMessage = useMemo(() => {
+    if (
+      emailLoginResult.data?.status === "sent" &&
+      emailLoginResult.originalArgs?.email
+    ) {
+      return `We have sent you a one-time login link by email to ${emailLoginResult.originalArgs.email}`;
+    }
+    return "We will send you a one-time login link by email";
+  }, []);
 
   return (
     <Container p="8">
@@ -116,13 +126,13 @@ export const LoginPage: React.FC = () => {
                     disabled={isLoading}
                   >
                     Send magic link
-                  </Button>
+                  </Button>{" "}
+                  {isLoading && <Button onClick={onCancel}>Cancel</Button>}
                   <Text size="1" align="center">
-                    We will send you a one-time login link by email
+                    {emailMessage}
                   </Text>
                 </form>
               </Flex>
-              {isLoading && <Button onClick={onCancel}>Cancel</Button>}
             </Flex>
           </Accordion.Content>
         </Accordion.Item>

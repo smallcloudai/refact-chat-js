@@ -7,8 +7,8 @@ import {
   loginPollingGood,
   loginPollingWaiting,
   emailLogin,
+  goodUser,
 } from "../../__fixtures__/msw";
-// import { CloudLogin } from "../../components/CloudLogin";
 
 const App = () => {
   const store = setUpStore({
@@ -26,7 +26,6 @@ const App = () => {
   return (
     <Provider store={store}>
       <Theme>
-        {/* <CloudLogin goBack={() => ({})} /> */}
         <LoginPage />
       </Theme>
     </Provider>
@@ -50,6 +49,7 @@ export const Primary: Story = {
       loginPollingWaiting,
       loginPollingGood,
       emailLogin,
+      goodUser,
     ],
   },
 };
