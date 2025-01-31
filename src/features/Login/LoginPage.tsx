@@ -8,6 +8,8 @@ import {
   TextField,
   Container,
 } from "@radix-ui/themes";
+import { GitHubLogoIcon } from "@radix-ui/react-icons";
+import { GoogleIcon } from "../../images/GoogleIcon";
 import { Accordion } from "../../components/Accordion";
 import { useEventsBusForIDE, useLogin, useEmailLogin } from "../../hooks";
 
@@ -75,7 +77,7 @@ export const LoginPage: React.FC = () => {
                 }}
                 disabled={isLoading}
               >
-                Continue with Google
+                <GoogleIcon width="15" height="15" /> Continue with Google
               </Button>
               <Button
                 onClick={() => {
@@ -84,7 +86,7 @@ export const LoginPage: React.FC = () => {
                 }}
                 disabled={isLoading}
               >
-                Continue with GitHub
+                <GitHubLogoIcon width="15" height="15" /> Continue with GitHub
               </Button>
 
               <Text>or</Text>
