@@ -7,6 +7,7 @@ import {
   Separator,
   TextField,
   Container,
+  Heading,
 } from "@radix-ui/themes";
 import { GitHubLogoIcon } from "@radix-ui/react-icons";
 import { GoogleIcon } from "../../images/GoogleIcon";
@@ -53,12 +54,11 @@ export const LoginPage: React.FC = () => {
   }, []);
 
   return (
-    <Container p="8">
-      <Accordion.Root
-        type="multiple"
-        defaultValue={["cloud"]}
-        disabled={isLoading}
-      >
+    <Container>
+      <Heading align="center" as="h2" size="6" my="6">
+        Login to Refact.ai
+      </Heading>
+      <Accordion.Root type="single" defaultValue={"cloud"} disabled={isLoading}>
         <Accordion.Item value="cloud">
           <Accordion.Trigger>Refact Cloud</Accordion.Trigger>
           <Accordion.Content>
