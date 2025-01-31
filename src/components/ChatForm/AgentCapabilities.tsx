@@ -3,17 +3,27 @@ import {
   QuestionMarkCircledIcon,
 } from "@radix-ui/react-icons";
 import { Flex, HoverCard, IconButton, Popover, Text } from "@radix-ui/themes";
-import { AgentRollbackSwitch, ApplyPatchSwitch } from "./ChatControls";
-import { useAppSelector } from "../../hooks";
+import {
+  AgentRollbackSwitch,
+  ApplyPatchSwitch,
+  DeepseekReasoningSwitch,
+} from "./ChatControls";
+import { useAppSelector, useLogin } from "../../hooks";
 import {
   selectAutomaticPatch,
   selectCheckpointsEnabled,
+  selectThreadMode,
 } from "../../features/Chat";
 import { useMemo } from "react";
 
 export const AgentCapabilities = () => {
+  const { user } = useLogin();
   const isPatchAutomatic = useAppSelector(selectAutomaticPatch);
   const isAgentRollbackEnabled = useAppSelector(selectCheckpointsEnabled);
+  const currentMode = useAppSelector(selectThreadMode);
+  const isReasoningEnabled = useMemo(() => {
+    return currentMode === "THINKING_AGENT" && user.data?.inference !== "FREE";
+  }, [currentMode, user.data?.inference]);
 
   const agenticFeatures = useMemo(() => {
     return [
@@ -22,8 +32,10 @@ export const AgentCapabilities = () => {
         enabled: isPatchAutomatic,
       },
       { name: "Agent rollback", enabled: isAgentRollbackEnabled },
+      { name: "Deepseek Reasoner", enabled: isReasoningEnabled },
     ];
-  }, [isPatchAutomatic, isAgentRollbackEnabled]);
+  }, [isPatchAutomatic, isAgentRollbackEnabled, isReasoningEnabled]);
+
   return (
     <Flex mb="2" gap="2" align="center">
       <Popover.Root>
@@ -36,6 +48,7 @@ export const AgentCapabilities = () => {
           <Flex gap="2" direction="column">
             <ApplyPatchSwitch />
             <AgentRollbackSwitch />
+            {user.data?.inference !== "FREE" && <DeepseekReasoningSwitch />}
           </Flex>
         </Popover.Content>
       </Popover.Root>
