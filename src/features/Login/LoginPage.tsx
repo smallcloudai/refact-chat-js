@@ -51,7 +51,7 @@ export const LoginPage: React.FC = () => {
       return `We have sent you a one-time login link by email to ${emailLoginResult.originalArgs.email}`;
     }
     return "We will send you a one-time login link by email";
-  }, []);
+  }, [emailLoginResult.data?.status, emailLoginResult.originalArgs?.email]);
 
   return (
     <Container>
