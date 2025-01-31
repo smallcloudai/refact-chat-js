@@ -15,30 +15,17 @@ import {
 import type { ChatMessages } from ".";
 import { parseOrElse } from "../../utils";
 import { createAsyncThunk } from "@reduxjs/toolkit/react";
-
-export type MemoRecord = {
-  memid: string;
-  thevec?: number[]; // are options nullable?
-  distance?: number;
-  m_type: string;
-  m_goal: string;
-  m_project: string;
-  m_payload: string;
-  m_origin: string;
-  // mstat_correct: bigint,
-  // mstat_relevant: bigint,
-  mstat_correct: number;
-  mstat_relevant: number;
-  mstat_times_used: number;
-};
-
-function isMemoRecord(obj: unknown): obj is MemoRecord {
-  if (!obj) return false;
-  if (typeof obj !== "object") return false;
-  if (!("memid" in obj) || typeof obj.memid !== "string") return false;
-  // TODO: other checks
-  return true;
-}
+import {
+  type MemoRecord,
+  isMemoRecord,
+  type VecDbStatus,
+  isVecDbStatus,
+} from "./types";
+import {
+  deleteMemory,
+  setMemory,
+  setVecDbStatus,
+} from "../../features/Knowledge/knowledgeSlice";
 
 export type MemdbSubEvent = {
   pubevent_id: number;
@@ -133,20 +120,54 @@ export const subscribeToMemoriesThunk = createAppAsyncThunk<
       const reader = response.body?.getReader();
       if (!reader) return;
       const onAbort = () => {
-        console.log("knowledge stream aborted");
+        // console.log("knowledge stream aborted");
       };
       const onChunk = (chunk: Record<string, unknown>) => {
-        console.log({ chunk });
-        // TODO: dispatch actions here
+        if (
+          !isMemdbSubEvent(chunk) &&
+          !isMemdbSubEventUnparsed(chunk) &&
+          !isVecDbStatus(chunk)
+        ) {
+          // eslint-disable-next-line no-console
+          console.log("Invalid chunk from mem db", chunk);
+          return;
+        }
+
+        if (isVecDbStatus(chunk)) {
+          const action = setVecDbStatus(chunk);
+          thunkApi.dispatch(action);
+          return;
+        }
+        const maybeMemoRecord: MemoRecord | null = isMemoRecord(
+          chunk.pubevent_json,
+        )
+          ? chunk.pubevent_json
+          : parseOrElse(chunk.pubevent_json, null, isMemoRecord);
+
+        if (maybeMemoRecord === null) {
+          return;
+        }
+
+        if (chunk.pubevent_action === "DELETE") {
+          const action = deleteMemory(maybeMemoRecord.memid);
+          thunkApi.dispatch(action);
+        } else if (
+          chunk.pubevent_action === "INSERT" ||
+          chunk.pubevent_action === "UPDATE"
+        ) {
+          const action = setMemory(maybeMemoRecord);
+          thunkApi.dispatch(action);
+        } else {
+          // eslint-disable-next-line no-console
+          console.log("Unknown action", chunk.pubevent_action);
+        }
       };
 
       return consumeStream(reader, thunkApi.signal, onAbort, onChunk);
     })
     .catch((err) => {
-      console.error(err);
-    })
-    .finally(() => {
-      console.log("done");
+      // eslint-disable-next-line no-console
+      console.error("Error in memory subscription", err);
     });
 });
 
@@ -212,69 +233,6 @@ export function isMemUpdateRequest(obj: unknown): obj is MemUpdateRequest {
   return true;
 }
 
-export type VecDbStatus = {
-  files_unprocessed: number;
-  files_total: number; // only valid for status bar in the UI, resets to 0 when done
-  requests_made_since_start: number;
-  vectors_made_since_start: number;
-  db_size: number;
-  db_cache_size: number;
-  state: "starting" | "parsing" | "done" | "cooldown";
-  queue_additions: boolean;
-  vecdb_max_files_hit: boolean;
-  vecdb_errors: Record<string, number>;
-};
-
-function isVecDbStatus(obj: unknown): obj is VecDbStatus {
-  if (!obj) return false;
-  if (typeof obj !== "object") return false;
-  if (
-    !("files_unprocessed" in obj) ||
-    typeof obj.files_unprocessed !== "number"
-  ) {
-    return false;
-  }
-  if (!("files_total" in obj) || typeof obj.files_total !== "number") {
-    return false;
-  }
-  if (
-    !("requests_made_since_start" in obj) ||
-    typeof obj.requests_made_since_start !== "number"
-  ) {
-    return false;
-  }
-  if (
-    !("vectors_made_since_start" in obj) ||
-    typeof obj.vectors_made_since_start !== "number"
-  ) {
-    return false;
-  }
-  if (!("db_size" in obj) || typeof obj.db_size !== "number") {
-    return false;
-  }
-  if (!("db_cache_size" in obj) || typeof obj.db_cache_size !== "number") {
-    return false;
-  }
-
-  if (!("state" in obj) || typeof obj.state !== "string") {
-    return false;
-  }
-  if (!("queue_additions" in obj) || typeof obj.queue_additions !== "boolean") {
-    return false;
-  }
-  if (
-    !("vecdb_max_files_hit" in obj) ||
-    typeof obj.vecdb_max_files_hit !== "boolean"
-  ) {
-    return false;
-  }
-  if (!("vecdb_errors" in obj) || typeof obj.vecdb_errors !== "object") {
-    return false;
-  }
-
-  return true;
-}
-
 export type CompressTrajectoryPost = {
   project: string;
   messages: ChatMessages;
@@ -309,6 +267,7 @@ export const knowledgeApi = createApi({
     },
   }),
   endpoints: (builder) => ({
+    // TODO: delete this.
     subscribe: builder.query<
       {
         loaded: boolean;

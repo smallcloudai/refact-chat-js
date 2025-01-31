@@ -1,14 +1,14 @@
-import { createSlice } from "@reduxjs/toolkit";
-import { MemoRecord, VecDbStatus } from "../../services/refact/knowledge";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import type { MemoRecord, VecDbStatus } from "../../services/refact/types";
 
 export type KnowledgeState = {
-  loading: boolean;
+  loaded: boolean;
   memories: Record<string, MemoRecord>;
   status: null | VecDbStatus;
 };
 
 const initialState: KnowledgeState = {
-  loading: false,
+  loaded: false,
   memories: {},
   status: null,
 };
@@ -18,5 +18,26 @@ export const knowledgeSlice = createSlice({
   initialState,
   reducers: {
     // TODO: add reducers
+    setVecDbStatus: (state, action: PayloadAction<VecDbStatus>) => {
+      state.loaded = true;
+      state.status = action.payload;
+    },
+    setMemory: (state, action: PayloadAction<MemoRecord>) => {
+      state.loaded = true;
+      state.memories[action.payload.memid] = action.payload;
+    },
+    deleteMemory: (state, action: PayloadAction<string>) => {
+      state.loaded = true;
+      const { [action.payload]: _, ...memories } = state.memories;
+      state.memories = memories;
+    },
+    clearMemory: (state) => {
+      state.loaded = true;
+      state.memories = {};
+    },
   },
+  // TODO: selectors
 });
+
+export const { setVecDbStatus, setMemory, deleteMemory, clearMemory } =
+  knowledgeSlice.actions;
