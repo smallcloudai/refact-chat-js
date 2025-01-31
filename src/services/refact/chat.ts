@@ -31,6 +31,12 @@ export function isLspChatMessage(json: unknown): json is LspChatMessage {
   return true;
 }
 
+export function isLspUserMessage(
+  message: LspChatMessage,
+): message is UserMessage {
+  return message.role === "user";
+}
+
 type StreamArgs =
   | {
       stream: true;
@@ -52,6 +58,7 @@ type SendChatArgs = {
   apiKey?: string | null;
   // isConfig?: boolean;
   toolsConfirmed?: boolean;
+  checkpointsEnabled?: boolean;
   integration?: IntegrationMeta | null;
   mode?: LspChatMode; // used for chat actions
 } & StreamArgs;
@@ -122,6 +129,7 @@ export async function sendChat({
   port = 8001,
   apiKey,
   toolsConfirmed = true,
+  checkpointsEnabled = true,
   // isConfig = false,
   integration,
   last_user_message_id = "",
@@ -145,6 +153,7 @@ export async function sendChat({
     max_tokens: max_new_tokens,
     only_deterministic_messages,
     tools_confirmation: toolsConfirmed,
+    checkpoints_enabled: checkpointsEnabled,
     // chat_id,
     meta: {
       chat_id,

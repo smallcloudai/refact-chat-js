@@ -2,12 +2,13 @@ import { Flex, Text } from "@radix-ui/themes";
 import { TourBox } from "./TourBox";
 import { TourTitle } from "./TourTitle";
 import { TourButton } from "./TourButton";
-import { useAppDispatch, useAppearance } from "../../hooks";
+import { useAppDispatch, useAppearance, useOpenUrl } from "../../hooks";
 import { finish } from "../../features/Tour";
+import { Link } from "../Link";
 
 export const TourEnd = () => {
   const { appearance } = useAppearance();
-
+  const openUrl = useOpenUrl();
   const dispatch = useAppDispatch();
   const onPressNext = () => {
     dispatch(finish());
@@ -21,16 +22,27 @@ export const TourEnd = () => {
       m="8px"
       style={{ alignSelf: "center" }}
     >
-      <TourBox style={{ gap: "15px", alignSelf: "center" }}>
+      <TourBox
+        style={{
+          gap: "15px",
+          alignSelf: "center",
+          color: appearance === "light" ? "white" : "black",
+          whiteSpace: "pre-line",
+        }}
+      >
         <TourTitle title="Your Refact product tour is finished!" />
-        <Text
-          style={{
-            color: appearance === "light" ? "white" : "black",
-            whiteSpace: "pre-line",
-          }}
-        >
-          {`There are more things in Refact:\n- our on-prem version\n- custom instructions`}
-        </Text>
+        <Flex direction="column">
+          <Text mb="1">There are more things to explore in Refact!</Text>
+          <Text>
+            -{" "}
+            <Link
+              style={{ color: "black", textDecoration: "underline" }}
+              onClick={() => openUrl("https://docs.refact.ai")}
+            >
+              Check out our documentation
+            </Link>
+          </Text>
+        </Flex>
         <TourButton title="Ready to use" onClick={onPressNext} />
       </TourBox>
     </Flex>

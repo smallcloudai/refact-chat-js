@@ -31,6 +31,7 @@ import {
   setMaxNewTokens,
   setAutomaticPatch,
   setLastUserMessageId,
+  setEnabledCheckpoints,
 } from "./actions";
 import { formatChatResponse } from "./utils";
 import { DEFAULT_MAX_NEW_TOKENS } from "../../../services/refact";
@@ -76,6 +77,7 @@ const createInitialState = ({
     cache: {},
     system_prompt: {},
     tool_use,
+    checkpoints_enabled: true,
     send_immediately: false,
   };
 };
@@ -125,6 +127,7 @@ export const chatReducer = createReducer(initialState, (builder) => {
     next.thread.mode = state.thread.mode;
     next.system_prompt = state.system_prompt;
     next.automatic_patch = state.automatic_patch;
+    next.checkpoints_enabled = state.checkpoints_enabled;
     return next;
   });
 
@@ -174,6 +177,10 @@ export const chatReducer = createReducer(initialState, (builder) => {
 
   builder.addCase(setAutomaticPatch, (state, action) => {
     state.automatic_patch = action.payload;
+  });
+
+  builder.addCase(setEnabledCheckpoints, (state, action) => {
+    state.checkpoints_enabled = action.payload;
   });
 
   builder.addCase(setLastUserMessageId, (state, action) => {

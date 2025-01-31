@@ -22,11 +22,7 @@ import {
 import { ErrorCallout, Callout } from "../Callout";
 import { ComboBox } from "../ComboBox";
 import { FilesPreview } from "./FilesPreview";
-import {
-  ApplyPatchSwitch,
-  ChatControls,
-  DeepseekReasoningSwitch,
-} from "./ChatControls";
+import { ChatControls } from "./ChatControls";
 import { addCheckboxValuesToInput } from "./utils";
 import { useCommandCompletionAndPreviewFiles } from "./useCommandCompletionAndPreviewFiles";
 import { useAppSelector, useAppDispatch } from "../../hooks";
@@ -55,6 +51,7 @@ import {
 } from "../../features/Chat";
 import { isUserMessage, telemetryApi } from "../../services/refact";
 import { push } from "../../features/Pages/pagesSlice";
+import { AgentCapabilities } from "./AgentCapabilities";
 
 export type ChatFormProps = {
   onSubmit: (str: string) => void;
@@ -319,12 +316,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
             {helpInfo}
           </Flex>
         )}
-        {toolUse === "agent" && (
-          <Flex direction="column" gap="2" mb="2">
-            <ApplyPatchSwitch />
-            <DeepseekReasoningSwitch />
-          </Flex>
-        )}
+        {toolUse === "agent" && <AgentCapabilities />}
         <Form
           disabled={disableSend}
           className={className}
@@ -359,7 +351,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
           <Flex gap="2" className={styles.buttonGroup}>
             {toolUse === "agent" && (
               <AgentIntegrationsButton
-                disabled={disableSend || disableInput}
                 title="Set up Agent Integrations"
                 size="1"
                 type="button"
@@ -370,7 +361,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
             {onClose && (
               <BackToSideBarButton
                 disabled={isStreaming}
-                title="return to sidebar"
+                title="Return to sidebar"
                 size="1"
                 onClick={onClose}
               />
@@ -380,7 +371,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
             {/* TODO: Reserved space for microphone button coming later on */}
             <PaperPlaneButton
               disabled={disableSend || disableInput}
-              title="send"
+              title="Send message"
               size="1"
               type="submit"
             />

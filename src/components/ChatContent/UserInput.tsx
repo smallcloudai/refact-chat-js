@@ -1,16 +1,20 @@
-import React, { useCallback, useState } from "react";
-import { Text, Container, Button, Flex, IconButton } from "@radix-ui/themes";
-import { Markdown } from "../Markdown";
-import { RetryForm } from "../ChatForm";
-import styles from "./ChatContent.module.css";
 import { Pencil2Icon } from "@radix-ui/react-icons";
+import { Button, Container, Flex, IconButton, Text } from "@radix-ui/themes";
+import React, { useCallback, useMemo, useState } from "react";
+import { selectMessages } from "../../features/Chat";
+import { CheckpointButton } from "../../features/Checkpoints";
+import { useAppSelector } from "../../hooks";
 import {
+  isUserMessage,
   ProcessedUserMessageContentWithImages,
   UserMessageContentWithImage,
   type UserMessage,
 } from "../../services/refact";
 import { takeWhile } from "../../utils";
+import { RetryForm } from "../ChatForm";
 import { DialogImage } from "../DialogImage";
+import { Markdown } from "../Markdown";
+import styles from "./ChatContent.module.css";
 
 export type UserInputProps = {
   children: UserMessage["content"];
@@ -25,6 +29,8 @@ export const UserInput: React.FC<UserInputProps> = ({
   children,
   onRetry,
 }) => {
+  const messages = useAppSelector(selectMessages);
+
   const [showTextArea, setShowTextArea] = useState(false);
   const [isEditButtonVisible, setIsEditButtonVisible] = useState(false);
   // const ref = React.useRef<HTMLButtonElement>(null);
@@ -51,6 +57,12 @@ export const UserInput: React.FC<UserInputProps> = ({
   const elements = process(children);
   const isString = typeof children === "string";
   const linesLength = isString ? children.split("\n").length : Infinity;
+
+  const checkpointsFromMessage = useMemo(() => {
+    const maybeUserMessage = messages[messageIndex];
+    if (!isUserMessage(maybeUserMessage)) return null;
+    return maybeUserMessage.checkpoints;
+  }, [messageIndex, messages]);
 
   return (
     <Container position="relative" pt="1">
@@ -84,19 +96,30 @@ export const UserInput: React.FC<UserInputProps> = ({
           >
             <div>{elements}</div>
           </Button>
-          <IconButton
-            title="Edit message"
-            variant="soft"
-            size={"2"}
-            onClick={() => handleShowTextArea(true)}
+          <Flex
+            direction={linesLength <= 3 ? "row" : "column"}
+            gap="1"
             style={{
               opacity: isEditButtonVisible ? 1 : 0,
               visibility: isEditButtonVisible ? "visible" : "hidden",
               transition: "opacity 0.15s, visibility 0.15s",
             }}
           >
-            <Pencil2Icon width={15} height={15} />
-          </IconButton>
+            {checkpointsFromMessage && checkpointsFromMessage.length > 0 && (
+              <CheckpointButton
+                checkpoints={checkpointsFromMessage}
+                messageIndex={messageIndex}
+              />
+            )}
+            <IconButton
+              title="Edit message"
+              variant="soft"
+              size={"2"}
+              onClick={() => handleShowTextArea(true)}
+            >
+              <Pencil2Icon width={15} height={15} />
+            </IconButton>
+          </Flex>
         </Flex>
       )}
     </Container>
