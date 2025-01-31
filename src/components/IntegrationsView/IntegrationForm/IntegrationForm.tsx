@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import classNames from "classnames";
 import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrationDataByPathQuery";
 
@@ -6,6 +6,8 @@ import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrati
 import type {
   IntegrationField,
   IntegrationPrimitive,
+  IntegrationWithIconRecord,
+  IntegrationWithIconResponse,
   ToolConfirmation,
 } from "../../../services/refact";
 
@@ -35,7 +37,7 @@ import { useIntegrations } from "../useIntegrations";
 import {
   selectAvailabilityValues,
   selectConfirmationRules,
-  selectCurrentIntegration,
+  // selectCurrentIntegration,
   selectIsApplyingIntegrationForm,
   selectIsDeletingIntegration,
   selectIsDisabledIntegrationForm,
@@ -44,14 +46,18 @@ import {
   setToolParameters,
 } from "../../../features/Integrations";
 
-// type IntegrationFormProps = {
-//   integrationsMap?: IntegrationWithIconResponse;
-// };
+type IntegrationFormProps = {
+  currentIntegration: IntegrationWithIconRecord;
+  integrationsMap: IntegrationWithIconResponse;
+};
 
-export const IntegrationForm = () => {
+export const IntegrationForm: FC<IntegrationFormProps> = ({
+  currentIntegration,
+  integrationsMap,
+}) => {
   const dispatch = useAppDispatch();
+  // const currentIntegration = useAppSelector(selectCurrentIntegration);
   const [areExtraFieldsRevealed, setAreExtraFieldsRevealed] = useState(false);
-  const currentIntegration = useAppSelector(selectCurrentIntegration);
   const availabilityValues = useAppSelector(selectAvailabilityValues);
   const confirmationRules = useAppSelector(selectConfirmationRules);
   const isDisabledIntegrationForm = useAppSelector(
@@ -68,10 +74,10 @@ export const IntegrationForm = () => {
     handleDeleteIntegration,
     handleIntegrationFormChange,
     handleNavigateToIntegrationSetup,
-  } = useIntegrations({});
+  } = useIntegrations({ integrationsMap });
 
   const { integration } = useGetIntegrationDataByPathQuery(
-    currentIntegration?.integr_config_path ?? "",
+    currentIntegration.integr_config_path,
   );
   const { openFile } = useEventsBusForIDE();
 

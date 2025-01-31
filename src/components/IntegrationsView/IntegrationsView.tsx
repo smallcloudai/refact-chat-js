@@ -133,7 +133,9 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
             height="100%"
           >
             <IntegrationForm
-            // TODO: on smart link click or pass the name down
+              // TODO: on smart link click or pass the name down
+              integrationsMap={integrationsMap}
+              currentIntegration={currentIntegration}
             />
             {information && (
               <InformationCallout

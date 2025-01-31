@@ -111,21 +111,28 @@ export const useIntegrations = ({
     if (!isIntegrationSetupPage(currentPage)) return null;
     return currentPage;
   }, [currentPage]);
-  const isTemplateIntegration = (
-    integrationName: string | undefined,
-    type: "cmdline" | "service",
-  ): boolean => {
-    return integrationName?.startsWith(type) ?? false;
-  };
 
-  const getCommandName = (
-    integrationName: string | undefined,
-    isCmdline: boolean,
-    isService: boolean,
-  ): string | undefined => {
-    if (!integrationName || (!isCmdline && !isService)) return undefined;
-    return integrationName.split("_").slice(1).join("_");
-  };
+  const isTemplateIntegration = useCallback(
+    (
+      integrationName: string | undefined,
+      type: "cmdline" | "service",
+    ): boolean => {
+      return integrationName?.startsWith(type) ?? false;
+    },
+    [],
+  );
+
+  const getCommandName = useCallback(
+    (
+      integrationName: string | undefined,
+      isCmdline: boolean,
+      isService: boolean,
+    ): string | undefined => {
+      if (!integrationName || (!isCmdline && !isService)) return undefined;
+      return integrationName.split("_").slice(1).join("_");
+    },
+    [],
+  );
 
   const findIntegration = useCallback(
     (
@@ -163,7 +170,7 @@ export const useIntegrations = ({
         }) ?? null
       );
     },
-    [],
+    [isTemplateIntegration],
   );
 
   const maybeIntegration = useMemo(() => {
@@ -212,7 +219,13 @@ export const useIntegrations = ({
     );
 
     return integrationWithFlag;
-  }, [currentThreadIntegration, integrationsMap, findIntegration]);
+  }, [
+    currentThreadIntegration,
+    integrationsMap,
+    findIntegration,
+    getCommandName,
+    isTemplateIntegration,
+  ]);
 
   const theme = useAppSelector(selectThemeMode);
   const icons = iconMap(
@@ -475,21 +488,23 @@ export const useIntegrations = ({
     dispatch,
   ]);
 
-  const handleSetCurrentIntegrationSchema = (
-    schema: Integration["integr_schema"],
-  ) => {
-    if (!currentIntegration) return;
+  const handleSetCurrentIntegrationSchema = useCallback(
+    (schema: Integration["integr_schema"]) => {
+      if (!currentIntegration) return;
 
-    setCurrentIntegrationSchema(schema);
-  };
+      setCurrentIntegrationSchema(schema);
+    },
+    [currentIntegration],
+  );
 
-  const handleSetCurrentIntegrationValues = (
-    values: Integration["integr_values"],
-  ) => {
-    if (!currentIntegration) return;
+  const handleSetCurrentIntegrationValues = useCallback(
+    (values: Integration["integr_values"]) => {
+      if (!currentIntegration) return;
 
-    setCurrentIntegrationValues(values);
-  };
+      setCurrentIntegrationValues(values);
+    },
+    [currentIntegration],
+  );
 
   const handleFormReturn = useCallback(() => {
     dispatch(resetIntegrationsState());
@@ -761,12 +776,8 @@ export const useIntegrations = ({
           integr_config_exists: false,
         };
 
-        const actions = [
-          setCurrentIntegration(customIntegration),
-          setCurrentNotConfiguredIntegration(null),
-        ];
-
-        actions.forEach((action) => dispatch(action));
+        dispatch(setCurrentIntegration(customIntegration));
+        dispatch(setCurrentNotConfiguredIntegration(null));
         return;
       } else if ("integr_config_path" in rawFormValues) {
         // getting config path, opening integration
@@ -778,11 +789,8 @@ export const useIntegrations = ({
           debugIntegrations(`[DEBUG]: integration was not found, error!`);
           return;
         }
-        const actions = [
-          setCurrentIntegration(foundIntegration),
-          setCurrentNotConfiguredIntegration(null),
-        ];
-        actions.forEach((action) => dispatch(action));
+        dispatch(setCurrentIntegration(foundIntegration));
+        dispatch(setCurrentNotConfiguredIntegration(null));
       } else {
         debugIntegrations(
           `[DEBUG]: Unexpected error occured. It's mostly a bug`,
@@ -792,9 +800,9 @@ export const useIntegrations = ({
     [dispatch, currentNotConfiguredIntegration, integrationsMap],
   );
 
-  useEffect(() => {
-    debugIntegrations(`[DEBUG]: currentIntegration: `, currentIntegration);
-  });
+  // useEffect(() => {
+  //   debugIntegrations(`[DEBUG]: currentIntegration: `, currentIntegration);
+  // }, [currentIntegration]);
 
   const handleNavigateToIntegrationSetup = useCallback(
     (integrationName: string, integrationConfigPath: string) => {
@@ -816,11 +824,8 @@ export const useIntegrations = ({
         );
         return;
       }
-      const actions = [
-        setIsDisabledIntegrationForm(true),
-        setCurrentIntegration(maybeIntegration),
-      ];
-      actions.forEach((action) => dispatch(action));
+      dispatch(setIsDisabledIntegrationForm(true));
+      dispatch(setCurrentIntegration(maybeIntegration));
     },
     [dispatch, currentIntegration, integrationsMap],
   );
