@@ -2,16 +2,10 @@ import { FC, FormEvent, useEffect } from "react";
 import classNames from "classnames";
 import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrationDataByPathQuery";
 import { Spinner } from "../../Spinner";
-import { Badge, Button, Flex, Grid, Heading, Text } from "@radix-ui/themes";
+import { Button, Flex, Grid, Text } from "@radix-ui/themes";
 import { IntegrationDocker } from "../IntegrationDocker";
-import { SmartLink } from "../../SmartLink";
-import { IntegrationFormField } from "../../../features/Integrations/IntegrationFormField";
-import { IntegrationAvailability } from "./IntegrationAvailability";
-import { IntegrationDeletePopover } from "../IntegrationDeletePopover";
 import { debugIntegrations } from "../../../debugConfig";
 import { Confirmation } from "../Confirmation";
-import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
-import { useEventsBusForIDE } from "../../../hooks";
 import { useFormFields } from "./hooks/useFormFields";
 import { useFormAvailability } from "./hooks/useFormAvailability";
 
@@ -23,6 +17,10 @@ import {
   type ToolConfirmation,
 } from "../../../services/refact";
 import type { ToolParameterEntity } from "../../../services/refact";
+import { FormFields } from "./FormFields";
+import { ErrorState } from "./ErrorState";
+import { FormSmartlinks } from "./FormSmartlinks";
+import { FormAvailabilityAndDelete } from "./FormAvailabilityAndDelete";
 
 type IntegrationFormProps = {
   integrationPath: string;
@@ -67,7 +65,6 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   handleSwitchIntegration,
 }) => {
   const { integration } = useGetIntegrationDataByPathQuery(integrationPath);
-  const { openFile } = useEventsBusForIDE();
 
   const {
     importantFields,
@@ -110,155 +107,6 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
     }
   }, [integration, handleAvailabilityChange]);
 
-  // Render helpers
-  const renderErrorState = () => {
-    if (!integration.data) return null;
-    const { integr_name } = integration.data;
-    const { error_msg, integr_config_path, error_line } =
-      integration.data.error_log[0];
-    return (
-      <Flex width="100%" direction="column" align="start" gap="4">
-        <Text size="2" color="gray">
-          Whoops, this integration has a syntax error in the config file. You
-          can fix this by editing the config file.
-        </Text>
-        <Badge size="2" color="red">
-          <ExclamationTriangleIcon /> {error_msg}
-        </Badge>
-        <Flex align="center" gap="2">
-          <Button
-            variant="outline"
-            color="gray"
-            onClick={() =>
-              openFile({
-                file_name: integr_config_path,
-                line: error_line === 0 ? 1 : error_line,
-              })
-            }
-          >
-            Open {integr_name}.yaml
-          </Button>
-          <IntegrationDeletePopover
-            integrationName={integr_name}
-            integrationConfigPath={integr_config_path}
-            isApplying={isApplying}
-            isDeletingIntegration={isDeletingIntegration}
-            handleDeleteIntegration={handleDeleteIntegration}
-          />
-        </Flex>
-      </Flex>
-    );
-  };
-
-  const renderFormFields = () => {
-    if (!integration.data) return null;
-    const {
-      integr_config_path,
-      integr_name,
-      integr_schema,
-      integr_values,
-      project_path,
-    } = integration.data;
-
-    return (
-      <Grid gap="2" className={styles.gridContainer}>
-        {Object.keys(importantFields).map((fieldKey) => (
-          <IntegrationFormField
-            key={`${fieldKey}-important`}
-            fieldKey={fieldKey}
-            values={integr_values}
-            field={integr_schema.fields[fieldKey]}
-            integrationName={integr_name}
-            integrationPath={integr_config_path}
-            integrationProject={project_path}
-            isFieldVisible={areExtraFieldsRevealed}
-            onToolParameters={handleToolParameters}
-          />
-        ))}
-        {Object.keys(extraFields).map((fieldKey) => (
-          <IntegrationFormField
-            key={`${fieldKey}-extra`}
-            fieldKey={fieldKey}
-            values={integr_values}
-            field={integr_schema.fields[fieldKey]}
-            integrationName={integr_name}
-            integrationPath={integr_config_path}
-            integrationProject={project_path}
-            isFieldVisible={areExtraFieldsRevealed}
-            onToolParameters={handleToolParameters}
-          />
-        ))}
-      </Grid>
-    );
-  };
-
-  const renderSmartLinks = () => {
-    if (!integration.data?.integr_schema.smartlinks?.length) return null;
-
-    return (
-      <Flex width="100%" direction="column" gap="1" mb="6">
-        <Flex align="center" gap="3" mt="2" wrap="wrap">
-          <Heading as="h6" size="2" weight="medium">
-            Actions:
-          </Heading>
-          {integration.data.integr_schema.smartlinks.map((smartlink, idx) => {
-            if (!integration.data) return null;
-            const { integr_name, project_path, integr_config_path } =
-              integration.data;
-            return (
-              <SmartLink
-                key={`smartlink-${idx}`}
-                smartlink={smartlink}
-                integrationName={integr_name}
-                integrationProject={project_path}
-                integrationPath={integr_config_path}
-                shouldBeDisabled={
-                  smartlink.sl_enable_only_with_tool
-                    ? !availabilityValues.on_your_laptop
-                    : false
-                }
-              />
-            );
-          })}
-        </Flex>
-      </Flex>
-    );
-  };
-
-  const renderAvailabilityAndDelete = () => {
-    if (!integration.data?.integr_values) return null;
-
-    return (
-      <Flex align="start" justify="between">
-        <Flex
-          gap="4"
-          mb="4"
-          align="center"
-          justify="between"
-          className={styles.switchInline}
-        >
-          {integration.data.integr_values.available &&
-            Object.keys(integration.data.integr_values.available).map((key) => (
-              <IntegrationAvailability
-                key={key}
-                fieldName={key}
-                value={availabilityValues[key]}
-                onChange={handleAvailabilityChange}
-              />
-            ))}
-        </Flex>
-        <IntegrationDeletePopover
-          integrationName={integration.data.integr_name}
-          integrationConfigPath={integration.data.integr_config_path}
-          isApplying={isApplying}
-          isDeletingIntegration={isDeletingIntegration}
-          handleDeleteIntegration={handleDeleteIntegration}
-        />
-      </Flex>
-    );
-  };
-
-  // Loading and error states
   if (integration.isLoading) {
     return <Spinner spinning />;
   }
@@ -268,7 +116,14 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   }
 
   if (integration.data.error_log.length > 0) {
-    return renderErrorState();
+    return (
+      <ErrorState
+        integration={integration.data}
+        onDelete={handleDeleteIntegration}
+        isApplying={isApplying}
+        isDeletingIntegration={isDeletingIntegration}
+      />
+    );
   }
 
   return (
@@ -286,9 +141,26 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
       >
         <Flex direction="column" gap="2">
           <Grid mb="0">
-            {renderAvailabilityAndDelete()}
-            {renderSmartLinks()}
-            {renderFormFields()}
+            <FormAvailabilityAndDelete
+              integration={integration.data}
+              availabilityValues={availabilityValues}
+              handleAvailabilityChange={handleAvailabilityChange}
+              isApplying={isApplying}
+              isDeletingIntegration={isDeletingIntegration}
+              onDelete={handleDeleteIntegration}
+            />
+            <FormSmartlinks
+              integration={integration.data}
+              smartlinks={integration.data.integr_schema.smartlinks}
+              availabilityValues={availabilityValues}
+            />
+            <FormFields
+              integration={integration.data}
+              importantFields={importantFields}
+              extraFields={extraFields}
+              areExtraFieldsRevealed={areExtraFieldsRevealed}
+              onToolParameters={handleToolParameters}
+            />
           </Grid>
 
           {Object.keys(extraFields).length > 0 && (
