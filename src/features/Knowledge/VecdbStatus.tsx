@@ -1,5 +1,5 @@
 import React from "react";
-import type { VecDbStatus } from "../../services/refact/knowledge";
+import type { VecDbStatus } from "../../services/refact";
 import { HoverCard, IconButton, Text, DataList } from "@radix-ui/themes";
 import classNames from "classnames";
 import { LayersIcon } from "@radix-ui/react-icons";

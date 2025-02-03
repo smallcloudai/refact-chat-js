@@ -1,20 +1,28 @@
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
-import {
-  knowledgeApi,
-  SubscribeArgs,
-  VecDbStatus,
-} from "../../services/refact/knowledge";
+import { knowledgeApi, SubscribeArgs } from "../../services/refact/knowledge";
 import { useDebounceCallback } from "usehooks-ts";
-import isEqual from "lodash.isequal";
-import { useAppDispatch } from "../../hooks";
+// import isEqual from "lodash.isequal";
+import { useAppDispatch, useAppSelector } from "../../hooks";
+import { subscribeToMemoriesThunk } from "../../services/refact/knowledge";
+import {
+  selectKnowledgeIsLoaded,
+  selectMemories,
+  selectVecDbStatus,
+} from "./knowledgeSlice";
 
 export function useKnowledgeSearch() {
   const dispatch = useAppDispatch();
   const [searchValue, setSearchValue] = useState<SubscribeArgs>(undefined);
-  const [cachedVecDbStatus, setCachedVecDbStatus] =
-    useState<null | VecDbStatus>(null);
+  const vecDbStatus = useAppSelector(selectVecDbStatus);
+  const memories = useAppSelector(selectMemories);
+  const isKnowledgeLoaded = useAppSelector(selectKnowledgeIsLoaded);
 
-  const searchResult = knowledgeApi.useSubscribeQuery(searchValue);
+  useEffect(() => {
+    const thunk = dispatch(subscribeToMemoriesThunk(searchValue));
+    return () => {
+      thunk.abort();
+    };
+  }, [dispatch, searchValue]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedSearch = useCallback(
@@ -24,15 +32,6 @@ export function useKnowledgeSearch() {
     }),
     [],
   );
-
-  useEffect(() => {
-    if (
-      searchResult.data?.status &&
-      !isEqual(searchResult.data.status, cachedVecDbStatus)
-    ) {
-      setCachedVecDbStatus(searchResult.data.status);
-    }
-  }, [searchResult.data, cachedVecDbStatus]);
 
   useEffect(() => {
     return () => {
@@ -52,9 +51,10 @@ export function useKnowledgeSearch() {
   );
 
   return {
-    searchResult,
     searchValue,
     search,
-    vecDbStatus: cachedVecDbStatus,
+    vecDbStatus,
+    isKnowledgeLoaded,
+    memories,
   };
 }

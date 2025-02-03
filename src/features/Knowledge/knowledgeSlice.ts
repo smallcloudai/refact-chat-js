@@ -37,7 +37,15 @@ export const knowledgeSlice = createSlice({
     },
   },
   // TODO: selectors
+  selectors: {
+    selectVecDbStatus: (state) => state.status,
+    selectMemories: (state) => state.memories,
+    selectKnowledgeIsLoaded: (state) => state.loaded,
+  },
 });
 
 export const { setVecDbStatus, setMemory, deleteMemory, clearMemory } =
   knowledgeSlice.actions;
+
+export const { selectVecDbStatus, selectMemories, selectKnowledgeIsLoaded } =
+  knowledgeSlice.selectors;

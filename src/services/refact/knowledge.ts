@@ -15,12 +15,7 @@ import {
 import type { ChatMessages } from ".";
 import { parseOrElse } from "../../utils";
 import { createAsyncThunk } from "@reduxjs/toolkit/react";
-import {
-  type MemoRecord,
-  isMemoRecord,
-  type VecDbStatus,
-  isVecDbStatus,
-} from "./types";
+import { type MemoRecord, isMemoRecord, isVecDbStatus } from "./types";
 import {
   clearMemory,
   deleteMemory,
@@ -104,7 +99,7 @@ const createAppAsyncThunk = createAsyncThunk.withTypes<{
   state: RootState;
   dispatch: AppDispatch;
 }>();
-
+// use this
 export const subscribeToMemoriesThunk = createAppAsyncThunk<
   unknown,
   SubscribeArgs
@@ -269,95 +264,6 @@ export const knowledgeApi = createApi({
     },
   }),
   endpoints: (builder) => ({
-    // TODO: delete this.
-    subscribe: builder.query<
-      {
-        loaded: boolean;
-        memories: Record<string, MemoRecord>;
-        status: null | VecDbStatus;
-      },
-      SubscribeArgs
-    >({
-      queryFn() {
-        return {
-          data: {
-            loaded: false,
-            memories: {},
-            status: null,
-          },
-        };
-      },
-      onCacheEntryAdded: async (args, api) => {
-        // console.log("knowledgeApi.subscribe.onCacheEntryAdded");
-        const state = api.getState() as unknown as RootState;
-        const token = state.config.apiKey;
-        const port = state.config.lspPort;
-
-        const response = await subscribeToMemories(port, args, token);
-        if (!response.body) return;
-
-        const stream = response.body.getReader();
-        const abortSignal = new AbortController();
-        const onAbort = () => {
-          // console.log("Aborted");
-        };
-        const onChunk = (chunk: Record<string, unknown>) => {
-          // validate the type
-          // console.log("mem-db chunk");
-          // console.log(chunk);
-          if (
-            !isMemdbSubEvent(chunk) &&
-            !isMemdbSubEventUnparsed(chunk) &&
-            !isVecDbStatus(chunk)
-          ) {
-            // eslint-disable-next-line no-console
-            console.log("Invalid chunk from mem db", chunk);
-            return;
-          }
-
-          api.updateCachedData((draft) => {
-            // TODO: clean this up a bit
-            draft.loaded = true;
-            if (isVecDbStatus(chunk)) {
-              draft.status = chunk;
-              return;
-            }
-
-            const data: MemoRecord | null = isMemoRecord(chunk.pubevent_json)
-              ? chunk.pubevent_json
-              : parseOrElse(chunk.pubevent_json, null, isMemoRecord);
-
-            if (data === null) {
-              return;
-            }
-
-            if (chunk.pubevent_action === "DELETE") {
-              // delete draft.memories[data.memid]
-              draft.memories = removeFromObject(draft.memories, data.memid);
-            } else if (chunk.pubevent_action === "INSERT") {
-              draft.memories[data.memid] = data;
-            } else if (chunk.pubevent_action === "UPDATE") {
-              draft.memories[data.memid] = data;
-            } else {
-              // eslint-disable-next-line no-console
-              console.log("Unknown action", chunk.pubevent_action);
-            }
-          });
-        };
-        try {
-          await api.cacheDataLoaded;
-          void consumeStream(stream, abortSignal.signal, onAbort, onChunk);
-        } catch {
-          // no-op in case `cacheEntryRemoved` resolves before `cacheDataLoaded`,
-          // in which case `cacheDataLoaded` will throw
-        }
-        await api.cacheEntryRemoved;
-        await stream.cancel();
-      },
-      // keepUnusedDataFor: 0,
-      // transformResponse // use this to format the cache using memid
-    }),
-
     addMemory: builder.mutation<MemAddResponse, MemAddRequest>({
       async queryFn(arg, api, extraOptions, baseQuery) {
         const state = api.getState() as RootState;
@@ -476,11 +382,3 @@ export const knowledgeApi = createApi({
     }),
   }),
 });
-
-function removeFromObject<T extends Record<string, unknown>>(
-  obj: T,
-  key: string,
-): T {
-  const entries = Object.entries(obj).filter(([k, _]) => k !== key);
-  return Object.fromEntries(entries) as T;
-}

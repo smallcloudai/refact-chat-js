@@ -15,7 +15,7 @@ import {
   MagnifyingGlassIcon,
   PlusIcon,
 } from "@radix-ui/react-icons";
-import { knowledgeApi, MemoRecord } from "../../services/refact/knowledge";
+import { knowledgeApi, MemoRecord } from "../../services/refact";
 import { pop } from "../../features/Pages/pagesSlice";
 import { useAppDispatch } from "../../hooks";
 import { ScrollArea } from "../../components/ScrollArea";
@@ -24,7 +24,8 @@ import { EditKnowledgeForm, AddKnowledgeForm } from "./KnowledgeForms";
 import { useKnowledgeSearch } from "./useKnowledgeSearch";
 
 export const KnowledgeList: React.FC = () => {
-  const { searchResult, search, vecDbStatus } = useKnowledgeSearch();
+  const { memories, search, vecDbStatus, isKnowledgeLoaded } =
+    useKnowledgeSearch();
   const dispatch = useAppDispatch();
 
   const [openForm, setOpenForm] = React.useState<boolean>(false);
@@ -38,7 +39,7 @@ export const KnowledgeList: React.FC = () => {
     }
   }, [dispatch, openForm]);
 
-  const memoryCount = Object.keys(searchResult.data?.memories ?? {}).length;
+  const memoryCount = Object.keys(memories).length;
 
   return (
     <Flex direction="column" overflowY="hidden" height="100%">
@@ -76,15 +77,13 @@ export const KnowledgeList: React.FC = () => {
       </Flex>
       <ScrollArea scrollbars="vertical">
         <Flex direction="column" gap="4" px="2">
-          {searchResult.isLoading && (
-            <Spinner loading={searchResult.isLoading} />
-          )}
+          {!isKnowledgeLoaded && <Spinner loading={!isKnowledgeLoaded} />}
           {/* TODO: this could happen if theres no knowledge, but may also happen while waiting for the stream */}
-          {searchResult.data?.loaded && memoryCount === 0 && (
+          {isKnowledgeLoaded && memoryCount === 0 && (
             <Text>No knowledge items found</Text>
           )}
 
-          {Object.values(searchResult.data?.memories ?? {}).map((memory) => {
+          {Object.values(memories).map((memory) => {
             return (
               <KnowledgeListItem
                 key={memory.memid}

@@ -50,6 +50,7 @@ import { linksApi } from "../services/refact/links";
 import { integrationsSlice } from "../features/Integrations";
 import { agentUsageSlice } from "../features/AgentUsage/agentUsageSlice";
 import { currentProjectInfoReducer } from "../features/Chat/currentProject";
+import { knowledgeSlice } from "../features/Knowledge/knowledgeSlice";
 
 const tipOfTheDayPersistConfig = {
   key: "totd",
@@ -100,6 +101,7 @@ const rootReducer = combineSlices(
   userSurveySlice,
   integrationsSlice,
   agentUsageSlice,
+  knowledgeSlice,
 );
 
 const rootPersistConfig = {

@@ -15,7 +15,7 @@ import {
   knowledgeApi,
   MemoRecord,
   MemUpdateRequest,
-} from "../../services/refact/knowledge";
+} from "../../services/refact";
 import styles from "./KnowledgeForms.module.css";
 
 type EditKnowledgeFormProps = {
