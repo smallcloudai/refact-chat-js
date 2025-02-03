@@ -201,20 +201,25 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
           <Heading as="h6" size="2" weight="medium">
             Actions:
           </Heading>
-          {integration.data.integr_schema.smartlinks.map((smartlink, idx) => (
-            <SmartLink
-              key={`smartlink-${idx}`}
-              smartlink={smartlink}
-              integrationName={integration.data?.integr_name ?? ""}
-              integrationProject={integration.data?.project_path ?? ""}
-              integrationPath={integration.data?.integr_config_path ?? ""}
-              shouldBeDisabled={
-                smartlink.sl_enable_only_with_tool
-                  ? !availabilityValues.on_your_laptop
-                  : false
-              }
-            />
-          ))}
+          {integration.data.integr_schema.smartlinks.map((smartlink, idx) => {
+            if (!integration.data) return null;
+            const { integr_name, project_path, integr_config_path } =
+              integration.data;
+            return (
+              <SmartLink
+                key={`smartlink-${idx}`}
+                smartlink={smartlink}
+                integrationName={integr_name}
+                integrationProject={project_path}
+                integrationPath={integr_config_path}
+                shouldBeDisabled={
+                  smartlink.sl_enable_only_with_tool
+                    ? !availabilityValues.on_your_laptop
+                    : false
+                }
+              />
+            );
+          })}
         </Flex>
       </Flex>
     );
