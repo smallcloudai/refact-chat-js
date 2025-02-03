@@ -5,6 +5,8 @@ import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import styles from "./IntegrationsHeader.module.css";
 import { LeftRightPadding } from "../../features/Integrations/Integrations";
 import { toPascalCase } from "../../utils/toPascalCase";
+import { useAppSelector } from "../../hooks";
+import { selectConfig } from "../../features/Config/configSlice.ts";
 
 type IntegrationsHeaderProps = {
   handleFormReturn: () => void;
@@ -24,6 +26,7 @@ export const IntegrationsHeader: FC<IntegrationsHeaderProps> = ({
   handleInstantReturn,
 }) => {
   const { width } = useWindowDimensions();
+  const config = useAppSelector(selectConfig);
 
   const handleButtonClick = () => {
     if (instantBackReturnment && handleInstantReturn) {
@@ -34,12 +37,21 @@ export const IntegrationsHeader: FC<IntegrationsHeaderProps> = ({
   };
 
   return (
-    <Flex className={styles.IntegrationsHeader} px={leftRightPadding}>
-      <Flex align="center" justify="between" width="100%" px={leftRightPadding}>
+    <Flex
+      className={styles.IntegrationsHeader}
+      px={leftRightPadding}
+      pt={config.host === "web" ? "5" : "2"}
+    >
+      <Flex
+        align="center"
+        justify="between"
+        width="100%"
+        px={config.host === "web" ? leftRightPadding : undefined}
+      >
         <Flex
           gap={{
             initial: "3",
-            xs: "4",
+            xs: "5",
           }}
           align="center"
         >
@@ -53,19 +65,26 @@ export const IntegrationsHeader: FC<IntegrationsHeaderProps> = ({
               <ArrowLeftIcon width="16" height="16" />
             </IconButton>
           )}
-          <img
-            src={icon}
-            className={styles.IntegrationsHeaderIcon}
-            alt={integrationName}
-          />
-          <Heading as="h5" size="3">
-            Setup{" "}
-            {integrationName.includes("TEMPLATE")
-              ? integrationName.startsWith("cmdline")
-                ? "Command Line Tool"
-                : "Command Line Service"
-              : toPascalCase(integrationName)}
-          </Heading>
+          <Flex
+            gap={{
+              initial: "2",
+              xs: "3",
+            }}
+            align="center"
+          >
+            <img
+              src={icon}
+              className={styles.IntegrationsHeaderIcon}
+              alt={integrationName}
+            />
+            <Heading as="h5" size="3">
+              {integrationName.includes("TEMPLATE")
+                ? integrationName.startsWith("cmdline")
+                  ? "Command Line Tool"
+                  : "Command Line Service"
+                : toPascalCase(integrationName)}
+            </Heading>
+          </Flex>
         </Flex>
       </Flex>
     </Flex>

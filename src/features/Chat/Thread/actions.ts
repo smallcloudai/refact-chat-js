@@ -6,6 +6,7 @@ import {
   type ToolUse,
   IntegrationMeta,
   LspChatMode,
+  PayloadWithChatAndMessageId,
 } from "./types";
 import {
   isAssistantDelta,
@@ -23,7 +24,11 @@ import {
 import type { AppDispatch, RootState } from "../../../app/store";
 import { type SystemPrompts } from "../../../services/refact/prompts";
 import { formatMessagesForLsp, consumeStream } from "./utils";
-import { generateChatTitle, sendChat } from "../../../services/refact/chat";
+import {
+  DEFAULT_MAX_NEW_TOKENS,
+  generateChatTitle,
+  sendChat,
+} from "../../../services/refact/chat";
 import { ToolCommand } from "../../../services/refact/tools";
 import { scanFoDuplicatesWith, takeFromEndWhile } from "../../../utils";
 import { debugApp } from "../../../debugConfig";
@@ -45,6 +50,10 @@ export const chatTitleGenerationResponse = createAction<
 
 export const chatAskedQuestion = createAction<PayloadWithId>(
   "chatThread/askQuestion",
+);
+
+export const setLastUserMessageId = createAction<PayloadWithChatAndMessageId>(
+  "chatThread/setLastUserMessageId",
 );
 
 export const backUpMessages = createAction<
@@ -88,6 +97,14 @@ export const setPreventSend = createAction<PayloadWithId>(
 
 export const setToolUse = createAction<ToolUse>("chatThread/setToolUse");
 
+export const setAutomaticPatch = createAction<boolean>(
+  "chat/setAutomaticPatch",
+);
+
+export const setEnabledCheckpoints = createAction<boolean>(
+  "chat/setEnabledCheckpoints",
+);
+
 export const saveTitle = createAction<PayloadWithIdAndTitle>(
   "chatThread/saveTitle",
 );
@@ -104,6 +121,10 @@ export const setIntegrationData = createAction<Partial<IntegrationMeta> | null>(
 
 export const setIsWaitingForResponse = createAction<boolean>(
   "chatThread/setIsWaiting",
+);
+
+export const setMaxNewTokens = createAction<number>(
+  "chatThread/setMaxNewTokens",
 );
 
 // TODO: This is the circular dep when imported from hooks :/
@@ -141,6 +162,7 @@ export const chatGenerateTitleThunk = createAppAsyncThunk<
       role: "user",
       content:
         "Generate a short 2-3 word title for the current chat that reflects the context of the user's query. The title should be specific, avoiding generic terms, and should relate to relevant files, symbols, or objects. If user message contains filename, please make sure that filename remains inside of a generated title. Please ensure the answer is strictly 2-3 words, not paragraphs of text.\nOutput should be STRICTLY 2-3 words, not explanation.",
+      checkpoints: [],
     },
   ]);
 
@@ -244,12 +266,16 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
     chatId: string;
     tools: ToolCommand[] | null;
     toolsConfirmed?: boolean;
+    checkpointsEnabled?: boolean;
     mode?: LspChatMode; // used once for actions
     // TODO: make a separate function for this... and it'll need to be saved.
   }
 >(
   "chatThread/sendChat",
-  ({ messages, chatId, tools, mode, toolsConfirmed }, thunkAPI) => {
+  (
+    { messages, chatId, tools, mode, toolsConfirmed, checkpointsEnabled },
+    thunkAPI,
+  ) => {
     const state = thunkAPI.getState();
 
     const thread =
@@ -267,18 +293,22 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
 
     const messagesForLsp = formatMessagesForLsp(messages);
     const realMode = mode ?? thread?.mode;
+    const maybeLastUserMessageId = thread?.last_user_message_id;
 
     return sendChat({
       messages: messagesForLsp,
+      last_user_message_id: maybeLastUserMessageId,
       model: state.chat.thread.model,
       tools,
       stream: true,
       abortSignal: thunkAPI.signal,
+      max_new_tokens: state.chat.max_new_tokens,
       chatId,
       apiKey: state.config.apiKey,
       port: state.config.lspPort,
       onlyDeterministicMessages,
       toolsConfirmed: toolsConfirmed,
+      checkpointsEnabled,
       integration: thread?.integration,
       mode: realMode,
     })
@@ -305,6 +335,7 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
         return thunkAPI.rejectWithValue(err.message);
       })
       .finally(() => {
+        thunkAPI.dispatch(setMaxNewTokens(DEFAULT_MAX_NEW_TOKENS));
         thunkAPI.dispatch(doneStreaming({ id: chatId }));
       });
   },

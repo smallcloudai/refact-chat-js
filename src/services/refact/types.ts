@@ -1,3 +1,4 @@
+import { Checkpoint } from "../../features/Checkpoints/types";
 import { GetChatTitleActionPayload, GetChatTitleResponse } from "./chat";
 
 export type ChatRole =
@@ -132,6 +133,7 @@ export interface UserMessage extends BaseMessage {
   content:
     | string
     | (UserMessageContentWithImage | ProcessedUserMessageContentWithImages)[];
+  checkpoints?: Checkpoint[];
 }
 
 export type ProcessedUserMessageContentWithImages = {
@@ -142,6 +144,7 @@ export interface AssistantMessage extends BaseMessage {
   role: "assistant";
   content: string | null;
   tool_calls?: ToolCall[] | null;
+  finish_reason?: "stop" | "length" | "abort" | "tool_calls" | null;
 }
 
 export interface ToolCallMessage extends AssistantMessage {
@@ -329,7 +332,7 @@ type Delta = AssistantDelta | ChatContextFileDelta | ToolCallDelta | BaseDelta;
 
 export type ChatChoice = {
   delta: Delta;
-  finish_reason?: "stop" | "abort" | "tool_calls" | null;
+  finish_reason?: "stop" | "length" | "abort" | "tool_calls" | null;
   index: number;
 };
 
@@ -338,6 +341,7 @@ export type ChatUserMessageResponse =
       id: string;
       role: "user" | "context_file" | "context_memory";
       content: string;
+      checkpoints?: Checkpoint[];
     }
   | {
       id: string;
@@ -348,6 +352,7 @@ export type ChatUserMessageResponse =
             | UserMessageContentWithImage
             | ProcessedUserMessageContentWithImages
           )[];
+      checkpoints?: Checkpoint[];
     };
 
 export type ToolResponse = {
@@ -519,6 +524,8 @@ type ChatResponseChoice = {
   created: number;
   model: string;
   id: string;
+  refact_agent_request_available: null | number;
+  refact_agent_max_request_num: number;
 };
 
 export function isChatResponseChoice(

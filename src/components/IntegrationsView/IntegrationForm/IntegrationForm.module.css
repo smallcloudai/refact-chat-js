@@ -5,8 +5,8 @@
 }
 
 .disabledButton {
-  opacity: 0.8;
   cursor: not-allowed;
+  backdrop-filter: blur(1000px);
 }
 
 .DockerIcon {

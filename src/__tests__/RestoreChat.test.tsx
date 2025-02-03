@@ -28,7 +28,7 @@ describe("Restore Chat from history", () => {
 
     const { user, ...app } = render(<InnerApp />, {
       preloadedState: {
-        pages: [{ name: "initial setup" }, { name: "history" }],
+        pages: [{ name: "login page" }, { name: "history" }],
         history: {
           id: {
             title: "test title",
@@ -39,7 +39,7 @@ describe("Restore Chat from history", () => {
             model: "test",
             tool_use: "explore",
             messages: [
-              { role: "user", content: "test user message" },
+              { role: "user", content: "test user message", checkpoints: [] },
               { role: "assistant", content: "👋" },
             ],
             read: true,

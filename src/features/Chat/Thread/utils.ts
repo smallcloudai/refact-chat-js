@@ -20,6 +20,7 @@ import {
   isDiffChunk,
   isDiffMessage,
   isDiffResponse,
+  isLspUserMessage,
   isPlainTextResponse,
   isSubchatContextFileResponse,
   isSubchatResponse,
@@ -100,7 +101,7 @@ export function mergeToolCalls(prev: ToolCall[], add: ToolCall[]): ToolCall[] {
   }, prev);
 }
 
-function lastIndexOf<T>(arr: T[], predicate: (a: T) => boolean): number {
+export function lastIndexOf<T>(arr: T[], predicate: (a: T) => boolean): number {
   let index = -1;
   for (let i = arr.length - 1; i >= 0; i--) {
     if (predicate(arr[i])) {
@@ -128,6 +129,20 @@ function replaceLastUserMessage(
   return result.concat([userMessage]);
 }
 
+export function getAgentUsageCounter(response: ChatResponse): number | null {
+  if (isChatResponseChoice(response)) {
+    return response.refact_agent_request_available;
+  }
+  return null;
+}
+
+export function getMaxFreeAgentUsage(response: ChatResponse): number {
+  if (isChatResponseChoice(response)) {
+    return response.refact_agent_max_request_num;
+  }
+  return 0;
+}
+
 export function formatChatResponse(
   messages: ChatMessages,
   response: ChatResponse,
@@ -136,6 +151,7 @@ export function formatChatResponse(
     return replaceLastUserMessage(messages, {
       role: response.role,
       content: response.content,
+      checkpoints: response.checkpoints,
     });
   }
 
@@ -211,6 +227,7 @@ export function formatChatResponse(
           role: cur.delta.role,
           content: cur.delta.content,
           tool_calls: cur.delta.tool_calls,
+          finish_reason: cur.finish_reason,
         };
         return acc.concat([msg]);
       }
@@ -218,6 +235,7 @@ export function formatChatResponse(
       const message = {
         role: cur.delta.role,
         content: cur.delta.content,
+        finish_reason: cur.finish_reason,
       } as ChatMessage;
       return acc.concat([message]);
     }
@@ -231,6 +249,7 @@ export function formatChatResponse(
             role: "assistant",
             content: cur.delta.content ?? "",
             tool_calls: cur.delta.tool_calls,
+            finish_reason: cur.finish_reason,
           },
         ]);
       }
@@ -244,7 +263,12 @@ export function formatChatResponse(
         : lastMessage.content;
 
       return last.concat([
-        { role: "assistant", content: message, tool_calls: calls },
+        {
+          role: "assistant",
+          content: message,
+          tool_calls: calls,
+          finish_reason: cur.finish_reason,
+        },
       ]);
     }
 
@@ -261,13 +285,20 @@ export function formatChatResponse(
           role: "assistant",
           content: currentMessage + cur.delta.content,
           tool_calls: toolCalls,
+          finish_reason: cur.finish_reason,
         },
       ]);
     } else if (
       isAssistantDelta(cur.delta) &&
       typeof cur.delta.content === "string"
     ) {
-      return acc.concat([{ role: "assistant", content: cur.delta.content }]);
+      return acc.concat([
+        {
+          role: "assistant",
+          content: cur.delta.content,
+          finish_reason: cur.finish_reason,
+        },
+      ]);
     } else if (cur.delta.role === "assistant") {
       // empty message from JB
       return acc;
@@ -373,6 +404,7 @@ export function formatMessagesForLsp(messages: ChatMessages): LspChatMessage[] {
           role: message.role,
           content: message.content,
           tool_calls: message.tool_calls ?? undefined,
+          finish_reason: message.finish_reason,
         },
       ]);
     }
@@ -408,10 +440,11 @@ export function formatMessagesForChat(
   messages: LspChatMessage[],
 ): ChatMessages {
   return messages.reduce<ChatMessages>((acc, message) => {
-    if (message.role === "user" && typeof message.content === "string") {
+    if (isLspUserMessage(message) && typeof message.content === "string") {
       const userMessage: UserMessage = {
         role: message.role,
         content: message.content,
+        checkpoints: message.checkpoints,
       };
       return acc.concat(userMessage);
     }

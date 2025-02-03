@@ -1,68 +1,30 @@
 import { useCallback, useMemo, useState, useEffect } from "react";
 import {
-  addAgentUsageItem,
-  selectAgentUsageItems,
+  selectMaxAgentUsageAmount,
+  selectAgentUsage,
+  setInitialAgentUsage,
 } from "../features/AgentUsage/agentUsageSlice";
 import { useGetUser } from "./useGetUser";
 import { useAppSelector } from "./useAppSelector";
-import {
-  selectIsStreaming,
-  selectIsWaiting,
-  selectThreadToolUse,
-} from "../features/Chat";
-import { ChatMessages, isUserMessage } from "../events";
+import { selectIsStreaming, selectIsWaiting } from "../features/Chat";
 import { useAppDispatch } from "./useAppDispatch";
 
-const MAX_FREE_USAGE = 20;
-const ONE_DAY_IN_MS = 1000 * 60 * 60 * 24;
+export const USAGE_LIMIT_EXHAUSTED_MESSAGE =
+  "You have exceeded the FREE usage limit. Wait till tomorrow to send messages again, or upgrade to PRO.";
 
 export function useAgentUsage() {
-  const user = useGetUser();
-  const toolUse = useAppSelector(selectThreadToolUse);
-  const allAgentUsageItems = useAppSelector(selectAgentUsageItems);
   const dispatch = useAppDispatch();
+  const user = useGetUser();
+  const agentUsage = useAppSelector(selectAgentUsage);
+  const maxAgentUsageAmount = useAppSelector(selectMaxAgentUsageAmount);
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
 
-  const usersUsage = useMemo(() => {
-    if (!user.data?.account) return 0;
-
-    // TODO: date.now() can change the result of memo
-    const agentUsageForToday = allAgentUsageItems.filter(
-      (item) =>
-        item.time + ONE_DAY_IN_MS > Date.now() &&
-        item.user === user.data?.account,
-    );
-
-    return agentUsageForToday.length;
-  }, [allAgentUsageItems, user.data?.account]);
-
-  const increment = useCallback(() => {
-    if (
-      user.data &&
-      user.data.retcode === "OK" &&
-      user.data.inference === "FREE" &&
-      toolUse === "agent"
-    ) {
-      dispatch(addAgentUsageItem({ user: user.data.account }));
-    }
-  }, [dispatch, toolUse, user.data]);
-
-  const incrementIfLastMessageIsFromUser = useCallback(
-    (messages: ChatMessages) => {
-      if (messages.length === 0) return;
-      const lastMessage = messages[messages.length - 1];
-      if (isUserMessage(lastMessage)) {
-        increment();
-      }
-      return;
-    },
-    [increment],
-  );
-
   const aboveUsageLimit = useMemo(() => {
-    return usersUsage >= MAX_FREE_USAGE;
-  }, [usersUsage]);
+    if (agentUsage === null) return false;
+    if (agentUsage === 0) return true;
+    return false;
+  }, [agentUsage]);
 
   const [pollingForUser, setPollingForUser] = useState<boolean>(false);
 
@@ -96,26 +58,36 @@ export function useAgentUsage() {
     setPollingForUser(true);
   }, []);
 
+  const refetchUser = useCallback(async () => {
+    // TODO: find a better way to refetch user and update store state :/
+    const updatedUserData = await user.refetch();
+    if (!updatedUserData.data) return;
+    const action = setInitialAgentUsage({
+      agent_usage: updatedUserData.data.refact_agent_request_available,
+      agent_max_usage_amount: updatedUserData.data.refact_agent_max_request_num,
+    });
+    dispatch(action);
+  }, [dispatch, user]);
+
   const shouldShow = useMemo(() => {
     // TODO: maybe uncalled tools.
-    if (toolUse !== "agent") return false;
-    if (isStreaming || isWaiting) return false;
     if (user.data?.inference !== "FREE") return false;
-    if (MAX_FREE_USAGE - usersUsage > 5) return false;
+    if (isStreaming || isWaiting) return false;
+    if (agentUsage === null) return false;
+    if (agentUsage > 5) return false;
     return true;
-  }, [isStreaming, isWaiting, toolUse, user.data?.inference, usersUsage]);
+  }, [isStreaming, isWaiting, agentUsage, user.data?.inference]);
 
   const disableInput = useMemo(() => {
     return shouldShow && aboveUsageLimit;
   }, [aboveUsageLimit, shouldShow]);
 
   return {
-    incrementIfLastMessageIsFromUser,
-    usersUsage,
     shouldShow,
-    MAX_FREE_USAGE,
+    maxAgentUsageAmount,
     aboveUsageLimit,
     startPollingForUser,
+    refetchUser,
     pollingForUser,
     disableInput,
     plan: user.data?.inference ?? "",

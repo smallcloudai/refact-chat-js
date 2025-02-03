@@ -34,7 +34,7 @@ import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
 import "katex/dist/katex.min.css";
-import { useLinksFromLsp, usePatchActions } from "../../hooks";
+import { useAppSelector, useLinksFromLsp, usePatchActions } from "../../hooks";
 
 import { ErrorCallout, DiffWarningCallout } from "../Callout";
 
@@ -44,6 +44,7 @@ import { extractFilePathFromPin } from "../../utils";
 import { telemetryApi } from "../../services/refact/telemetry";
 import { ChatLinkButton } from "../ChatLinks";
 import { extractLinkFromPuzzle } from "../../utils/extractLinkFromPuzzle";
+import { selectAutomaticPatch, selectToolUse } from "../../features/Chat";
 
 export type MarkdownProps = Pick<
   React.ComponentProps<typeof ReactMarkdown>,
@@ -51,7 +52,11 @@ export type MarkdownProps = Pick<
 > &
   Pick<
     MarkdownCodeBlockProps,
-    "startingLineNumber" | "showLineNumbers" | "useInlineStyles" | "style"
+    | "startingLineNumber"
+    | "showLineNumbers"
+    | "useInlineStyles"
+    | "style"
+    | "color"
   > & {
     canHaveInteractiveElements?: boolean;
     wrap?: boolean;
@@ -72,6 +77,14 @@ const PinMessages: React.FC<{
   } = usePatchActions();
   const [sendTelemetryEvent] =
     telemetryApi.useLazySendTelemetryChatEventQuery();
+
+  const toolUse = useAppSelector(selectToolUse);
+  const isPatchAutomatic = useAppSelector(selectAutomaticPatch);
+
+  const shouldInteractiveButtonsBeVisible = useMemo(() => {
+    if (toolUse === "agent") return !isPatchAutomatic;
+    return true;
+  }, [isPatchAutomatic, toolUse]);
 
   const getMarkdown = useCallback(() => {
     return (
@@ -126,6 +139,7 @@ const PinMessages: React.FC<{
   }
 
   const filePath = extractFilePathFromPin(children);
+
   return (
     <Card
       className={styles.patch_title}
@@ -147,22 +161,26 @@ const PinMessages: React.FC<{
           </Link>
         </TruncateLeft>{" "}
         <div style={{ flexGrow: 1 }} />
-        <Button
-          size="1"
-          onClick={(event) => handleAutoApply(event, children, filePath)}
-          disabled={disable}
-          title={`Show: ${children}`}
-        >
-          ➕ Auto Apply
-        </Button>
-        <Button
-          size="1"
-          onClick={onDiffClick}
-          disabled={disable || !hasMarkdown || !canPaste}
-          title="Replace the current selection in the ide."
-        >
-          ➕ Replace Selection
-        </Button>
+        {shouldInteractiveButtonsBeVisible && (
+          <>
+            <Button
+              size="1"
+              onClick={(event) => handleAutoApply(event, children, filePath)}
+              disabled={disable}
+              title={`Show: ${children}`}
+            >
+              ➕ Auto Apply
+            </Button>
+            <Button
+              size="1"
+              onClick={onDiffClick}
+              disabled={disable || !hasMarkdown || !canPaste}
+              title="Replace the current selection in the ide."
+            >
+              ➕ Replace Selection
+            </Button>
+          </>
+        )}
       </Flex>
       {errorMessage && errorMessage.type === "error" && (
         <ErrorCallout onClick={resetErrorMessage} timeout={5000}>
@@ -223,6 +241,7 @@ const _Markdown: React.FC<MarkdownProps> = ({
   allowedElements,
   unwrapDisallowed,
   canHaveInteractiveElements,
+  color,
   ...rest
 }) => {
   const components: Partial<Components> = useMemo(() => {
@@ -237,8 +256,8 @@ const _Markdown: React.FC<MarkdownProps> = ({
           <ul {...props} className={classNames(styles.list, props.className)} />
         );
       },
-      code({ style: _style, ...props }) {
-        return <MarkdownCodeBlock {...props} {...rest} />;
+      code({ style: _style, color: _color, ...props }) {
+        return <MarkdownCodeBlock color={color} {...props} {...rest} />;
       },
       p({ color: _color, ref: _ref, node: _node, ...props }) {
         if (canHaveInteractiveElements) {
@@ -315,7 +334,7 @@ const _Markdown: React.FC<MarkdownProps> = ({
         return <Table.Cell {...props} />;
       },
     };
-  }, [rest, canHaveInteractiveElements]);
+  }, [rest, canHaveInteractiveElements, color]);
   return (
     <ReactMarkdown
       className={styles.markdown}

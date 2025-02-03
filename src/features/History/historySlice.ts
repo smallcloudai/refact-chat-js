@@ -131,6 +131,12 @@ export const historySlice = createSlice({
         {},
       );
     },
+    updateChatTitleById: (
+      state,
+      action: PayloadAction<{ chatId: string; newTitle: string }>,
+    ) => {
+      state[action.payload.chatId].title = action.payload.newTitle;
+    },
     clearHistory: () => {
       return {};
     },
@@ -154,6 +160,7 @@ export const {
   markChatAsUnread,
   markChatAsRead,
   setTitleGenerationCompletionForChat,
+  updateChatTitleById,
   clearHistory,
 } = historySlice.actions;
 export const { getChatById, getHistory } = historySlice.selectors;

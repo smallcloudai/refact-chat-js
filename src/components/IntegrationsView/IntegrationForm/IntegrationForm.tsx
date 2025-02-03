@@ -189,24 +189,33 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
           <ExclamationTriangleIcon />
           {errorMessage}
         </Badge>
-        <Button
-          variant="outline"
-          color="gray"
-          onClick={() =>
-            openFile({
-              file_name: integrationFile,
-              line: errorLine === 0 ? 1 : errorLine,
-            })
-          }
-        >
-          Open {integration.data.integr_name}.yaml
-        </Button>
+        <Flex align="center" gap="2">
+          <Button
+            variant="outline"
+            color="gray"
+            onClick={() =>
+              openFile({
+                file_name: integrationFile,
+                line: errorLine === 0 ? 1 : errorLine,
+              })
+            }
+          >
+            Open {integration.data.integr_name}.yaml
+          </Button>
+          <IntegrationDeletePopover
+            integrationName={integration.data.integr_name}
+            integrationConfigPath={integration.data.integr_config_path}
+            isApplying={isApplying}
+            isDeletingIntegration={isDeletingIntegration}
+            handleDeleteIntegration={handleDeleteIntegration}
+          />
+        </Flex>
       </Flex>
     );
   }
 
   return (
-    <Flex width="100%" direction="column" gap="2">
+    <Flex width="100%" direction="column" gap="2" pb="8">
       {integration.data.integr_schema.description && (
         <Text size="2" color="gray" mb="3">
           {integration.data.integr_schema.description}
@@ -218,26 +227,28 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         id={`form-${integration.data.integr_name}`}
       >
         <Flex direction="column" gap="2">
-          <Grid mt="2" mb="0">
+          <Grid mb="0">
             {integration.data.integr_values && (
-              <Flex
-                gap="4"
-                mb="4"
-                align="center"
-                justify="between"
-                className={styles.switchInline}
-              >
-                {integration.data.integr_values.available &&
-                  Object.keys(integration.data.integr_values.available).map(
-                    (key) => (
-                      <IntegrationAvailability
-                        key={key}
-                        fieldName={key}
-                        value={availabilityValues[key]}
-                        onChange={handleAvailabilityChange}
-                      />
-                    ),
-                  )}
+              <Flex align="start" justify="between">
+                <Flex
+                  gap="4"
+                  mb="4"
+                  align="center"
+                  justify="between"
+                  className={styles.switchInline}
+                >
+                  {integration.data.integr_values.available &&
+                    Object.keys(integration.data.integr_values.available).map(
+                      (key) => (
+                        <IntegrationAvailability
+                          key={key}
+                          fieldName={key}
+                          value={availabilityValues[key]}
+                          onChange={handleAvailabilityChange}
+                        />
+                      ),
+                    )}
+                </Flex>
                 <IntegrationDeletePopover
                   integrationName={integration.data.integr_name}
                   integrationConfigPath={integration.data.integr_config_path}
@@ -247,6 +258,42 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
                 />
               </Flex>
             )}
+            {integration.data.integr_schema.smartlinks &&
+              integration.data.integr_schema.smartlinks.length > 0 && (
+                <Flex width="100%" direction="column" gap="1" mb="6">
+                  <Flex align="center" gap="3" mt="2" wrap="wrap">
+                    <Heading as="h6" size="2" weight="medium">
+                      Actions:
+                    </Heading>
+                    {integration.data.integr_schema.smartlinks.map(
+                      (smartlink, index) => {
+                        return (
+                          <SmartLink
+                            key={`smartlink-${index}`}
+                            smartlink={smartlink}
+                            integrationName={
+                              integration.data?.integr_name ?? ""
+                            }
+                            integrationProject={
+                              integration.data?.project_path ?? ""
+                            }
+                            integrationPath={
+                              integration.data?.integr_config_path ?? ""
+                            }
+                            shouldBeDisabled={
+                              smartlink.sl_enable_only_with_tool
+                                ? integration.data?.integr_values === null ||
+                                  !shouldIntegrationFormBeDisabled ||
+                                  !availabilityValues.on_your_laptop
+                                : false
+                            }
+                          />
+                        );
+                      },
+                    )}
+                  </Flex>
+                </Flex>
+              )}
             <Grid gap="2" className={styles.gridContainer}>
               {Object.keys(importantFields).map((fieldKey) => {
                 if (integration.data) {
@@ -285,7 +332,10 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
               size="2"
               onClick={() => setAreExtraFieldsRevealed((prev) => !prev)}
               mb="1"
-              mt="3"
+              mt={{
+                initial: "3",
+                xs: "0",
+              }}
               className={styles.advancedButton}
             >
               {areExtraFieldsRevealed
@@ -312,7 +362,13 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
               />
             </Flex>
           )}
-          <Flex justify="end" width="100%">
+          <Flex
+            justify="end"
+            width="100%"
+            position="fixed"
+            bottom="4"
+            right="8"
+          >
             <Flex gap="4">
               <Button
                 color="green"
@@ -340,37 +396,6 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
           </Flex>
         </Flex>
       </form>
-      {integration.data.integr_schema.smartlinks &&
-        integration.data.integr_schema.smartlinks.length > 0 && (
-          <Flex width="100%" direction="column" gap="2" mt="4">
-            <Heading as="h4" size="3">
-              Ask AI to do it for you (experimental)
-            </Heading>
-            <Flex align="center" gap="2" mt="2" wrap="wrap">
-              {integration.data.integr_schema.smartlinks.map(
-                (smartlink, index) => {
-                  return (
-                    <SmartLink
-                      key={`smartlink-${index}`}
-                      smartlink={smartlink}
-                      integrationName={integration.data?.integr_name ?? ""}
-                      integrationProject={integration.data?.project_path ?? ""}
-                      integrationPath={
-                        integration.data?.integr_config_path ?? ""
-                      }
-                      shouldBeDisabled={
-                        smartlink.sl_enable_only_with_tool
-                          ? integration.data?.integr_values === null ||
-                            !shouldIntegrationFormBeDisabled
-                          : false
-                      }
-                    />
-                  );
-                },
-              )}
-            </Flex>
-          </Flex>
-        )}
       {integration.data.integr_schema.docker && (
         <Flex mt="6" direction="column" align="start" gap="5">
           <IntegrationDocker

@@ -1,5 +1,13 @@
 import React, { useCallback, useMemo } from "react";
-import { Text, Flex, HoverCard, Link, Skeleton, Box } from "@radix-ui/themes";
+import {
+  Text,
+  Flex,
+  HoverCard,
+  Link,
+  Skeleton,
+  Box,
+  Switch,
+} from "@radix-ui/themes";
 import { Select } from "../Select";
 import { type Config } from "../../features/Config/configSlice";
 import { TruncateLeft } from "../Text";
@@ -12,12 +20,118 @@ import { useTourRefs } from "../../features/Tour";
 import { ToolUseSwitch } from "./ToolUseSwitch";
 import {
   ToolUse,
+  selectAutomaticPatch,
+  selectCheckpointsEnabled,
   selectIsStreaming,
+  selectIsWaiting,
   selectMessages,
   selectToolUse,
+  setAutomaticPatch,
+  setEnabledCheckpoints,
   setToolUse,
 } from "../../features/Chat/Thread";
 import { useAppSelector, useAppDispatch, useCapsForToolUse } from "../../hooks";
+
+export const ApplyPatchSwitch: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const isPatchAutomatic = useAppSelector(selectAutomaticPatch);
+
+  const handleAutomaticPatchChange = (checked: boolean) => {
+    dispatch(setAutomaticPatch(checked));
+  };
+
+  return (
+    <Flex
+      gap="4"
+      align="center"
+      wrap="wrap"
+      flexGrow="1"
+      flexShrink="0"
+      width="100%"
+    >
+      <Text size="2" mr="auto">
+        Auto apply patches
+      </Text>
+      <Flex gap="2" align="center">
+        <Switch
+          size="1"
+          title="Enable/disable automatic patch calls by Agent"
+          checked={isPatchAutomatic}
+          onCheckedChange={handleAutomaticPatchChange}
+        />
+        <HoverCard.Root>
+          <HoverCard.Trigger>
+            <QuestionMarkCircledIcon style={{ marginLeft: 4 }} />
+          </HoverCard.Trigger>
+          <HoverCard.Content size="2" maxWidth="280px">
+            <Text weight="bold">Enabled</Text>
+            <Text as="p" size="2">
+              When enabled, Refact Agent will automatically apply changes to
+              files without asking for your confirmation.
+            </Text>
+            <Text as="div" mt="2" weight="bold">
+              Disabled
+            </Text>
+            <Text as="p" size="2">
+              When disabled, Refact Agent will ask for your confirmation before
+              applying any unsaved changes.
+            </Text>
+          </HoverCard.Content>
+        </HoverCard.Root>
+      </Flex>
+    </Flex>
+  );
+};
+export const AgentRollbackSwitch: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const isAgentRollbackEnabled = useAppSelector(selectCheckpointsEnabled);
+
+  const handleAgentRollbackChange = (checked: boolean) => {
+    dispatch(setEnabledCheckpoints(checked));
+  };
+
+  return (
+    <Flex
+      gap="4"
+      align="center"
+      wrap="wrap"
+      flexGrow="1"
+      flexShrink="0"
+      width="100%"
+    >
+      <Text size="2" mr="auto">
+        Agent rollback
+      </Text>
+      <Flex gap="2" align="center">
+        <Switch
+          size="1"
+          title="Enable/disable automatic patch calls by Agent"
+          checked={isAgentRollbackEnabled}
+          onCheckedChange={handleAgentRollbackChange}
+        />
+        <HoverCard.Root>
+          <HoverCard.Trigger>
+            <QuestionMarkCircledIcon style={{ marginLeft: 4 }} />
+          </HoverCard.Trigger>
+          <HoverCard.Content size="2" maxWidth="280px">
+            <Text weight="bold">Enabled</Text>
+            <Text as="p" size="2">
+              When enabled, Refact Agent will automatically apply changes to
+              files without asking for your confirmation.
+            </Text>
+            <Text as="div" mt="2" weight="bold">
+              Disabled
+            </Text>
+            <Text as="p" size="2">
+              When disabled, Refact Agent will ask for your confirmation before
+              applying any unsaved changes.
+            </Text>
+          </HoverCard.Content>
+        </HoverCard.Root>
+      </Flex>
+    </Flex>
+  );
+};
 
 const CapsSelect: React.FC = () => {
   const refs = useTourRefs();
@@ -159,6 +273,7 @@ export const ChatControls: React.FC<ChatControlsProps> = ({
   const refs = useTourRefs();
   const dispatch = useAppDispatch();
   const isStreaming = useAppSelector(selectIsStreaming);
+  const isWaiting = useAppSelector(selectIsWaiting);
   const messages = useAppSelector(selectMessages);
   const toolUse = useAppSelector(selectToolUse);
   const onSetToolUse = useCallback(
@@ -167,8 +282,8 @@ export const ChatControls: React.FC<ChatControlsProps> = ({
   );
 
   const showControls = useMemo(
-    () => messages.length === 0 && !isStreaming,
-    [isStreaming, messages],
+    () => messages.length === 0 && !isStreaming && !isWaiting,
+    [isStreaming, isWaiting, messages],
   );
 
   return (
@@ -204,17 +319,16 @@ export const ChatControls: React.FC<ChatControlsProps> = ({
       })}
 
       {showControls && (
-        <ToolUseSwitch
-          ref={(x) => refs.setUseTools(x)}
-          toolUse={toolUse}
-          setToolUse={onSetToolUse}
-        />
+        <Flex gap="2" direction="column">
+          <ToolUseSwitch
+            ref={(x) => refs.setUseTools(x)}
+            toolUse={toolUse}
+            setToolUse={onSetToolUse}
+          />
+          <CapsSelect />
+          <PromptSelect />
+        </Flex>
       )}
-
-      <Flex gap="2" direction="column">
-        {showControls && <CapsSelect />}
-        {showControls && <PromptSelect />}
-      </Flex>
     </Flex>
   );
 };

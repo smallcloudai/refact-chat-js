@@ -40,6 +40,14 @@ export function useCapsForToolUse() {
     [caps.data?.code_chat_default_model, dispatch],
   );
 
+  const isMultimodalitySupportedForCurrentModel = useMemo(() => {
+    const models = caps.data?.code_chat_models;
+    const item = models?.[currentModel];
+    if (!item) return false;
+    if (!item.supports_multimodality) return false;
+    return true;
+  }, [caps.data?.code_chat_models, currentModel]);
+
   const usableModels = useMemo(() => {
     const models = caps.data?.code_chat_models ?? {};
     const items = Object.entries(models).reduce<string[]>(
@@ -57,9 +65,8 @@ export function useCapsForToolUse() {
   }, [caps.data?.code_chat_models, toolUse]);
 
   const usableModelsForPlan = useMemo(() => {
-    if (user.data?.inference === "PRO") return usableModels;
-    if (user.data?.inference === "ROBOT") return usableModels;
-    if (!usage.aboveUsageLimit) return usableModels;
+    if (user.data?.inference !== "FREE") return usableModels;
+    if (!usage.aboveUsageLimit && toolUse === "agent") return usableModels;
     return usableModels.map((model) => {
       if (!PAID_AGENT_LIST.includes(model)) return model;
 
@@ -93,6 +100,7 @@ export function useCapsForToolUse() {
     usableModelsForPlan,
     currentModel,
     setCapModel,
+    isMultimodalitySupportedForCurrentModel,
     loading: !caps.data && (caps.isFetching || caps.isLoading),
   };
 }

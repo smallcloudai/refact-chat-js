@@ -1,13 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Host, InitialSetup } from "../components/InitialSetup";
-import { CloudLogin } from "../components/CloudLogin";
-import { EnterpriseSetup } from "../components/EnterpriseSetup";
-import { SelfHostingSetup } from "../components/SelfHostingSetup";
 import { Flex } from "@radix-ui/themes";
 import { Chat, newChatAction, selectChatId, selectIsStreaming } from "./Chat";
 import { Sidebar } from "../components/Sidebar/Sidebar";
 import { useEventsBusForIDE, useConfig, useEffectOnce } from "../hooks";
-
 import { useAppSelector, useAppDispatch } from "../hooks";
 import { FIMDebug } from "./FIM";
 import { store, persistor, RootState } from "../app/store";
@@ -27,7 +22,6 @@ import { TourProvider } from "./Tour";
 import { Tour } from "../components/Tour";
 import { TourEnd } from "../components/Tour/TourEnd";
 import { useEventBusForApp } from "../hooks/useEventBusForApp";
-import { BringYourOwnKey } from "../components/BringYourOwnKey/BringYourOwnKey";
 import { AbortControllerProvider } from "../contexts/AbortControllers";
 import { Toolbar } from "../components/Toolbar";
 import { Tab } from "../components/Toolbar/Toolbar";
@@ -37,6 +31,10 @@ import { Integrations } from "./Integrations";
 import { UserSurvey } from "./UserSurvey";
 import { integrationsApi } from "../services/refact";
 import { KnowledgeList } from "./Knowledge";
+import { LoginPage } from "./Login";
+
+import styles from "./App.module.css";
+import classNames from "classnames";
 
 export interface AppProps {
   style?: React.CSSProperties;
@@ -44,8 +42,10 @@ export interface AppProps {
 
 export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
   const dispatch = useAppDispatch();
+
   const pages = useAppSelector(selectPages);
   const isStreaming = useAppSelector(selectIsStreaming);
+
   const isPageInHistory = useCallback(
     (pageName: string) => {
       return pages.some((page) => page.name === pageName);
@@ -53,7 +53,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
     [pages],
   );
 
-  const { setupHost, chatPageChange, setIsChatStreaming, setIsChatReady } =
+  const { chatPageChange, setIsChatStreaming, setIsChatReady } =
     useEventsBusForIDE();
   const tourState = useAppSelector((state: RootState) => state.tour);
   const historyState = useAppSelector((state: RootState) => state.history);
@@ -75,7 +75,8 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
     isPageInHistory("chat");
 
   useEffect(() => {
-    if (config.apiKey && config.addressURL && !isLoggedIn) {
+    // TODO: note sure why but removing isLoggedIn works?
+    if (config.apiKey && config.addressURL /*&& !isLoggedIn*/) {
       if (tourState.type === "in_progress" && tourState.step === 1) {
         dispatch(push({ name: "welcome" }));
       } else if (Object.keys(historyState).length === 0) {
@@ -87,7 +88,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
       }
     }
     if (!config.apiKey && !config.addressURL && isLoggedIn) {
-      dispatch(popBackTo({ name: "initial setup" }));
+      dispatch(popBackTo({ name: "login page" }));
     }
   }, [
     config.apiKey,
@@ -112,30 +113,6 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
   useEffectOnce(() => {
     setIsChatReady(true);
   });
-
-  const onPressNext = (host: Host) => {
-    if (host === "cloud") {
-      dispatch(push({ name: "cloud login" }));
-    } else if (host === "enterprise") {
-      dispatch(push({ name: "enterprise setup" }));
-    } else if (host === "self-hosting") {
-      dispatch(push({ name: "self hosting setup" }));
-    } else {
-      dispatch(push({ name: "bring your own key" }));
-    }
-  };
-
-  const enterpriseSetup = (endpointAddress: string, apiKey: string) => {
-    setupHost({ type: "enterprise", apiKey, endpointAddress });
-  };
-
-  const selfHostingSetup = (endpointAddress: string) => {
-    setupHost({ type: "self", endpointAddress });
-  };
-
-  const bringYourOwnKeySetup = () => {
-    setupHost({ type: "bring-your-own-key" });
-  };
 
   const startTour = () => {
     dispatch(push({ name: "history" }));
@@ -168,15 +145,13 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
 
   return (
     <Flex
-      style={{
-        flexDirection: "column",
-        alignItems: "stretch",
-        height:
-          page.name === "integrations page" && isPaddingApplied
-            ? "calc(100vh - 80px)"
-            : "100vh",
-        ...style,
-      }}
+      align="stretch"
+      direction="column"
+      style={style}
+      className={classNames(styles.rootFlex, {
+        [styles.integrationsPagePadding]:
+          page.name === "integrations page" && isPaddingApplied,
+      })}
     >
       <PageWrapper
         host={config.host}
@@ -185,20 +160,8 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
         }}
       >
         <UserSurvey />
+        {page.name === "login page" && <LoginPage />}
         {activeTab && <Toolbar activeTab={activeTab} />}
-        {page.name === "initial setup" && (
-          <InitialSetup onPressNext={onPressNext} />
-        )}
-        {page.name === "cloud login" && <CloudLogin goBack={goBack} />}
-        {page.name === "enterprise setup" && (
-          <EnterpriseSetup goBack={goBack} next={enterpriseSetup} />
-        )}
-        {page.name === "self hosting setup" && (
-          <SelfHostingSetup goBack={goBack} next={selfHostingSetup} />
-        )}
-        {page.name === "bring your own key" && (
-          <BringYourOwnKey goBack={goBack} next={bringYourOwnKeySetup} />
-        )}
         {page.name === "welcome" && <Welcome onPressNext={startTour} />}
         {page.name === "tour end" && <TourEnd />}
         {page.name === "history" && (
@@ -249,7 +212,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
         )}
         {page.name === "knowledge list" && <KnowledgeList />}
       </PageWrapper>
-      <Tour page={pages[pages.length - 1].name} />
+      {page.name !== "welcome" && <Tour page={pages[pages.length - 1].name} />}
     </Flex>
   );
 };

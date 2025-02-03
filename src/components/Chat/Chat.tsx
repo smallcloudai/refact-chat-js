@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ChatForm, ChatFormProps } from "../ChatForm";
 import { ChatContent } from "../ChatContent";
-import { Flex, Button, Text, Container, Card } from "@radix-ui/themes";
+import { Flex, Button, Text, Card } from "@radix-ui/themes";
 import {
   useAppSelector,
   useAppDispatch,
@@ -9,8 +9,9 @@ import {
   useAutoSend,
   useGetCapsQuery,
   useCapsForToolUse,
+  useAgentUsage,
 } from "../../hooks";
-import type { Config } from "../../features/Config/configSlice";
+import { type Config } from "../../features/Config/configSlice";
 import {
   enableSend,
   selectIsStreaming,
@@ -24,6 +25,8 @@ import { ThreadHistoryButton } from "../Buttons";
 import { push } from "../../features/Pages/pagesSlice";
 import { DropzoneProvider } from "../Dropzone";
 import { AgentUsage } from "../../features/AgentUsage";
+import { useCheckpoints } from "../../hooks/useCheckpoints";
+import { Checkpoints } from "../../features/Checkpoints";
 
 export type ChatProps = {
   host: Config["host"];
@@ -39,6 +42,8 @@ export const Chat: React.FC<ChatProps> = ({
   unCalledTools,
   maybeSendToSidebar,
 }) => {
+  const dispatch = useAppDispatch();
+
   const [isViewingRawJSON, setIsViewingRawJSON] = useState(false);
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
@@ -48,9 +53,11 @@ export const Chat: React.FC<ChatProps> = ({
   const { submit, abort, retryFromIndex } = useSendChatRequest();
 
   const chatToolUse = useAppSelector(getSelectedToolUse);
-  const dispatch = useAppDispatch();
   const messages = useAppSelector(selectMessages);
   const capsForToolUse = useCapsForToolUse();
+  const { disableInput } = useAgentUsage();
+
+  const { shouldCheckpointsPopupBeShown } = useCheckpoints();
 
   const [isDebugChatHistoryVisible, setIsDebugChatHistoryVisible] =
     useState(false);
@@ -106,22 +113,27 @@ export const Chat: React.FC<ChatProps> = ({
           onStopStreaming={abort}
         />
 
-        {!unCalledTools && <AgentUsage />}
+        {shouldCheckpointsPopupBeShown && <Checkpoints />}
+
+        <AgentUsage />
         {!isStreaming && preventSend && unCalledTools && (
-          <Container py="4" bottom="0" style={{ justifyContent: "flex-end" }}>
-            <Card>
-              <Flex direction="column" align="center" gap="2">
+          <Flex py="4">
+            <Card style={{ width: "100%" }}>
+              <Flex direction="column" align="center" gap="2" width="100%">
                 Chat was interrupted with uncalled tools calls.
-                <Button onClick={onEnableSend}>Resume</Button>
+                <Button onClick={onEnableSend} disabled={disableInput}>
+                  Resume
+                </Button>
               </Flex>
             </Card>
-          </Container>
+          </Flex>
         )}
 
         <ChatForm
           key={chatId} // TODO: think of how can we not trigger re-render on chatId change (checkboxes)
           onSubmit={handleSummit}
           onClose={maybeSendToSidebar}
+          unCalledTools={unCalledTools}
         />
 
         <Flex justify="between" pl="1" pr="1" pt="1">

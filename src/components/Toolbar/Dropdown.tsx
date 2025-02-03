@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import {
   selectHost,
   selectKnowledgeFeature,
@@ -12,9 +12,10 @@ import {
   useLogout,
   useAppSelector,
   useAppDispatch,
+  useAgentUsage,
 } from "../../hooks";
 import { useOpenUrl } from "../../hooks/useOpenUrl";
-import { DropdownMenu, Flex, IconButton } from "@radix-ui/themes";
+import { Button, DropdownMenu, Flex, IconButton } from "@radix-ui/themes";
 import { HamburgerMenuIcon, DiscordLogoIcon } from "@radix-ui/react-icons";
 import { clearHistory } from "../../features/History/historySlice";
 import { KnowledgeListPage } from "../../features/Pages/pagesSlice";
@@ -26,7 +27,7 @@ export type DropdownNavigationOptions =
   | "settings"
   | "hot keys"
   | "restart tour"
-  | "cloud login"
+  | "login page"
   | "integrations"
   | KnowledgeListPage["name"]
   | "";
@@ -67,6 +68,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   const logout = useLogout();
   const { addressURL } = useConfig();
   const knowledgeEnabled = useAppSelector(selectKnowledgeFeature);
+  const { startPollingForUser } = useAgentUsage();
 
   const bugUrl = linkForBugReports(host);
   const discordUrl = "https://www.smallcloud.ai/discord";
@@ -78,6 +80,16 @@ export const Dropdown: React.FC<DropdownProps> = ({
   const handleChatHistoryCleanUp = () => {
     dispatch(clearHistory());
   };
+
+  const handleProUpgradeClick = useCallback(() => {
+    startPollingForUser();
+    openUrl("https://refact.smallcloud.ai/pro");
+  }, [openUrl, startPollingForUser]);
+
+  const refactProductType = useMemo(() => {
+    if (host === "jetbrains") return "Plugin";
+    return "Extension";
+  }, [host]);
 
   return (
     <DropdownMenu.Root>
@@ -99,7 +111,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
           </DropdownMenu.Item>
         )}
 
-        {/* 
+        {/*
         Hide coins (until coins logic is reworked)
         {user.data && (
           <DropdownMenu.Label>
@@ -115,18 +127,34 @@ export const Dropdown: React.FC<DropdownProps> = ({
             </Flex>
           </DropdownMenu.Label>
         )}
+        <Flex direction="column" gap="2" mt="1" mx="2">
+          {user.data && user.data.inference === "FREE" && (
+            <Button
+              color="red"
+              variant="outline"
+              onClick={handleProUpgradeClick}
+            >
+              Upgrade to PRO
+            </Button>
+          )}
 
-        <DropdownMenu.Item
-          onSelect={(event) => {
-            event.preventDefault();
-            openUrl(discordUrl);
-          }}
-        >
-          <Flex align="center" gap="3">
-            Discord Community{" "}
-            <DiscordLogoIcon width="20" height="20" color="var(--accent-11)" />
-          </Flex>
-        </DropdownMenu.Item>
+          <Button
+            onClick={(event) => {
+              event.preventDefault();
+              openUrl(discordUrl);
+            }}
+            variant="outline"
+          >
+            <Flex align="center" gap="3">
+              Discord Community{" "}
+              <DiscordLogoIcon
+                width="20"
+                height="20"
+                color="var(--accent-11)"
+              />
+            </Flex>
+          </Button>
+        </Flex>
 
         <DropdownMenu.Separator />
 
@@ -147,7 +175,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
         </DropdownMenu.Item>
 
         <DropdownMenu.Item onSelect={() => handleNavigation("settings")}>
-          IDE Settings
+          {refactProductType} Settings
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Item onSelect={() => handleNavigation("hot keys")}>
+          IDE Hotkeys
         </DropdownMenu.Item>
 
         <DropdownMenu.Item
@@ -207,7 +239,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
           onSelect={(event) => {
             event.preventDefault();
             logout();
-            handleNavigation("cloud login");
+            handleNavigation("login page");
           }}
         >
           Logout

@@ -8,6 +8,8 @@ export type User = {
   inference: string;
   metering_balance: number;
   questionnaire: false | Record<string, string>;
+  refact_agent_max_request_num: number;
+  refact_agent_request_available: null | number; // null for PRO or ROBOT
 };
 
 function isUser(json: unknown): json is User {
@@ -21,11 +23,16 @@ function isUser(json: unknown): json is User {
     "inference_url" in json &&
     typeof json.inference_url === "string" &&
     "inference" in json &&
-    typeof json.inference === "string"
+    typeof json.inference === "string" &&
+    "refact_agent_max_request_num" in json &&
+    typeof json.refact_agent_max_request_num === "number" &&
+    "refact_agent_request_available" in json &&
+    (json.refact_agent_request_available === null ||
+      typeof json.refact_agent_max_request_num === "number")
   );
 }
 
-type GoodResponse = User & {
+export type GoodPollingResponse = User & {
   secret_key: string;
   tooltip_message: string;
   login_message: string;
@@ -34,7 +41,7 @@ type GoodResponse = User & {
   "longthink-functions-today-v2": Record<string, LongThinkFunction>;
 };
 
-export function isGoodResponse(json: unknown): json is GoodResponse {
+export function isGoodResponse(json: unknown): json is GoodPollingResponse {
   if (!isUser(json)) return false;
   return "secret_key" in json && typeof json.secret_key === "string";
 }
@@ -44,7 +51,7 @@ type BadResponse = {
   retcode: "FAILED";
 };
 
-export type StreamedLoginResponse = GoodResponse | BadResponse;
+export type StreamedLoginResponse = GoodPollingResponse | BadResponse;
 
 export type LongThinkFunction = {
   label: string;
@@ -160,8 +167,15 @@ export const smallCloudApi = createApi({
         });
       },
     }),
-    getUser: builder.query<User, string>({
-      query: (apiKey: string) => {
+    getUser: builder.query<
+      User,
+      {
+        apiKey: string;
+        addressURL?: string;
+      }
+    >({
+      query: (args) => {
+        const { apiKey } = args;
         return {
           url: "login",
           method: "GET",
@@ -214,5 +228,61 @@ export const smallCloudApi = createApi({
       queryFn: () => ({ data: null }),
       invalidatesTags: ["User", "Polling"],
     }),
+
+    loginWithEmailLink: builder.mutation<
+      EmailLinkResponse,
+      { email: string; token: string }
+    >({
+      async queryFn(arg, api, extraOptions, baseQuery) {
+        // TODO: maybe use cookies?
+        const url = `https://www.smallcloud.ai/plugin-magic-link/${arg.token.trim()}/${arg.email.trim()}`;
+
+        const response = await baseQuery({
+          ...extraOptions,
+          url,
+          signal: api.signal,
+        });
+        if (response.error) return response;
+
+        if (!isEmailLinkResponse(response.data)) {
+          return {
+            error: {
+              error:
+                "Invalid response from https://www.smallcloud.ai/plugin-magic-link",
+              data: response.data,
+              status: "CUSTOM_ERROR",
+            },
+          };
+        }
+
+        return { data: response.data };
+      },
+    }),
   }),
 });
+
+type EmailLinkResponse =
+  | {
+      retcode: "OK";
+      status: "sent";
+    }
+  | {
+      retcode: "OK";
+      status: "not_logged_in";
+    }
+  | {
+      retcode: "OK";
+      status: "user_logged_in";
+      key: string;
+    };
+
+function isEmailLinkResponse(json: unknown): json is EmailLinkResponse {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  return (
+    "retcode" in json &&
+    typeof json.retcode === "string" &&
+    "status" in json &&
+    typeof json.status === "string"
+  );
+}

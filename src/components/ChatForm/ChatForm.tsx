@@ -3,7 +3,11 @@ import React, { useCallback, useEffect, useMemo } from "react";
 import { Flex, Card, Text } from "@radix-ui/themes";
 import styles from "./ChatForm.module.css";
 
-import { PaperPlaneButton, BackToSideBarButton } from "../Buttons/Buttons";
+import {
+  PaperPlaneButton,
+  BackToSideBarButton,
+  AgentIntegrationsButton,
+} from "../Buttons/Buttons";
 import { TextArea } from "../TextArea";
 import { Form } from "./Form";
 import {
@@ -11,6 +15,9 @@ import {
   useIsOnline,
   useConfig,
   useAgentUsage,
+  useSendChatRequest,
+  useCapsForToolUse,
+  USAGE_LIMIT_EXHAUSTED_MESSAGE,
 } from "../../hooks";
 import { ErrorCallout, Callout } from "../Callout";
 import { ComboBox } from "../ComboBox";
@@ -34,48 +41,76 @@ import { getPauseReasonsWithPauseStatus } from "../../features/ToolConfirmation/
 import { AttachFileButton, FileList } from "../Dropzone";
 import { useAttachedImages } from "../../hooks/useAttachedImages";
 import {
+  enableSend,
+  selectChatId,
   selectIsStreaming,
   selectIsWaiting,
   selectMessages,
+  selectPreventSend,
+  selectToolUse,
 } from "../../features/Chat";
-import { isAssistantMessage } from "../../services/refact/types";
+import { isUserMessage, telemetryApi } from "../../services/refact";
+import { push } from "../../features/Pages/pagesSlice";
+import { AgentCapabilities } from "./AgentCapabilities";
 
 export type ChatFormProps = {
   onSubmit: (str: string) => void;
   onClose?: () => void;
   className?: string;
+  unCalledTools: boolean;
 };
 
 export const ChatForm: React.FC<ChatFormProps> = ({
   onSubmit,
   onClose,
   className,
+  unCalledTools,
 }) => {
   const dispatch = useAppDispatch();
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
+  const { retryFromIndex } = useSendChatRequest();
+  const { isMultimodalitySupportedForCurrentModel } = useCapsForToolUse();
   const config = useConfig();
+  const toolUse = useAppSelector(selectToolUse);
   const error = useAppSelector(getErrorMessage);
   const information = useAppSelector(getInformationMessage);
   const pauseReasonsWithPause = useAppSelector(getPauseReasonsWithPauseStatus);
   const [helpInfo, setHelpInfo] = React.useState<React.ReactNode | null>(null);
-  const onClearError = useCallback(() => dispatch(clearError()), [dispatch]);
   const { disableInput } = useAgentUsage();
   const isOnline = useIsOnline();
+
+  const chatId = useAppSelector(selectChatId);
   const messages = useAppSelector(selectMessages);
+  const preventSend = useAppSelector(selectPreventSend);
+
+  const onClearError = useCallback(() => {
+    dispatch(clearError());
+    const userMessages = messages.filter(isUserMessage);
+
+    // getting second-to-last user message
+    const lastSuccessfulUserMessage =
+      userMessages.slice(-2, -1)[0] || userMessages[0];
+
+    const lastSuccessfulUserMessageIndex = messages.indexOf(
+      lastSuccessfulUserMessage,
+    );
+    retryFromIndex(
+      lastSuccessfulUserMessageIndex,
+      lastSuccessfulUserMessage.content,
+    );
+  }, [dispatch, retryFromIndex, messages]);
 
   const disableSend = useMemo(() => {
     // TODO: if interrupting chat some errors can occur
     if (messages.length === 0) return false;
-    const lastMessage = messages[messages.length - 1];
-    return (
-      isAssistantMessage(lastMessage) && (isWaiting || isStreaming || !isOnline)
-    );
-  }, [isOnline, isStreaming, isWaiting, messages]);
+    return isWaiting || isStreaming || !isOnline || preventSend;
+  }, [isOnline, isStreaming, isWaiting, preventSend, messages]);
 
   const { processAndInsertImages } = useAttachedImages();
   const handlePastingFile = useCallback(
     (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      if (!isMultimodalitySupportedForCurrentModel) return;
       const files: File[] = [];
       const items = event.clipboardData.items;
       for (const item of items) {
@@ -89,7 +124,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
         processAndInsertImages(files);
       }
     },
-    [processAndInsertImages],
+    [processAndInsertImages, isMultimodalitySupportedForCurrentModel],
   );
 
   const {
@@ -99,6 +134,9 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     setFileInteracted,
     setLineSelectionInteracted,
   } = useCheckboxes();
+
+  const [sendTelemetryEvent] =
+    telemetryApi.useLazySendTelemetryChatEventQuery();
 
   const [value, setValue, isSendImmediately, setIsSendImmediately] =
     useInputValue(() => unCheckAll());
@@ -116,9 +154,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   const handleSubmit = useCallback(() => {
     const trimmedValue = value.trim();
     if (disableInput) {
-      const action = setInformation(
-        "You have exceeded the FREE usage limit, upgrade to PRO or switch to EXPLORE mode.",
-      );
+      const action = setInformation(USAGE_LIMIT_EXHAUSTED_MESSAGE);
       dispatch(action);
     } else if (!disableSend && trimmedValue.length > 0) {
       const valueIncludingChecks = addCheckboxValuesToInput(
@@ -190,6 +226,36 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     [handleHelpInfo, setValue, setFileInteracted, setLineSelectionInteracted],
   );
 
+  const handleAgentIntegrationsClick = useCallback(() => {
+    dispatch(push({ name: "integrations page" }));
+    void sendTelemetryEvent({
+      scope: `openIntegrations`,
+      success: true,
+      error_message: "",
+    });
+  }, [dispatch, sendTelemetryEvent]);
+
+  useEffect(() => {
+    // this use effect is required to reset preventSend when chat was restored
+    if (
+      preventSend &&
+      !unCalledTools &&
+      !isStreaming &&
+      !isWaiting &&
+      isOnline
+    ) {
+      dispatch(enableSend({ id: chatId }));
+    }
+  }, [
+    dispatch,
+    isOnline,
+    isWaiting,
+    isStreaming,
+    preventSend,
+    chatId,
+    unCalledTools,
+  ]);
+
   useEffect(() => {
     if (isSendImmediately && !isWaiting && !isStreaming) {
       handleSubmit();
@@ -207,9 +273,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     return (
       <ErrorCallout mt="2" onClick={onClearError} timeout={null}>
         {error}
-        <Text size="1" as="div">
-          Click to retry
-        </Text>
       </ErrorCallout>
     );
   }
@@ -230,7 +293,11 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 
   return (
     <Card mt="1" style={{ flexShrink: 0, position: "static" }}>
-      {!isOnline && <Callout type="info" message="Offline" />}
+      {!isOnline && (
+        <Callout type="info" mb="2">
+          Oops, seems that connection was lost... Check your internet connection
+        </Callout>
+      )}
 
       <Flex
         ref={(x) => refs.setChat(x)}
@@ -247,6 +314,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
             {helpInfo}
           </Flex>
         )}
+        {toolUse === "agent" && <AgentCapabilities />}
         <Form
           disabled={disableSend}
           className={className}
@@ -279,19 +347,29 @@ export const ChatForm: React.FC<ChatFormProps> = ({
             )}
           />
           <Flex gap="2" className={styles.buttonGroup}>
+            {toolUse === "agent" && (
+              <AgentIntegrationsButton
+                title="Set up Agent Integrations"
+                size="1"
+                type="button"
+                onClick={handleAgentIntegrationsClick}
+                ref={(x) => refs.setSetupIntegrations(x)}
+              />
+            )}
             {onClose && (
               <BackToSideBarButton
                 disabled={isStreaming}
-                title="return to sidebar"
+                title="Return to sidebar"
                 size="1"
                 onClick={onClose}
               />
             )}
-            {config.features?.images !== false && <AttachFileButton />}
+            {config.features?.images !== false &&
+              isMultimodalitySupportedForCurrentModel && <AttachFileButton />}
             {/* TODO: Reserved space for microphone button coming later on */}
             <PaperPlaneButton
               disabled={disableSend || disableInput}
-              title="send"
+              title="Send message"
               size="1"
               type="submit"
             />

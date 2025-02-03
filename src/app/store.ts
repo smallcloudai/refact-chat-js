@@ -51,6 +51,8 @@ import { integrationsSlice } from "../features/Integrations";
 import { agentUsageSlice } from "../features/AgentUsage/agentUsageSlice";
 import { currentProjectInfoReducer } from "../features/Chat/currentProject";
 import { knowledgeSlice } from "../features/Knowledge/knowledgeSlice";
+import { checkpointsSlice } from "../features/Checkpoints/checkpointsSlice";
+import { checkpointsApi } from "../services/refact/checkpoints";
 
 const tipOfTheDayPersistConfig = {
   key: "totd",
@@ -58,9 +60,19 @@ const tipOfTheDayPersistConfig = {
   stateReconciler: mergeInitialState,
 };
 
+const agentUsagePersistConfig = {
+  key: "agentUsage",
+  storage: storage(),
+  stateReconciler: mergeInitialState,
+};
+
 const persistedTipOfTheDayReducer = persistReducer<
   ReturnType<typeof tipOfTheDaySlice.reducer>
 >(tipOfTheDayPersistConfig, tipOfTheDaySlice.reducer);
+
+const persistedAgentUsageReducer = persistReducer<
+  ReturnType<typeof agentUsageSlice.reducer>
+>(agentUsagePersistConfig, agentUsageSlice.reducer);
 
 // https://redux-toolkit.js.org/api/combineSlices
 // `combineSlices` automatically combines the reducers using
@@ -71,6 +83,7 @@ const rootReducer = combineSlices(
     tour: tourReducer,
     // tipOfTheDay: persistedTipOfTheDayReducer,
     [tipOfTheDaySlice.reducerPath]: persistedTipOfTheDayReducer,
+    [agentUsageSlice.reducerPath]: persistedAgentUsageReducer,
     config: configReducer,
     active_file: activeFileReducer,
     current_project: currentProjectInfoReducer,
@@ -86,6 +99,7 @@ const rootReducer = combineSlices(
     [pathApi.reducerPath]: pathApi.reducer,
     [pingApi.reducerPath]: pingApi.reducer,
     [linksApi.reducerPath]: linksApi.reducer,
+    [checkpointsApi.reducerPath]: checkpointsApi.reducer,
     [telemetryApi.reducerPath]: telemetryApi.reducer,
     [knowledgeApi.reducerPath]: knowledgeApi.reducer,
   },
@@ -102,6 +116,7 @@ const rootReducer = combineSlices(
   integrationsSlice,
   agentUsageSlice,
   knowledgeSlice,
+  checkpointsSlice,
 );
 
 const rootPersistConfig = {
@@ -172,6 +187,7 @@ export function setUpStore(preloadedState?: Partial<RootState>) {
             linksApi.middleware,
             integrationsApi.middleware,
             dockerApi.middleware,
+            checkpointsApi.middleware,
             telemetryApi.middleware,
             knowledgeApi.middleware,
           )

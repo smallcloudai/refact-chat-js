@@ -28,8 +28,13 @@ import {
   setChatMode,
   setIntegrationData,
   setIsWaitingForResponse,
+  setMaxNewTokens,
+  setAutomaticPatch,
+  setLastUserMessageId,
+  setEnabledCheckpoints,
 } from "./actions";
 import { formatChatResponse } from "./utils";
+import { DEFAULT_MAX_NEW_TOKENS } from "../../../services/refact";
 
 const createChatThread = (
   tool_use: ToolUse,
@@ -41,6 +46,7 @@ const createChatThread = (
     messages: [],
     title: "",
     model: "",
+    last_user_message_id: "",
     tool_use,
     integration,
     mode,
@@ -61,9 +67,11 @@ const createInitialState = (
     error: null,
     prevent_send: false,
     waiting_for_response: false,
+    max_new_tokens: DEFAULT_MAX_NEW_TOKENS,
     cache: {},
     system_prompt: {},
     tool_use,
+    checkpoints_enabled: true,
     send_immediately: false,
   };
 };
@@ -108,6 +116,8 @@ export const chatReducer = createReducer(initialState, (builder) => {
     }
     next.thread.model = state.thread.model;
     next.system_prompt = state.system_prompt;
+    next.automatic_patch = state.automatic_patch;
+    next.checkpoints_enabled = state.checkpoints_enabled;
     return next;
   });
 
@@ -153,6 +163,19 @@ export const chatReducer = createReducer(initialState, (builder) => {
     state.streaming = false;
     state.thread.read = true;
     state.prevent_send = false;
+  });
+
+  builder.addCase(setAutomaticPatch, (state, action) => {
+    state.automatic_patch = action.payload;
+  });
+
+  builder.addCase(setEnabledCheckpoints, (state, action) => {
+    state.checkpoints_enabled = action.payload;
+  });
+
+  builder.addCase(setLastUserMessageId, (state, action) => {
+    if (state.thread.id !== action.payload.chatId) return state;
+    state.thread.last_user_message_id = action.payload.messageId;
   });
 
   builder.addCase(chatAskedQuestion, (state, action) => {
@@ -242,5 +265,9 @@ export const chatReducer = createReducer(initialState, (builder) => {
 
   builder.addCase(setIsWaitingForResponse, (state, action) => {
     state.waiting_for_response = action.payload;
+  });
+
+  builder.addCase(setMaxNewTokens, (state, action) => {
+    state.max_new_tokens = action.payload;
   });
 });

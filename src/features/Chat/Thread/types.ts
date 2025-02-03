@@ -21,6 +21,7 @@ export type ChatThread = {
   integration?: IntegrationMeta | null;
   mode?: LspChatMode;
   project_name?: string;
+  last_user_message_id?: string;
 };
 
 export type ToolUse = "quick" | "explore" | "agent";
@@ -30,7 +31,10 @@ export type Chat = {
   thread: ChatThread;
   error: null | string;
   prevent_send: boolean;
+  automatic_patch?: boolean;
+  checkpoints_enabled?: boolean;
   waiting_for_response: boolean;
+  max_new_tokens?: number;
   cache: Record<string, ChatThread>;
   system_prompt: SystemPrompts;
   tool_use: ToolUse;
@@ -38,6 +42,7 @@ export type Chat = {
 };
 
 export type PayloadWithId = { id: string };
+export type PayloadWithChatAndMessageId = { chatId: string; messageId: string };
 export type PayloadWithIdAndTitle = {
   title: string;
   isTitleGenerated: boolean;
