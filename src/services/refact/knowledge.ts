@@ -22,6 +22,7 @@ import {
   isVecDbStatus,
 } from "./types";
 import {
+  clearMemory,
   deleteMemory,
   setMemory,
   setVecDbStatus,
@@ -119,6 +120,7 @@ export const subscribeToMemoriesThunk = createAppAsyncThunk<
       }
       const reader = response.body?.getReader();
       if (!reader) return;
+      thunkApi.dispatch(clearMemory());
       const onAbort = () => {
         // console.log("knowledge stream aborted");
       };
