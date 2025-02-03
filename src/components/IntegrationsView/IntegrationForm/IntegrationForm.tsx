@@ -5,7 +5,7 @@ import { Spinner } from "../../Spinner";
 import { Badge, Button, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { IntegrationDocker } from "../IntegrationDocker";
 import { SmartLink } from "../../SmartLink";
-import { IntegrationFormField } from "../../../features/Integrations/renderIntegrationFormField";
+import { IntegrationFormField } from "../../../features/Integrations/IntegrationFormField";
 import { IntegrationAvailability } from "./IntegrationAvailability";
 import { IntegrationDeletePopover } from "../IntegrationDeletePopover";
 import { debugIntegrations } from "../../../debugConfig";

@@ -10,7 +10,7 @@ import { SmartLink } from "../../components/SmartLink";
 import { ParametersTable } from "../../components/IntegrationsView/IntegrationsTable/ParametersTable";
 import { Markdown } from "../../components/Markdown";
 import { toPascalCase } from "../../utils/toPascalCase";
-import styles from "./renderIntegrationFormField.module.css";
+import styles from "./IntegrationFormField.module.css";
 
 import type {
   Integration,
@@ -223,9 +223,3 @@ export const IntegrationFormField: FC<IntegrationFormFieldProps> = ({
     </Flex>
   );
 };
-
-// For backward compatibility
-// eslint-disable-next-line react-refresh/only-export-components
-export const renderIntegrationFormField = (
-  props: IntegrationFormFieldProps,
-) => <IntegrationFormField {...props} />;
