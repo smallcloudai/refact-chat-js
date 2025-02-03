@@ -58,7 +58,12 @@ export const LoginPage: React.FC = () => {
       <Heading align="center" as="h2" size="6" my="6">
         Login to Refact.ai
       </Heading>
-      <Accordion.Root type="single" defaultValue={"cloud"} disabled={isLoading}>
+      <Accordion.Root
+        type="single"
+        defaultValue={"cloud"}
+        disabled={isLoading}
+        collapsible
+      >
         <Accordion.Item value="cloud">
           <Accordion.Trigger>Refact Cloud</Accordion.Trigger>
           <Accordion.Content>
