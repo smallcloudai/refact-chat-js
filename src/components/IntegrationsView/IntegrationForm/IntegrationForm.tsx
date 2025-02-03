@@ -1,33 +1,28 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { FC, FormEvent, useEffect } from "react";
 import classNames from "classnames";
 import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrationDataByPathQuery";
-
-import type { FC, FormEvent, Dispatch } from "react";
-import type {
-  Integration,
-  IntegrationField,
-  IntegrationPrimitive,
-  ToolConfirmation,
-} from "../../../services/refact";
-
-import styles from "./IntegrationForm.module.css";
 import { Spinner } from "../../Spinner";
 import { Badge, Button, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { IntegrationDocker } from "../IntegrationDocker";
 import { SmartLink } from "../../SmartLink";
-import { renderIntegrationFormField } from "../../../features/Integrations/renderIntegrationFormField";
+import { IntegrationFormField } from "../../../features/Integrations/renderIntegrationFormField";
 import { IntegrationAvailability } from "./IntegrationAvailability";
 import { IntegrationDeletePopover } from "../IntegrationDeletePopover";
 import { debugIntegrations } from "../../../debugConfig";
-import type { ToolParameterEntity } from "../../../services/refact";
-import {
-  areAllFieldsBoolean,
-  areToolConfirmation,
-  areToolParameters,
-} from "../../../services/refact";
 import { Confirmation } from "../Confirmation";
 import { ExclamationTriangleIcon } from "@radix-ui/react-icons";
 import { useEventsBusForIDE } from "../../../hooks";
+import { useFormFields } from "./hooks/useFormFields";
+import { useFormAvailability } from "./hooks/useFormAvailability";
+
+import styles from "./IntegrationForm.module.css";
+import {
+  areAllFieldsBoolean,
+  areToolConfirmation,
+  type Integration,
+  type ToolConfirmation,
+} from "../../../services/refact";
+import type { ToolParameterEntity } from "../../../services/refact";
 
 type IntegrationFormProps = {
   integrationPath: string;
@@ -41,11 +36,11 @@ type IntegrationFormProps = {
   handleChange: (event: FormEvent<HTMLFormElement>) => void;
   onSchema: (schema: Integration["integr_schema"]) => void;
   onValues: (values: Integration["integr_values"]) => void;
-  setAvailabilityValues: Dispatch<
+  setAvailabilityValues: React.Dispatch<
     React.SetStateAction<Record<string, boolean>>
   >;
-  setConfirmationRules: Dispatch<React.SetStateAction<ToolConfirmation>>;
-  setToolParameters: Dispatch<
+  setConfirmationRules: React.Dispatch<React.SetStateAction<ToolConfirmation>>;
+  setToolParameters: React.Dispatch<
     React.SetStateAction<ToolParameterEntity[] | null>
   >;
   handleSwitchIntegration: (
@@ -71,123 +66,64 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
   setToolParameters,
   handleSwitchIntegration,
 }) => {
-  const [areExtraFieldsRevealed, setAreExtraFieldsRevealed] = useState(false);
-
   const { integration } = useGetIntegrationDataByPathQuery(integrationPath);
   const { openFile } = useEventsBusForIDE();
 
-  const handleAvailabilityChange = useCallback(
-    (fieldName: string, value: boolean) => {
-      setAvailabilityValues((prev) => ({ ...prev, [fieldName]: value }));
-    },
-    [setAvailabilityValues],
-  );
+  const {
+    importantFields,
+    extraFields,
+    areExtraFieldsRevealed,
+    toggleExtraFields,
+  } = useFormFields(integration.data?.integr_schema.fields);
+  const {
+    handleAvailabilityChange,
+    handleConfirmationChange,
+    handleToolParameters,
+  } = useFormAvailability({
+    setAvailabilityValues,
+    setConfirmationRules,
+    setToolParameters,
+  });
 
-  const handleConfirmationChange = useCallback(
-    (fieldName: string, values: string[]) => {
-      setConfirmationRules((prev) => {
-        return { ...prev, [fieldName as keyof ToolConfirmation]: values };
-      });
-    },
-    [setConfirmationRules],
-  );
+  // Set initial values from integration data
+  useEffect(() => {
+    if (integration.data?.integr_schema) {
+      onSchema(integration.data.integr_schema);
+    }
+    if (integration.data?.integr_values) {
+      onValues(integration.data.integr_values);
+    }
 
-  const handleToolParameters = useCallback(
-    (value: ToolParameterEntity[]) => {
-      setToolParameters(value);
-    },
-    [setToolParameters],
-  );
-
-  const shouldIntegrationFormBeDisabled = useMemo(() => {
-    if (!integration.data?.integr_values) return false;
-    return isDisabled;
-  }, [isDisabled, integration]);
+    debugIntegrations("[DEBUG]: integration.data: ", integration);
+  }, [integration, onSchema, onValues, handleAvailabilityChange]);
 
   useEffect(() => {
     if (
-      integration.data?.integr_values &&
-      integration.data.integr_values.available &&
-      typeof integration.data.integr_values.available === "object" &&
+      integration.data?.integr_values?.available &&
       areAllFieldsBoolean(integration.data.integr_values.available)
     ) {
       Object.entries(integration.data.integr_values.available).forEach(
-        ([key, value]) => {
-          handleAvailabilityChange(key, value);
+        ([fieldKey, value]) => {
+          handleAvailabilityChange(fieldKey, value);
         },
       );
     }
   }, [integration, handleAvailabilityChange]);
 
-  useEffect(() => {
-    if (
-      integration.data?.integr_values &&
-      integration.data.integr_values.parameters &&
-      Array.isArray(integration.data.integr_values.parameters) &&
-      areToolParameters(integration.data.integr_values.parameters)
-    ) {
-      handleToolParameters(integration.data.integr_values.parameters);
-    }
-  }, [integration, handleToolParameters]);
-
-  useEffect(() => {
-    if (integration.data?.integr_schema) {
-      onSchema(integration.data.integr_schema);
-    }
-
-    if (integration.data?.integr_values) {
-      onValues(integration.data.integr_values);
-    }
-    debugIntegrations(`[DEBUG]: integration.data: `, integration);
-  }, [integration, onSchema, onValues]);
-
-  const importantFields = Object.entries(
-    integration.data?.integr_schema.fields ?? {},
-  )
-    .filter(([_, field]) => !field.f_extra)
-    .reduce<
-      Record<string, IntegrationField<NonNullable<IntegrationPrimitive>>>
-    >((acc, [key, field]) => {
-      acc[key] = field;
-      return acc;
-    }, {});
-
-  const extraFields = Object.entries(
-    integration.data?.integr_schema.fields ?? {},
-  )
-    .filter(([_, field]) => field.f_extra)
-    .reduce<
-      Record<string, IntegrationField<NonNullable<IntegrationPrimitive>>>
-    >((acc, [key, field]) => {
-      acc[key] = field;
-      return acc;
-    }, {});
-
-  if (integration.isLoading) {
-    return <Spinner spinning />;
-  }
-
-  if (!integration.data) {
-    return (
-      <div>
-        <p>No integration found</p>
-      </div>
-    );
-  }
-
-  if (integration.data.error_log.length > 0) {
-    const errorMessage = integration.data.error_log[0].error_msg;
-    const integrationFile = integration.data.error_log[0].integr_config_path;
-    const errorLine = integration.data.error_log[0].error_line;
+  // Render helpers
+  const renderErrorState = () => {
+    if (!integration.data) return null;
+    const { integr_name } = integration.data;
+    const { error_msg, integr_config_path, error_line } =
+      integration.data.error_log[0];
     return (
       <Flex width="100%" direction="column" align="start" gap="4">
         <Text size="2" color="gray">
           Whoops, this integration has a syntax error in the config file. You
-          can fix this problem by editing the config file.
+          can fix this by editing the config file.
         </Text>
         <Badge size="2" color="red">
-          <ExclamationTriangleIcon />
-          {errorMessage}
+          <ExclamationTriangleIcon /> {error_msg}
         </Badge>
         <Flex align="center" gap="2">
           <Button
@@ -195,16 +131,16 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
             color="gray"
             onClick={() =>
               openFile({
-                file_name: integrationFile,
-                line: errorLine === 0 ? 1 : errorLine,
+                file_name: integr_config_path,
+                line: error_line === 0 ? 1 : error_line,
               })
             }
           >
-            Open {integration.data.integr_name}.yaml
+            Open {integr_name}.yaml
           </Button>
           <IntegrationDeletePopover
-            integrationName={integration.data.integr_name}
-            integrationConfigPath={integration.data.integr_config_path}
+            integrationName={integr_name}
+            integrationConfigPath={integr_config_path}
             isApplying={isApplying}
             isDeletingIntegration={isDeletingIntegration}
             handleDeleteIntegration={handleDeleteIntegration}
@@ -212,6 +148,122 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
         </Flex>
       </Flex>
     );
+  };
+
+  const renderFormFields = () => {
+    if (!integration.data) return null;
+    const {
+      integr_config_path,
+      integr_name,
+      integr_schema,
+      integr_values,
+      project_path,
+    } = integration.data;
+
+    return (
+      <Grid gap="2" className={styles.gridContainer}>
+        {Object.keys(importantFields).map((fieldKey) => (
+          <IntegrationFormField
+            key={`${fieldKey}-important`}
+            fieldKey={fieldKey}
+            values={integr_values}
+            field={integr_schema.fields[fieldKey]}
+            integrationName={integr_name}
+            integrationPath={integr_config_path}
+            integrationProject={project_path}
+            isFieldVisible={areExtraFieldsRevealed}
+            onToolParameters={handleToolParameters}
+          />
+        ))}
+        {Object.keys(extraFields).map((fieldKey) => (
+          <IntegrationFormField
+            key={`${fieldKey}-extra`}
+            fieldKey={fieldKey}
+            values={integr_values}
+            field={integr_schema.fields[fieldKey]}
+            integrationName={integr_name}
+            integrationPath={integr_config_path}
+            integrationProject={project_path}
+            isFieldVisible={areExtraFieldsRevealed}
+            onToolParameters={handleToolParameters}
+          />
+        ))}
+      </Grid>
+    );
+  };
+
+  const renderSmartLinks = () => {
+    if (!integration.data?.integr_schema.smartlinks?.length) return null;
+
+    return (
+      <Flex width="100%" direction="column" gap="1" mb="6">
+        <Flex align="center" gap="3" mt="2" wrap="wrap">
+          <Heading as="h6" size="2" weight="medium">
+            Actions:
+          </Heading>
+          {integration.data.integr_schema.smartlinks.map((smartlink, idx) => (
+            <SmartLink
+              key={`smartlink-${idx}`}
+              smartlink={smartlink}
+              integrationName={integration.data?.integr_name ?? ""}
+              integrationProject={integration.data?.project_path ?? ""}
+              integrationPath={integration.data?.integr_config_path ?? ""}
+              shouldBeDisabled={
+                smartlink.sl_enable_only_with_tool
+                  ? !availabilityValues.on_your_laptop
+                  : false
+              }
+            />
+          ))}
+        </Flex>
+      </Flex>
+    );
+  };
+
+  const renderAvailabilityAndDelete = () => {
+    if (!integration.data?.integr_values) return null;
+
+    return (
+      <Flex align="start" justify="between">
+        <Flex
+          gap="4"
+          mb="4"
+          align="center"
+          justify="between"
+          className={styles.switchInline}
+        >
+          {integration.data.integr_values.available &&
+            Object.keys(integration.data.integr_values.available).map((key) => (
+              <IntegrationAvailability
+                key={key}
+                fieldName={key}
+                value={availabilityValues[key]}
+                onChange={handleAvailabilityChange}
+              />
+            ))}
+        </Flex>
+        <IntegrationDeletePopover
+          integrationName={integration.data.integr_name}
+          integrationConfigPath={integration.data.integr_config_path}
+          isApplying={isApplying}
+          isDeletingIntegration={isDeletingIntegration}
+          handleDeleteIntegration={handleDeleteIntegration}
+        />
+      </Flex>
+    );
+  };
+
+  // Loading and error states
+  if (integration.isLoading) {
+    return <Spinner spinning />;
+  }
+
+  if (!integration.data) {
+    return <Text>No integration found</Text>;
+  }
+
+  if (integration.data.error_log.length > 0) {
+    return renderErrorState();
   }
 
   return (
@@ -221,6 +273,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
           {integration.data.integr_schema.description}
         </Text>
       )}
+
       <form
         onSubmit={handleSubmit}
         onChange={handleChange}
@@ -228,114 +281,20 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
       >
         <Flex direction="column" gap="2">
           <Grid mb="0">
-            {integration.data.integr_values && (
-              <Flex align="start" justify="between">
-                <Flex
-                  gap="4"
-                  mb="4"
-                  align="center"
-                  justify="between"
-                  className={styles.switchInline}
-                >
-                  {integration.data.integr_values.available &&
-                    Object.keys(integration.data.integr_values.available).map(
-                      (key) => (
-                        <IntegrationAvailability
-                          key={key}
-                          fieldName={key}
-                          value={availabilityValues[key]}
-                          onChange={handleAvailabilityChange}
-                        />
-                      ),
-                    )}
-                </Flex>
-                <IntegrationDeletePopover
-                  integrationName={integration.data.integr_name}
-                  integrationConfigPath={integration.data.integr_config_path}
-                  isApplying={isApplying}
-                  isDeletingIntegration={isDeletingIntegration}
-                  handleDeleteIntegration={handleDeleteIntegration}
-                />
-              </Flex>
-            )}
-            {integration.data.integr_schema.smartlinks &&
-              integration.data.integr_schema.smartlinks.length > 0 && (
-                <Flex width="100%" direction="column" gap="1" mb="6">
-                  <Flex align="center" gap="3" mt="2" wrap="wrap">
-                    <Heading as="h6" size="2" weight="medium">
-                      Actions:
-                    </Heading>
-                    {integration.data.integr_schema.smartlinks.map(
-                      (smartlink, index) => {
-                        return (
-                          <SmartLink
-                            key={`smartlink-${index}`}
-                            smartlink={smartlink}
-                            integrationName={
-                              integration.data?.integr_name ?? ""
-                            }
-                            integrationProject={
-                              integration.data?.project_path ?? ""
-                            }
-                            integrationPath={
-                              integration.data?.integr_config_path ?? ""
-                            }
-                            shouldBeDisabled={
-                              smartlink.sl_enable_only_with_tool
-                                ? integration.data?.integr_values === null ||
-                                  !shouldIntegrationFormBeDisabled ||
-                                  !availabilityValues.on_your_laptop
-                                : false
-                            }
-                          />
-                        );
-                      },
-                    )}
-                  </Flex>
-                </Flex>
-              )}
-            <Grid gap="2" className={styles.gridContainer}>
-              {Object.keys(importantFields).map((fieldKey) => {
-                if (integration.data) {
-                  return renderIntegrationFormField({
-                    fieldKey: fieldKey,
-                    values: integration.data.integr_values,
-                    field: integration.data.integr_schema.fields[fieldKey],
-                    integrationName: integration.data.integr_name,
-                    integrationPath: integration.data.integr_config_path,
-                    integrationProject: integration.data.project_path,
-                    onToolParameters: handleToolParameters,
-                  });
-                }
-              })}
-              {Object.keys(extraFields).map((fieldKey) => {
-                if (integration.data) {
-                  return renderIntegrationFormField({
-                    fieldKey: fieldKey,
-                    values: integration.data.integr_values,
-                    field: integration.data.integr_schema.fields[fieldKey],
-                    integrationName: integration.data.integr_name,
-                    integrationPath: integration.data.integr_config_path,
-                    integrationProject: integration.data.project_path,
-                    isFieldVisible: areExtraFieldsRevealed,
-                    onToolParameters: handleToolParameters,
-                  });
-                }
-              })}
-            </Grid>
+            {renderAvailabilityAndDelete()}
+            {renderSmartLinks()}
+            {renderFormFields()}
           </Grid>
-          {Object.values(extraFields).length > 0 && (
+
+          {Object.keys(extraFields).length > 0 && (
             <Button
               variant="soft"
               type="button"
               color="gray"
               size="2"
-              onClick={() => setAreExtraFieldsRevealed((prev) => !prev)}
+              onClick={toggleExtraFields}
               mb="1"
-              mt={{
-                initial: "3",
-                xs: "0",
-              }}
+              mt={{ initial: "3", xs: "0" }}
               className={styles.advancedButton}
             >
               {areExtraFieldsRevealed
@@ -343,14 +302,14 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
                 : "Show advanced configuration"}
             </Button>
           )}
+
           {!integration.data.integr_schema.confirmation.not_applicable && (
             <Flex gap="4" mb="3">
               <Confirmation
                 confirmationByUser={confirmationRules}
                 confirmationFromValues={
-                  integration.data.integr_values !== null &&
                   areToolConfirmation(
-                    integration.data.integr_values.confirmation,
+                    integration.data.integr_values?.confirmation,
                   )
                     ? integration.data.integr_values.confirmation
                     : null
@@ -362,6 +321,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
               />
             </Flex>
           )}
+
           <Flex
             justify="end"
             width="100%"
@@ -375,20 +335,11 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
                 variant="solid"
                 type="submit"
                 size="2"
-                title={
-                  shouldIntegrationFormBeDisabled
-                    ? "Cannot apply, no changes made"
-                    : "Apply"
-                }
-                className={classNames(
-                  {
-                    [styles.disabledButton]:
-                      isApplying || shouldIntegrationFormBeDisabled,
-                  },
-                  styles.button,
-                  styles.applyButton,
-                )}
-                disabled={shouldIntegrationFormBeDisabled}
+                title={isDisabled ? "Cannot apply, no changes made" : "Apply"}
+                className={classNames(styles.button, styles.applyButton, {
+                  [styles.disabledButton]: isApplying || isDisabled,
+                })}
+                disabled={isDisabled}
               >
                 {isApplying ? "Applying..." : "Apply"}
               </Button>
@@ -396,6 +347,7 @@ export const IntegrationForm: FC<IntegrationFormProps> = ({
           </Flex>
         </Flex>
       </form>
+
       {integration.data.integr_schema.docker && (
         <Flex mt="6" direction="column" align="start" gap="5">
           <IntegrationDocker
