@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { MemoryRouter, Routes, Route } from "react-router";
 import { Flex } from "@radix-ui/themes";
 import { Chat, newChatAction, selectChatId, selectIsStreaming } from "./Chat";
 import { Sidebar } from "../components/Sidebar/Sidebar";
@@ -19,8 +20,8 @@ import {
   selectPages,
 } from "../features/Pages/pagesSlice";
 import { TourProvider } from "./Tour";
-import { Tour } from "../components/Tour";
-import { TourEnd } from "../components/Tour/TourEnd";
+// import { Tour } from "../components/Tour";
+// import { TourEnd } from "../components/Tour/TourEnd";
 import { useEventBusForApp } from "../hooks/useEventBusForApp";
 import { AbortControllerProvider } from "../contexts/AbortControllers";
 import { Toolbar } from "../components/Toolbar";
@@ -112,9 +113,9 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
     setIsChatReady(true);
   });
 
-  const startTour = () => {
-    dispatch(push({ name: "history" }));
-  };
+  // const startTour = () => {
+  //   dispatch(push({ name: "history" }));
+  // };
 
   const goBack = () => {
     dispatch(pop());
@@ -158,75 +159,154 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
         }}
       >
         <UserSurvey />
-        {page.name === "login page" && <LoginPage />}
-        {activeTab && <Toolbar activeTab={activeTab} />}
-        {page.name === "welcome" && <Welcome onPressNext={startTour} />}
-        {page.name === "tour end" && <TourEnd />}
-        {page.name === "history" && (
-          <Sidebar
-            takingNotes={false}
-            onOpenChatInTab={undefined}
-            style={{
-              alignSelf: "stretch",
-              height: "calc(100% - var(--space-5)* 2)",
-            }}
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          {/** TODO: Tour */}
+          <Route element={activeTab && <Toolbar activeTab={activeTab} />}>
+            <Route
+              path="/chat"
+              element={
+                <Chat
+                  host={config.host}
+                  tabbed={config.tabbed}
+                  // TODO: fix this, remove props
+                  backFromChat={() => ({})}
+                />
+              }
+            />
+            <Route
+              path="/"
+              element={
+                <Sidebar
+                  takingNotes={false}
+                  onOpenChatInTab={undefined}
+                  style={{
+                    alignSelf: "stretch",
+                    height: "calc(100% - var(--space-5)* 2)",
+                  }}
+                />
+              }
+            />
+          </Route>
+          {/* {page.name === "login page" && <LoginPage />} */}
+          {/** Add toolbar to history and chat */}
+          {/* {activeTab && <Toolbar activeTab={activeTab} />} */}
+          {/* {page.name === "welcome" && <Welcome onPressNext={startTour} />} */}
+          <Route
+            path="/welcome"
+            element={<Welcome onPressNext={() => ({})} />}
           />
-        )}
-        {page.name === "chat" && (
-          <Chat
-            host={config.host}
-            tabbed={config.tabbed}
-            backFromChat={goBack}
+          {/* {page.name === "tour end" && <TourEnd />} */}
+          {/* {page.name === "history" && (
+            <Sidebar
+              takingNotes={false}
+              onOpenChatInTab={undefined}
+              style={{
+                alignSelf: "stretch",
+                height: "calc(100% - var(--space-5)* 2)",
+              }}
+            />
+          )} */}
+          {/* {page.name === "chat" && (
+            <Chat
+              host={config.host}
+              tabbed={config.tabbed}
+              backFromChat={goBack}
+            />
+          )} */}
+          {/* {page.name === "fill in the middle debug page" && (
+            <FIMDebug host={config.host} tabbed={config.tabbed} />
+          )} */}
+          <Route
+            path="/fim"
+            element={<FIMDebug host={config.host} tabbed={config.tabbed} />}
           />
-        )}
-        {page.name === "fill in the middle debug page" && (
-          <FIMDebug host={config.host} tabbed={config.tabbed} />
-        )}
-        {page.name === "statistics page" && (
-          <Statistics
-            backFromStatistic={goBack}
-            tabbed={config.tabbed}
-            host={config.host}
-            onCloseStatistic={goBack}
+          {/* {page.name === "statistics page" && (
+            <Statistics
+              backFromStatistic={goBack}
+              tabbed={config.tabbed}
+              host={config.host}
+              onCloseStatistic={goBack}
+            />
+          )} */}
+          <Route
+            path="/statistics"
+            element={
+              <Statistics
+                backFromStatistic={goBack}
+                tabbed={config.tabbed}
+                host={config.host}
+                onCloseStatistic={goBack}
+              />
+            }
           />
-        )}
-        {page.name === "integrations page" && (
-          <Integrations
-            backFromIntegrations={goBackFromIntegrations}
-            tabbed={config.tabbed}
-            host={config.host}
-            onCloseIntegrations={goBackFromIntegrations}
-            handlePaddingShift={handlePaddingShift}
+          {/* {page.name === "integrations page" && (
+            <Integrations
+              backFromIntegrations={goBackFromIntegrations}
+              tabbed={config.tabbed}
+              host={config.host}
+              onCloseIntegrations={goBackFromIntegrations}
+              handlePaddingShift={handlePaddingShift}
+            />
+          )} */}
+          <Route
+            path="/integrations"
+            element={
+              <Integrations
+                backFromIntegrations={goBackFromIntegrations}
+                tabbed={config.tabbed}
+                host={config.host}
+                onCloseIntegrations={goBackFromIntegrations}
+                handlePaddingShift={handlePaddingShift}
+              />
+            }
           />
-        )}
-        {page.name === "thread history page" && (
-          <ThreadHistory
-            backFromThreadHistory={goBack}
-            tabbed={config.tabbed}
-            host={config.host}
-            onCloseThreadHistory={goBack}
-            chatId={page.chatId}
+          {/* {page.name === "thread history page" && (
+            <ThreadHistory
+              backFromThreadHistory={goBack}
+              tabbed={config.tabbed}
+              host={config.host}
+              onCloseThreadHistory={goBack}
+              chatId={page.chatId}
+            />
+          )} */}
+          <Route
+            path="/thread-history/:chatId"
+            element={
+              <ThreadHistory
+                backFromThreadHistory={goBack}
+                tabbed={config.tabbed}
+                host={config.host}
+                onCloseThreadHistory={goBack}
+                // chatId={page.chatId ?? ""}
+                // select from path
+                chatId=""
+              />
+            }
           />
-        )}
+        </Routes>
       </PageWrapper>
-      {page.name !== "welcome" && <Tour page={pages[pages.length - 1].name} />}
+      {/* {page.name !== "welcome" && <Tour page={pages[pages.length - 1].name} />} */}
     </Flex>
   );
 };
 
 // TODO: move this to the `app` directory.
 export const App = () => {
+  // TODO: sync MemoryRouter with redux.
   return (
-    <Provider store={store}>
-      <PersistGate persistor={persistor}>
-        <Theme>
-          <TourProvider>
-            <AbortControllerProvider>
-              <InnerApp />
-            </AbortControllerProvider>
-          </TourProvider>
-        </Theme>
-      </PersistGate>
-    </Provider>
+    <MemoryRouter>
+      <Provider store={store}>
+        <PersistGate persistor={persistor}>
+          <Theme>
+            <TourProvider>
+              <AbortControllerProvider>
+                <InnerApp />
+              </AbortControllerProvider>
+            </TourProvider>
+          </Theme>
+        </PersistGate>
+      </Provider>
+    </MemoryRouter>
   );
 };
