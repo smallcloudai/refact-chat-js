@@ -1,5 +1,5 @@
 import React from "react";
-import { IconButton, Box } from "@radix-ui/themes";
+import { IconButton, Flex } from "@radix-ui/themes";
 import classnames from "classnames";
 import { knowledgeApi } from "../../services/refact/knowledge";
 import { useAppSelector } from "../../hooks";
@@ -43,11 +43,12 @@ export const LikeButton = () => {
 
   if (!shouldShow) return false;
   return (
-    <Box position="absolute" top="0" right="0">
+    <Flex justify="end" px="2" minHeight="28px">
       <IconButton
+        title="create a trajectory from this chat"
         variant="ghost"
-        size="1"
         onClick={submitLike}
+        disabled={likeResponse.isSuccess}
         loading={likeResponse.isLoading}
         className={classnames(
           likeResponse.isSuccess && styles.like__button__success,
@@ -55,7 +56,7 @@ export const LikeButton = () => {
       >
         <ThumbIcon />
       </IconButton>
-    </Box>
+    </Flex>
   );
 };
 

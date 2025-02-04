@@ -58,7 +58,6 @@ export const AssistantInput: React.FC<ChatInputProps> = ({
 
   return (
     <Container position="relative">
-      {isLast && <LikeButton />}
       {message && (
         <Box py="4">
           <Markdown canHaveInteractiveElements={true} onCopyClick={handleCopy}>
@@ -67,6 +66,7 @@ export const AssistantInput: React.FC<ChatInputProps> = ({
         </Box>
       )}
       {toolCalls && <ToolContent toolCalls={toolCalls} />}
+      {isLast && <LikeButton />}
     </Container>
   );
 };

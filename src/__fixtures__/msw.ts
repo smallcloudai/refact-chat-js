@@ -5,11 +5,14 @@ import { STUB_LINKS_FOR_CHAT_RESPONSE } from "./chat_links_response";
 import {
   AT_TOOLS_AVAILABLE_URL,
   CHAT_LINKS_URL,
+  KNOWLEDGE_CREATE_URL,
   KNOWLEDGE_SUB_URL,
 } from "../services/refact/consts";
 import { STUB_TOOL_RESPONSE } from "./tools_response";
 import { STUB_SUB_RESPONSE, STUB_SUB_RESPONSE_WITH_STATUS } from "./knowledge";
 import { GoodPollingResponse } from "../services/smallcloud";
+import type { LinksForChatResponse } from "../services/refact/links";
+import { CompressTrajectoryResponse } from "../services/refact/knowledge";
 
 export const goodPing: HttpHandler = http.get(
   "http://127.0.0.1:8001/v1/ping",
@@ -98,6 +101,17 @@ export const chatLinks: HttpHandler = http.post(
   },
 );
 
+export const noChatLinks: HttpHandler = http.post(
+  `http://127.0.0.1:8001${CHAT_LINKS_URL}`,
+  () => {
+    const res: LinksForChatResponse = {
+      uncommited_changes_warning: "",
+      links: [],
+    };
+    return HttpResponse.json(res);
+  },
+);
+
 export const goodTools: HttpHandler = http.get(
   `http://127.0.0.1:8001${AT_TOOLS_AVAILABLE_URL}`,
   () => {
@@ -153,6 +167,17 @@ export const KnowledgeWithStatus: HttpHandler = http.post(
         "Content-Type": "text/plain",
       },
     });
+  },
+);
+
+export const makeKnowledgeFromChat: HttpHandler = http.post(
+  `http://127.0.0.1:8001${KNOWLEDGE_CREATE_URL}`,
+  () => {
+    const result: CompressTrajectoryResponse = {
+      memid: "foo",
+      trajectory: "something",
+    };
+    return HttpResponse.json(result);
   },
 );
 export const loginPollingGood: HttpHandler = http.get(

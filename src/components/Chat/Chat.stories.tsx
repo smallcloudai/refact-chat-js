@@ -19,6 +19,8 @@ import {
   chatLinks,
   goodTools,
   noTools,
+  // noChatLinks,
+  makeKnowledgeFromChat,
 } from "../../__fixtures__/msw";
 import { TourProvider } from "../../features/Tour";
 import { Flex } from "@radix-ui/themes";
@@ -122,5 +124,28 @@ export const IDE: Story = {
 export const Knowledge: Story = {
   args: {
     thread: CHAT_WITH_KNOWLEDGE_TOOL,
+    config: {
+      host: "ide",
+      lspPort: 8001,
+      themeProps: {},
+      features: {
+        vecdb: true,
+        knowledge: true,
+      },
+    },
+  },
+  parameters: {
+    msw: {
+      handlers: [
+        goodCaps,
+        goodPing,
+        goodPrompts,
+        goodUser,
+        // noChatLinks,
+        chatLinks,
+        noTools,
+        makeKnowledgeFromChat,
+      ],
+    },
   },
 };
