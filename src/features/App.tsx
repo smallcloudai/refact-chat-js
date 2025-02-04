@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { MemoryRouter, Routes, Route } from "react-router";
+import { MemoryRouter, Routes, Route, useNavigate } from "react-router";
 import { Flex } from "@radix-ui/themes";
 import { Chat, newChatAction, selectChatId, selectIsStreaming } from "./Chat";
 import { Sidebar } from "../components/Sidebar/Sidebar";
@@ -14,8 +14,8 @@ import { useEventBusForWeb } from "../hooks/useEventBusForWeb";
 import { Statistics } from "./Statistics";
 import { Welcome } from "../components/Tour";
 import {
-  push,
-  popBackTo,
+  // push,
+  // popBackTo,
   pop,
   selectPages,
 } from "../features/Pages/pagesSlice";
@@ -41,6 +41,7 @@ export interface AppProps {
 }
 
 export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
   const pages = useAppSelector(selectPages);
@@ -77,17 +78,22 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
   useEffect(() => {
     if (config.apiKey && config.addressURL && !isLoggedIn) {
       if (tourState.type === "in_progress" && tourState.step === 1) {
-        dispatch(push({ name: "welcome" }));
+        // dispatch(push({ name: "welcome" }));
+        void navigate("/welcome");
       } else if (Object.keys(historyState).length === 0) {
-        dispatch(push({ name: "history" }));
+        // dispatch(push({ name: "history" }));
+        // TODO: /chat defaults to new chat, /chat/:id opens from history
         dispatch(newChatAction());
-        dispatch(push({ name: "chat" }));
+        void navigate("/chat");
+        // dispatch(push({ name: "chat" }));
       } else {
-        dispatch(push({ name: "history" }));
+        // dispatch(push({ name: "history" }));
+        void navigate("/history");
       }
     }
     if (!config.apiKey && !config.addressURL && isLoggedIn) {
-      dispatch(popBackTo({ name: "login page" }));
+      // dispatch(popBackTo({ name: "login page" }));
+      void navigate("/login");
     }
   }, [
     config.apiKey,
@@ -96,6 +102,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
     dispatch,
     tourState,
     historyState,
+    navigate,
   ]);
 
   useEffect(() => {
@@ -140,7 +147,12 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
         type: "dashboard",
       };
     }
+    return {
+      type: "dashboard",
+    };
   }, [page, chatId]);
+
+  // console.log({ activeTab, page });
 
   return (
     <Flex
@@ -168,7 +180,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
               index
               element={
                 <>
-                  {activeTab && <Toolbar activeTab={activeTab} />}
+                  <Toolbar activeTab={activeTab} />
                   <Sidebar
                     takingNotes={false}
                     onOpenChatInTab={undefined}
@@ -184,7 +196,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
               path="/chat"
               element={
                 <>
-                  {activeTab && <Toolbar activeTab={activeTab} />}
+                  <Toolbar activeTab={activeTab} />
                   <Chat
                     host={config.host}
                     tabbed={config.tabbed}
