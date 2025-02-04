@@ -3,7 +3,7 @@ import { FC } from "react";
 import {
   IntegrationWithIconRecord,
   NotConfiguredIntegrationWithIconRecord,
-} from "../../services/refact";
+} from "../../../services/refact";
 import { IntegrationCard } from "./IntegrationCard";
 
 type GlobalIntegrationsProps = {

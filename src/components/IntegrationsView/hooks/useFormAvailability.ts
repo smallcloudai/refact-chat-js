@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import type {
   ToolConfirmation,
   ToolParameterEntity,
-} from "../../../../services/refact";
+} from "../../../services/refact";
 
 type UseFormAvailabilityProps = {
   setAvailabilityValues: React.Dispatch<

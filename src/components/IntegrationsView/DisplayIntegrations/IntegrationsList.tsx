@@ -4,7 +4,7 @@ import { FC } from "react";
 import {
   IntegrationWithIconRecord,
   NotConfiguredIntegrationWithIconRecord,
-} from "../../services/refact";
+} from "../../../services/refact";
 import { GlobalIntegrations } from "./GlobalIntegrations";
 import { NewIntegrations } from "./NewIntegrations";
 import { ProjectIntegrations } from "./ProjectIntegrations";

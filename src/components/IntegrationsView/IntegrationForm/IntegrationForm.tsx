@@ -1,26 +1,26 @@
-import { FC, FormEvent, useEffect } from "react";
+import { Button, Flex, Grid, Text } from "@radix-ui/themes";
 import classNames from "classnames";
+import { FC, FormEvent, useEffect } from "react";
+import { debugIntegrations } from "../../../debugConfig";
 import { useGetIntegrationDataByPathQuery } from "../../../hooks/useGetIntegrationDataByPathQuery";
 import { Spinner } from "../../Spinner";
-import { Button, Flex, Grid, Text } from "@radix-ui/themes";
-import { IntegrationDocker } from "../IntegrationDocker";
-import { debugIntegrations } from "../../../debugConfig";
 import { Confirmation } from "../Confirmation";
-import { useFormFields } from "./hooks/useFormFields";
-import { useFormAvailability } from "./hooks/useFormAvailability";
+import { useFormAvailability } from "../hooks/useFormAvailability";
+import { useFormFields } from "../hooks/useFormFields";
+import { IntegrationDocker } from "../IntegrationDocker";
 
-import styles from "./IntegrationForm.module.css";
+import type { ToolParameterEntity } from "../../../services/refact";
 import {
   areAllFieldsBoolean,
   areToolConfirmation,
   type Integration,
   type ToolConfirmation,
 } from "../../../services/refact";
-import type { ToolParameterEntity } from "../../../services/refact";
-import { FormFields } from "./FormFields";
 import { ErrorState } from "./ErrorState";
-import { FormSmartlinks } from "./FormSmartlinks";
 import { FormAvailabilityAndDelete } from "./FormAvailabilityAndDelete";
+import { FormFields } from "./FormFields";
+import { FormSmartlinks } from "./FormSmartlinks";
+import styles from "./IntegrationForm.module.css";
 
 type IntegrationFormProps = {
   integrationPath: string;

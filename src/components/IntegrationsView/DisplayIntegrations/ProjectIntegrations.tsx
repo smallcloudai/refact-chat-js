@@ -3,9 +3,9 @@ import { FC } from "react";
 import {
   IntegrationWithIconRecord,
   NotConfiguredIntegrationWithIconRecord,
-} from "../../services/refact";
-import { formatPathName } from "../../utils/formatPathName";
-import { Markdown } from "../Markdown";
+} from "../../../services/refact";
+import { formatPathName } from "../../../utils/formatPathName";
+import { Markdown } from "../../Markdown";
 import { IntegrationCard } from "./IntegrationCard";
 
 type ProjectIntegrationsProps = {

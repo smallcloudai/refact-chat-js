@@ -11,12 +11,12 @@ import { IntegrationWithIconResponse } from "../../services/refact";
 import { ErrorCallout } from "../Callout";
 import { InformationCallout } from "../Callout/Callout";
 import { Spinner } from "../Spinner";
+import { IntegrationsList } from "./DisplayIntegrations/IntegrationsList";
 import { IntegrationForm } from "./IntegrationForm";
-import { IntegrationsHeader } from "./IntegrationsHeader";
-import { IntegrationsList } from "./IntegrationsList";
+import { IntegrationsHeader } from "./Header/IntegrationsHeader";
 import styles from "./IntegrationsView.module.css";
 import { IntermediateIntegration } from "./IntermediateIntegration";
-import { useIntegrations } from "./useIntegrations";
+import { useIntegrations } from "./hooks/useIntegrations";
 
 type IntegrationViewProps = {
   integrationsMap?: IntegrationWithIconResponse;

@@ -1,4 +1,30 @@
+import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import isEqual from "lodash.isequal";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { debugIntegrations } from "../../../debugConfig";
+import { setIntegrationData } from "../../../features/Chat";
+import { selectThemeMode } from "../../../features/Config/configSlice";
+import {
+  clearError,
+  getErrorMessage,
+  setError,
+} from "../../../features/Errors/errorsSlice";
+import {
+  clearInformation,
+  getInformationMessage,
+  setInformation,
+} from "../../../features/Errors/informationSlice";
+import { convertRawIntegrationFormValues } from "../../../features/Integrations/convertRawIntegrationFormValues";
+import {
+  IntegrationsSetupPage,
+  isIntegrationSetupPage,
+  pop,
+  popBackTo,
+  selectCurrentPage,
+} from "../../../features/Pages/pagesSlice";
+import { useAppDispatch, useAppSelector } from "../../../hooks";
+import { useDeleteIntegrationByPath } from "../../../hooks/useDeleteIntegrationByPath";
+import { useSaveIntegrationData } from "../../../hooks/useSaveIntegrationData";
 import {
   areAllFieldsBoolean,
   areIntegrationsNotConfigured,
@@ -17,33 +43,10 @@ import {
   NotConfiguredIntegrationWithIconRecord,
   ToolConfirmation,
   ToolParameterEntity,
-} from "../../services/refact";
-import {
-  IntegrationsSetupPage,
-  isIntegrationSetupPage,
-  pop,
-  popBackTo,
-  selectCurrentPage,
-} from "../../features/Pages/pagesSlice";
-import { useAppDispatch, useAppSelector } from "../../hooks";
-import { debugIntegrations } from "../../debugConfig";
-import isEqual from "lodash.isequal";
-import { convertRawIntegrationFormValues } from "../../features/Integrations/convertRawIntegrationFormValues";
-import { validateSnakeCase } from "../../utils/validateSnakeCase";
-import {
-  clearInformation,
-  getInformationMessage,
-  setInformation,
-} from "../../features/Errors/informationSlice";
-import { clearError } from "../../features/FIM";
-import { getErrorMessage, setError } from "../../features/Errors/errorsSlice";
-import { toPascalCase } from "../../utils/toPascalCase";
-import { useSaveIntegrationData } from "../../hooks/useSaveIntegrationData";
-import { useDeleteIntegrationByPath } from "../../hooks/useDeleteIntegrationByPath";
-import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
-import { setIntegrationData } from "../../features/Chat";
-import { selectThemeMode } from "../../features/Config/configSlice";
-import { iconMap } from "./icons/iconMap";
+} from "../../../services/refact";
+import { toPascalCase } from "../../../utils/toPascalCase";
+import { validateSnakeCase } from "../../../utils/validateSnakeCase";
+import { iconMap } from "../icons/iconMap";
 
 type useIntegrationsViewArgs = {
   integrationsMap?: IntegrationWithIconResponse;

@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import type {
   IntegrationField,
   IntegrationPrimitive,
-} from "../../../../services/refact";
+} from "../../../services/refact";
 
 export const useFormFields = (
   fields?: Record<string, IntegrationField<NonNullable<IntegrationPrimitive>>>,
