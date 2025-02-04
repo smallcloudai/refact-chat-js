@@ -31,8 +31,8 @@ export const AgentCapabilities = () => {
         name: "Auto-patch",
         enabled: isPatchAutomatic,
       },
-      { name: "Agent rollback", enabled: isAgentRollbackEnabled },
-      { name: "Deepseek Reasoner", enabled: isReasoningEnabled },
+      { name: "Files rollback", enabled: isAgentRollbackEnabled },
+      { name: "Thinking tool", enabled: isReasoningEnabled },
     ];
   }, [isPatchAutomatic, isAgentRollbackEnabled, isReasoningEnabled]);
 
@@ -53,7 +53,7 @@ export const AgentCapabilities = () => {
         </Popover.Content>
       </Popover.Root>
       <Text size="2">
-        Agent capabilities:
+        Enabled Features:
         <Text color="gray">
           {" "}
           {agenticFeatures
@@ -68,10 +68,7 @@ export const AgentCapabilities = () => {
         </HoverCard.Trigger>
         <HoverCard.Content size="2" maxWidth="280px">
           <Text as="p" size="2">
-            Here you can control special features that affect working flow of
-            Agent. Some features might lead to slower responses, some features
-            might speed up the process, but you will lose some control over
-            execution.
+            Here you can control special features affecting Agent behaviour
           </Text>
         </HoverCard.Content>
       </HoverCard.Root>

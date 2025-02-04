@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import React, { CSSProperties, useCallback, useMemo } from "react";
 import {
   Text,
   Flex,
@@ -52,9 +52,10 @@ export const ApplyPatchSwitch: React.FC = () => {
       flexGrow="1"
       flexShrink="0"
       width="100%"
+      justify="between"
     >
       <Text size="2" mr="auto">
-        Auto apply patches
+        Auto-patch (file changes)
       </Text>
       <Flex gap="2" align="center">
         <Switch
@@ -102,9 +103,10 @@ export const AgentRollbackSwitch: React.FC = () => {
       flexGrow="1"
       flexShrink="0"
       width="100%"
+      justify="between"
     >
       <Text size="2" mr="auto">
-        Agent rollback
+        Track file changes and support files rollback
       </Text>
       <Flex gap="2" align="center">
         <Switch
@@ -118,18 +120,16 @@ export const AgentRollbackSwitch: React.FC = () => {
             <QuestionMarkCircledIcon style={{ marginLeft: 4 }} />
           </HoverCard.Trigger>
           <HoverCard.Content size="2" maxWidth="280px">
-            <Text weight="bold">Enabled</Text>
-            <Text as="p" size="2">
-              When enabled, Refact Agent will automatically apply changes to
-              files without asking for your confirmation.
-            </Text>
-            <Text as="div" mt="2" weight="bold">
-              Disabled
-            </Text>
-            <Text as="p" size="2">
-              When disabled, Refact Agent will ask for your confirmation before
-              applying any unsaved changes.
-            </Text>
+            <Flex direction="column" gap="2">
+              <Text as="p" size="2">
+                When enabled, Refact Agent will automatically make snapshots of
+                files between your messages
+              </Text>
+              <Text as="p" size="2">
+                You can rollback file changes to checkpoints taken when you sent
+                messages to Agent
+              </Text>
+            </Flex>
           </HoverCard.Content>
         </HoverCard.Root>
       </Flex>
@@ -154,6 +154,12 @@ export const DeepseekReasoningSwitch: React.FC = () => {
     dispatch(setChatMode(checked ? "THINKING_AGENT" : modeFromHistory));
   };
 
+  const tooltipStyles: CSSProperties = {
+    marginLeft: 4,
+    visibility: "hidden",
+    opacity: 0,
+  };
+
   return (
     <Flex
       gap="2"
@@ -161,27 +167,19 @@ export const DeepseekReasoningSwitch: React.FC = () => {
       wrap="wrap"
       flexGrow="1"
       flexShrink="0"
+      justify="between"
       width="100%"
     >
-      <Text size="2">Use deepseek-reasoner before acting</Text>
-      <Switch
-        size="1"
-        title="Enable/disable deepseek-reasoner for Agent"
-        checked={isReasoningEnabled}
-        onCheckedChange={handleDeepseekReasoningChange}
-      />
-      <HoverCard.Root>
-        <HoverCard.Trigger>
-          <QuestionMarkCircledIcon style={{ marginLeft: 4 }} />
-        </HoverCard.Trigger>
-        <HoverCard.Content size="2" maxWidth="280px">
-          <Text as="p" size="2">
-            If enabled, the Agent will first generate a plan of action using a
-            deepseek reasoning model. This enhances result quality, but may slow
-            down execution due to the additional processing time required
-          </Text>
-        </HoverCard.Content>
-      </HoverCard.Root>
+      <Text size="2">Use o3-mini reasoning model for planning</Text>
+      <Flex gap="2" align="center">
+        <Switch
+          size="1"
+          title="Enable/disable deepseek-reasoner for Agent"
+          checked={isReasoningEnabled}
+          onCheckedChange={handleDeepseekReasoningChange}
+        />
+        <QuestionMarkCircledIcon style={tooltipStyles} />
+      </Flex>
     </Flex>
   );
 };
