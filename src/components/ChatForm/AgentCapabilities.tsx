@@ -6,7 +6,7 @@ import { Flex, HoverCard, IconButton, Popover, Text } from "@radix-ui/themes";
 import {
   AgentRollbackSwitch,
   ApplyPatchSwitch,
-  DeepseekReasoningSwitch,
+  ReasoningModeSwitch,
 } from "./ChatControls";
 import { useLogin, useAppSelector } from "../../hooks";
 import {
@@ -48,7 +48,7 @@ export const AgentCapabilities = () => {
           <Flex gap="2" direction="column">
             <ApplyPatchSwitch />
             <AgentRollbackSwitch />
-            {user.data?.inference !== "FREE" && <DeepseekReasoningSwitch />}
+            {user.data?.inference !== "FREE" && <ReasoningModeSwitch />}
           </Flex>
         </Popover.Content>
       </Popover.Root>

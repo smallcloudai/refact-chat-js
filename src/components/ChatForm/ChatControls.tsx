@@ -137,7 +137,7 @@ export const AgentRollbackSwitch: React.FC = () => {
   );
 };
 
-export const DeepseekReasoningSwitch: React.FC = () => {
+export const ReasoningModeSwitch: React.FC = () => {
   const dispatch = useAppDispatch();
   const chatId = useAppSelector(selectChatId);
   const currentMode = useAppSelector(selectThreadMode);
