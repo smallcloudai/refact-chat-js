@@ -162,29 +162,36 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           {/** TODO: Tour */}
-          <Route element={activeTab && <Toolbar activeTab={activeTab} />}>
+          {/** TODO: toolbar needs children to be a layout */}
+          <Route>
             <Route
-              path="/chat"
+              index
               element={
-                <Chat
-                  host={config.host}
-                  tabbed={config.tabbed}
-                  // TODO: fix this, remove props
-                  backFromChat={() => ({})}
-                />
+                <>
+                  {activeTab && <Toolbar activeTab={activeTab} />}
+                  <Sidebar
+                    takingNotes={false}
+                    onOpenChatInTab={undefined}
+                    style={{
+                      alignSelf: "stretch",
+                      height: "calc(100% - var(--space-5)* 2)",
+                    }}
+                  />
+                </>
               }
             />
             <Route
-              path="/"
+              path="/chat"
               element={
-                <Sidebar
-                  takingNotes={false}
-                  onOpenChatInTab={undefined}
-                  style={{
-                    alignSelf: "stretch",
-                    height: "calc(100% - var(--space-5)* 2)",
-                  }}
-                />
+                <>
+                  {activeTab && <Toolbar activeTab={activeTab} />}
+                  <Chat
+                    host={config.host}
+                    tabbed={config.tabbed}
+                    // TODO: fix this, remove props
+                    backFromChat={() => ({})}
+                  />
+                </>
               }
             />
           </Route>

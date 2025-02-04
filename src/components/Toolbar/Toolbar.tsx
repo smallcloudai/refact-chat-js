@@ -42,7 +42,7 @@ import {
 import { useWindowDimensions } from "../../hooks/useWindowDimensions";
 import { clearPauseReasonsAndHandleToolsStatus } from "../../features/ToolConfirmation/confirmationSlice";
 import { telemetryApi } from "../../services/refact/telemetry";
-
+import { useNavigate } from "react-router";
 import styles from "./Toolbar.module.css";
 
 export type DashboardTab = {
@@ -68,7 +68,9 @@ export type ToolbarProps = {
   activeTab: Tab;
 };
 
+// TODO: remove active tabs
 export const Toolbar = ({ activeTab }: ToolbarProps) => {
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const tabNav = useRef<HTMLElement | null>(null);
   const [tabNavWidth, setTabNavWidth] = useState(0);
@@ -95,6 +97,7 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
     return isOnlyOneChatTab && !isDashboardTab(activeTab);
   }, [isOnlyOneChatTab, activeTab]);
 
+  // TODO: handle router nav here (refactor later to use Link)
   const handleNavigation = useCallback(
     (to: DropdownNavigationOptions | "chat") => {
       if (to === "settings") {
@@ -112,22 +115,25 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
           error_message: "",
         });
       } else if (to === "fim") {
-        dispatch(push({ name: "fill in the middle debug page" }));
+        // dispatch(push({ name: "fill in the middle debug page" }));
+        void navigate("/fim");
         void sendTelemetryEvent({
           scope: `openDebugFim`,
           success: true,
           error_message: "",
         });
       } else if (to === "stats") {
-        dispatch(push({ name: "statistics page" }));
+        // dispatch(push({ name: "statistics page" }));
+        void navigate("/statistics");
         void sendTelemetryEvent({
           scope: `openStats`,
           success: true,
           error_message: "",
         });
       } else if (to === "restart tour") {
-        dispatch(popBackTo({ name: "login page" }));
-        dispatch(push({ name: "welcome" }));
+        // dispatch(popBackTo({ name: "login page" }));
+        // dispatch(push({ name: "welcome" }));
+        void navigate("/welcome");
         dispatch(restart());
         void sendTelemetryEvent({
           scope: `restartTour`,
@@ -135,18 +141,20 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
           error_message: "",
         });
       } else if (to === "integrations") {
-        dispatch(push({ name: "integrations page" }));
+        // dispatch(push({ name: "integrations page" }));
+        void navigate("/integrations");
         void sendTelemetryEvent({
           scope: `openIntegrations`,
           success: true,
           error_message: "",
         });
       } else if (to === "chat") {
-        dispatch(popBackTo({ name: "history" }));
-        dispatch(push({ name: "chat" }));
+        // dispatch(popBackTo({ name: "history" }));
+        // dispatch(push({ name: "chat" }));
+        void navigate("/chat");
       }
     },
-    [dispatch, sendTelemetryEvent, openSettings, openHotKeys],
+    [openSettings, sendTelemetryEvent, openHotKeys, navigate, dispatch],
   );
 
   const onCreateNewChat = useCallback(() => {
