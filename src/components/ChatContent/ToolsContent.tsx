@@ -471,7 +471,10 @@ const ToolUsageSummary: React.FC<{
   );
 };
 
+// TODO: make this look nicer.
 const Knowledge: React.FC<{ toolCall: ToolCall }> = ({ toolCall }) => {
+  const [open, setOpen] = React.useState(false);
+
   // TODO: add voting actions
   const maybeResult = useAppSelector((state) =>
     selectToolResultById(state, toolCall.id),
@@ -490,9 +493,21 @@ const Knowledge: React.FC<{ toolCall: ToolCall }> = ({ toolCall }) => {
 
   return (
     <Container>
-      <Collapsible.Root>
-        <Collapsible.Trigger>
-          <Text>Knowledge</Text>
+      <Collapsible.Root open={open} onOpenChange={setOpen}>
+        <Collapsible.Trigger asChild>
+          <Flex gap="2" align="end" onClick={() => setOpen((prev) => !prev)}>
+            <Flex
+              gap="1"
+              align="start"
+              direction="column"
+              style={{ cursor: "pointer" }}
+            >
+              <Text weight="light" size="1">
+                📚 Knowledge
+              </Text>
+            </Flex>
+            <Chevron open={open} />
+          </Flex>
         </Collapsible.Trigger>
         <Collapsible.Content>
           <Flex direction="column">
