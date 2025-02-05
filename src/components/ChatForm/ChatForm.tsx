@@ -47,6 +47,7 @@ import {
   selectIsWaiting,
   selectMessages,
   selectPreventSend,
+  selectThreadToolUse,
   selectToolUse,
 } from "../../features/Chat";
 import { isUserMessage, telemetryApi } from "../../services/refact";
@@ -81,8 +82,13 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   const isOnline = useIsOnline();
 
   const chatId = useAppSelector(selectChatId);
+  const threadToolUse = useAppSelector(selectThreadToolUse);
   const messages = useAppSelector(selectMessages);
   const preventSend = useAppSelector(selectPreventSend);
+
+  const shouldAgentCapabilitiesBeShown = useMemo(() => {
+    return threadToolUse === "agent" && toolUse === "agent";
+  }, [toolUse, threadToolUse]);
 
   const onClearError = useCallback(() => {
     dispatch(clearError());
@@ -101,11 +107,19 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     );
   }, [dispatch, retryFromIndex, messages]);
 
+  const caps = useCapsForToolUse();
+
+  const allDisabled = caps.usableModelsForPlan.every((option) => {
+    if (typeof option === "string") return false;
+    return option.disabled;
+  });
+
   const disableSend = useMemo(() => {
     // TODO: if interrupting chat some errors can occur
+    if (allDisabled) return true;
     if (messages.length === 0) return false;
     return isWaiting || isStreaming || !isOnline || preventSend;
-  }, [isOnline, isStreaming, isWaiting, preventSend, messages]);
+  }, [isOnline, isStreaming, isWaiting, preventSend, messages, allDisabled]);
 
   const { processAndInsertImages } = useAttachedImages();
   const handlePastingFile = useCallback(
@@ -316,7 +330,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
             {helpInfo}
           </Flex>
         )}
-        {toolUse === "agent" && <AgentCapabilities />}
+        {shouldAgentCapabilitiesBeShown && <AgentCapabilities />}
         <Form
           disabled={disableSend}
           className={className}
