@@ -65,7 +65,8 @@ function isChatTab(tab: Tab): tab is ChatTab {
 export type Tab = DashboardTab | ChatTab;
 
 export type ToolbarProps = {
-  activeTab: Tab;
+  // TODO: handle active tabs
+  activeTab?: Tab;
 };
 
 // TODO: remove active tabs
@@ -94,7 +95,7 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
   const [newTitle, setNewTitle] = useState<string | null>(null);
 
   const shouldChatTabLinkBeNotClickable = useMemo(() => {
-    return isOnlyOneChatTab && !isDashboardTab(activeTab);
+    return isOnlyOneChatTab && activeTab && !isDashboardTab(activeTab);
   }, [isOnlyOneChatTab, activeTab]);
 
   // TODO: handle router nav here (refactor later to use Link)
@@ -218,7 +219,7 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
     return history.filter(
       (chat) =>
         chat.read === false ||
-        (activeTab.type === "chat" && activeTab.id == chat.id),
+        (activeTab?.type === "chat" && activeTab.id == chat.id),
     );
   }, [history, activeTab]);
 
@@ -273,7 +274,7 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
       <Flex flexGrow="1" align="start" maxHeight="40px" overflowY="hidden">
         <TabNav.Root style={{ flex: 1, overflowX: "scroll" }} ref={tabNav}>
           <TabNav.Link
-            active={isDashboardTab(activeTab)}
+            active={activeTab && isDashboardTab(activeTab)}
             ref={(x) => refs.setBack(x)}
             onClick={() => {
               setIsRenaming((prev) => (prev ? !prev : prev));
@@ -286,8 +287,12 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
           {tabs.map((chat) => {
             const isStreamingThisTab =
               chat.id in cache ||
-              (isChatTab(activeTab) && chat.id === activeTab.id && isStreaming);
-            const isActive = isChatTab(activeTab) && activeTab.id == chat.id;
+              (activeTab &&
+                isChatTab(activeTab) &&
+                chat.id === activeTab.id &&
+                isStreaming);
+            const isActive =
+              activeTab && isChatTab(activeTab) && activeTab.id == chat.id;
             if (isRenaming) {
               return (
                 <TextField.Root

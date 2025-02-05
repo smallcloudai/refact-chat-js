@@ -26,7 +26,7 @@ import { useEventBusForApp } from "../hooks/useEventBusForApp";
 import { AbortControllerProvider } from "../contexts/AbortControllers";
 import { Toolbar } from "../components/Toolbar";
 import { Tab } from "../components/Toolbar/Toolbar";
-import { PageWrapper } from "../components/PageWrapper";
+import { Layout } from "../components/Layout";
 import { ThreadHistory } from "./ThreadHistory";
 import { Integrations } from "./Integrations";
 import { UserSurvey } from "./UserSurvey";
@@ -35,6 +35,7 @@ import { LoginPage } from "./Login";
 
 import styles from "./App.module.css";
 import classNames from "classnames";
+import { LayoutWithToolbar } from "../components/Layout/LayoutWithTopbar";
 
 export interface AppProps {
   style?: React.CSSProperties;
@@ -164,50 +165,46 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
           page.name === "integrations page" && isPaddingApplied,
       })}
     >
-      <PageWrapper
-        host={config.host}
-        style={{
-          paddingRight: page.name === "integrations page" ? 0 : undefined,
-        }}
-      >
-        <UserSurvey />
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          {/** TODO: Tour */}
-          {/** TODO: toolbar needs children to be a layout */}
-          <Route>
-            <Route
-              index
-              element={
-                <>
-                  <Toolbar activeTab={activeTab} />
-                  <Sidebar
-                    takingNotes={false}
-                    onOpenChatInTab={undefined}
-                    style={{
-                      alignSelf: "stretch",
-                      height: "calc(100% - var(--space-5)* 2)",
-                    }}
-                  />
-                </>
-              }
-            />
-            <Route
-              path="/chat"
-              element={
-                <>
-                  <Toolbar activeTab={activeTab} />
-                  <Chat
-                    host={config.host}
-                    tabbed={config.tabbed}
-                    // TODO: fix this, remove props
-                    backFromChat={() => ({})}
-                  />
-                </>
-              }
-            />
-          </Route>
+      <UserSurvey />
+      <Routes>
+        {/** TODO: Tour */}
+        {/** TODO: toolbar needs children to be a layout */}
+        <Route element={<LayoutWithToolbar />}>
+          <Route
+            index
+            element={
+              <>
+                <Toolbar activeTab={activeTab} />
+                <Sidebar
+                  takingNotes={false}
+                  onOpenChatInTab={undefined}
+                  style={{
+                    alignSelf: "stretch",
+                    height: "calc(100% - var(--space-5)* 2)",
+                  }}
+                />
+              </>
+            }
+          />
+          <Route
+            // add /?:chatId
+            path="/chat"
+            element={
+              <>
+                <Toolbar activeTab={activeTab} />
+                <Chat
+                  host={config.host}
+                  tabbed={config.tabbed}
+                  // TODO: fix this, remove props
+                  backFromChat={() => ({})}
+                />
+              </>
+            }
+          />
+        </Route>
+        <Route element={<Layout />}>
           {/* {page.name === "login page" && <LoginPage />} */}
+          <Route path="/login" element={<LoginPage />} />
           {/** Add toolbar to history and chat */}
           {/* {activeTab && <Toolbar activeTab={activeTab} />} */}
           {/* {page.name === "welcome" && <Welcome onPressNext={startTour} />} */}
@@ -236,10 +233,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
           {/* {page.name === "fill in the middle debug page" && (
             <FIMDebug host={config.host} tabbed={config.tabbed} />
           )} */}
-          <Route
-            path="/fim"
-            element={<FIMDebug host={config.host} tabbed={config.tabbed} />}
-          />
+          <Route path="/fim" element={<FIMDebug tabbed={config.tabbed} />} />
           {/* {page.name === "statistics page" && (
             <Statistics
               backFromStatistic={goBack}
@@ -268,18 +262,6 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
               handlePaddingShift={handlePaddingShift}
             />
           )} */}
-          <Route
-            path="/integrations"
-            element={
-              <Integrations
-                backFromIntegrations={goBackFromIntegrations}
-                tabbed={config.tabbed}
-                host={config.host}
-                onCloseIntegrations={goBackFromIntegrations}
-                handlePaddingShift={handlePaddingShift}
-              />
-            }
-          />
           {/* {page.name === "thread history page" && (
             <ThreadHistory
               backFromThreadHistory={goBack}
@@ -303,8 +285,24 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
               />
             }
           />
-        </Routes>
-      </PageWrapper>
+        </Route>
+        {/** page wrapper is used in this route */}
+        {/* <Route element={<Layout style={{ paddingRight: 0 }} />}> */}
+        <Route
+          path="/integrations"
+          element={
+            <Integrations
+              backFromIntegrations={goBackFromIntegrations}
+              tabbed={config.tabbed}
+              host={config.host}
+              onCloseIntegrations={goBackFromIntegrations}
+              handlePaddingShift={handlePaddingShift}
+            />
+          }
+        />
+        {/* </Route> */}
+      </Routes>
+      {/* </PageWrapper> */}
       {/* {page.name !== "welcome" && <Tour page={pages[pages.length - 1].name} />} */}
     </Flex>
   );

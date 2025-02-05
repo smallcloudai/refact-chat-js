@@ -4,7 +4,7 @@ import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import { ScrollArea } from "../../components/ScrollArea";
 // import type { StatisticState } from "../../hooks";
 import { StatisticView } from "../../components/StatisticView/StatisticView";
-import { PageWrapper } from "../../components/PageWrapper";
+import { PageWrapper } from "../../components/Layout";
 import { useGetStatisticDataQuery } from "../../hooks";
 import type { Config } from "../Config/configSlice";
 
