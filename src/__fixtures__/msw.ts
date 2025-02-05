@@ -7,6 +7,7 @@ import {
   CHAT_LINKS_URL,
   KNOWLEDGE_CREATE_URL,
   KNOWLEDGE_SUB_URL,
+  KNOWLEDGE_UPDATE_USED_URL,
 } from "../services/refact/consts";
 import { STUB_TOOL_RESPONSE } from "./tools_response";
 import { STUB_SUB_RESPONSE, STUB_SUB_RESPONSE_WITH_STATUS } from "./knowledge";
@@ -177,6 +178,27 @@ export const makeKnowledgeFromChat: HttpHandler = http.post(
       memid: "foo",
       trajectory: "something",
     };
+    return HttpResponse.json(result);
+  },
+);
+
+export const updateKnowledgeUse: HttpHandler = http.post(
+  `http://127.0.0.1:8001${KNOWLEDGE_UPDATE_USED_URL}`,
+  async (ctx) => {
+    const body = await ctx.request.json();
+    const memid =
+      body &&
+      typeof body === "object" &&
+      "memid" in body &&
+      typeof body.memid === "string"
+        ? body.memid
+        : "foo";
+    const result: CompressTrajectoryResponse = {
+      memid,
+      trajectory: "something",
+    };
+
+    await new Promise((r) => setTimeout(r, 1000));
     return HttpResponse.json(result);
   },
 );
