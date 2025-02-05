@@ -7,6 +7,8 @@ import {
   Box,
   Spinner,
   IconButton,
+  Card,
+  Separator,
 } from "@radix-ui/themes";
 import {
   isMultiModalToolResult,
@@ -510,7 +512,7 @@ const Knowledge: React.FC<{ toolCall: ToolCall }> = ({ toolCall }) => {
           </Flex>
         </Collapsible.Trigger>
         <Collapsible.Content>
-          <Flex direction="column">
+          <Flex direction="column" pt="4">
             <ScrollArea scrollbars="horizontal" style={{ width: "100%" }}>
               <Box>
                 <CommandMarkdown isInsideScrollArea>
@@ -549,36 +551,39 @@ const Memory: React.FC<{ id: string; content: string }> = ({ id, content }) => {
   }, [id, updateUsage]);
 
   return (
-    <Flex direction="column">
-      <Flex justify="between" align="center">
-        <Text size="1" weight="light">
-          Memory: {id}
-        </Text>
-        <Flex gap="2">
-          <IconButton
-            size="1"
-            title="Bad"
-            onClick={handleBad}
-            disabled={status.isLoading}
-            variant="outline"
-            color="tomato"
-          >
-            <Cross2Icon />{" "}
-          </IconButton>
-          <IconButton
-            size="1"
-            title="Good"
-            onClick={handleGood}
-            disabled={status.isLoading}
-            variant="outline"
-            color="grass"
-          >
-            <CheckIcon />
-          </IconButton>
+    <Card>
+      <Flex direction="column" gap="2">
+        <Flex justify="between" align="center">
+          <Text size="1" weight="light">
+            Memory: {id}
+          </Text>
+          <Flex gap="2" align="center">
+            <IconButton
+              size="1"
+              title="Bad"
+              onClick={handleBad}
+              disabled={status.isLoading}
+              variant="outline"
+              color="tomato"
+            >
+              <Cross2Icon />{" "}
+            </IconButton>
+            <IconButton
+              size="1"
+              title="Good"
+              onClick={handleGood}
+              disabled={status.isLoading}
+              variant="outline"
+              color="grass"
+            >
+              <CheckIcon />
+            </IconButton>
+          </Flex>
         </Flex>
+        <Separator size="4" />
+        <Text size="2">{content}</Text>
       </Flex>
-      <Text>{content}</Text>
-    </Flex>
+    </Card>
   );
 };
 
