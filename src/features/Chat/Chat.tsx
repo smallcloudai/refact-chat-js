@@ -3,6 +3,7 @@ import type { Config } from "../Config/configSlice";
 import { Chat as ChatComponent } from "../../components/Chat";
 import { useAppSelector } from "../../hooks";
 import { selectMessages } from "./Thread";
+// import { useParams } from "react-router";
 
 export type ChatProps = {
   host: Config["host"];
@@ -18,6 +19,9 @@ export const Chat: React.FC<ChatProps> = ({
   tabbed,
 }) => {
   const messages = useAppSelector(selectMessages);
+  //  const maybeChatId = useParams().chatId;
+  // if no chat id make a new chat.
+  // if chat id check cache for chat id, then check history for chat id, if not found ... maybe make a new one ?
 
   const sendToSideBar = () => {
     // TODO:

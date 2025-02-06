@@ -190,7 +190,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
           />
           <Route
             // add /?:chatId
-            path="chat"
+            path="chat/:chatId?"
             element={
               <Chat
                 host={config.host}
