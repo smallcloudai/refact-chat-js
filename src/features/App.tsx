@@ -1,7 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { MemoryRouter, Routes, Route, useNavigate } from "react-router";
 import { Flex } from "@radix-ui/themes";
-import { Chat, newChatAction, selectChatId, selectIsStreaming } from "./Chat";
+import {
+  Chat,
+  newChatAction,
+  // selectChatId,
+  selectIsStreaming,
+} from "./Chat";
 import { Sidebar } from "../components/Sidebar/Sidebar";
 import { useEventsBusForIDE, useConfig, useEffectOnce } from "../hooks";
 import { useAppSelector, useAppDispatch } from "../hooks";
@@ -24,8 +29,8 @@ import { TourProvider } from "./Tour";
 // import { TourEnd } from "../components/Tour/TourEnd";
 import { useEventBusForApp } from "../hooks/useEventBusForApp";
 import { AbortControllerProvider } from "../contexts/AbortControllers";
-import { Toolbar } from "../components/Toolbar";
-import { Tab } from "../components/Toolbar/Toolbar";
+// import { Toolbar } from "../components/Toolbar";
+// import { Tab } from "../components/Toolbar/Toolbar";
 import { Layout } from "../components/Layout";
 import { ThreadHistory } from "./ThreadHistory";
 import { Integrations } from "./Integrations";
@@ -59,7 +64,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
     useEventsBusForIDE();
   const tourState = useAppSelector((state: RootState) => state.tour);
   const historyState = useAppSelector((state: RootState) => state.history);
-  const chatId = useAppSelector(selectChatId);
+  // const chatId = useAppSelector(selectChatId);
   useEventBusForWeb();
   useEventBusForApp();
 
@@ -89,7 +94,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
         // dispatch(push({ name: "chat" }));
       } else {
         // dispatch(push({ name: "history" }));
-        void navigate("/history");
+        void navigate("/");
       }
     }
     if (!config.apiKey && !config.addressURL && isLoggedIn) {
@@ -136,22 +141,22 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
 
   const page = pages[pages.length - 1];
 
-  const activeTab: Tab | undefined = useMemo(() => {
-    if (page.name === "chat") {
-      return {
-        type: "chat",
-        id: chatId,
-      };
-    }
-    if (page.name === "history") {
-      return {
-        type: "dashboard",
-      };
-    }
-    return {
-      type: "dashboard",
-    };
-  }, [page, chatId]);
+  // const activeTab: Tab | undefined = useMemo(() => {
+  //   if (page.name === "chat") {
+  //     return {
+  //       type: "chat",
+  //       id: chatId,
+  //     };
+  //   }
+  //   if (page.name === "history") {
+  //     return {
+  //       type: "dashboard",
+  //     };
+  //   }
+  //   return {
+  //     type: "dashboard",
+  //   };
+  // }, [page, chatId]);
 
   // console.log({ activeTab, page });
 
@@ -173,43 +178,37 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
           <Route
             index
             element={
-              <>
-                <Toolbar activeTab={activeTab} />
-                <Sidebar
-                  takingNotes={false}
-                  onOpenChatInTab={undefined}
-                  style={{
-                    alignSelf: "stretch",
-                    height: "calc(100% - var(--space-5)* 2)",
-                  }}
-                />
-              </>
+              <Sidebar
+                takingNotes={false}
+                onOpenChatInTab={undefined}
+                style={{
+                  alignSelf: "stretch",
+                  height: "calc(100% - var(--space-5)* 2)",
+                }}
+              />
             }
           />
           <Route
             // add /?:chatId
-            path="/chat"
+            path="chat"
             element={
-              <>
-                <Toolbar activeTab={activeTab} />
-                <Chat
-                  host={config.host}
-                  tabbed={config.tabbed}
-                  // TODO: fix this, remove props
-                  backFromChat={() => ({})}
-                />
-              </>
+              <Chat
+                host={config.host}
+                tabbed={config.tabbed}
+                // TODO: fix this, remove props
+                backFromChat={() => ({})}
+              />
             }
           />
         </Route>
         <Route element={<Layout />}>
           {/* {page.name === "login page" && <LoginPage />} */}
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="login" element={<LoginPage />} />
           {/** Add toolbar to history and chat */}
           {/* {activeTab && <Toolbar activeTab={activeTab} />} */}
           {/* {page.name === "welcome" && <Welcome onPressNext={startTour} />} */}
           <Route
-            path="/welcome"
+            path="welcome"
             element={<Welcome onPressNext={() => ({})} />}
           />
           {/* {page.name === "tour end" && <TourEnd />} */}
@@ -233,7 +232,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
           {/* {page.name === "fill in the middle debug page" && (
             <FIMDebug host={config.host} tabbed={config.tabbed} />
           )} */}
-          <Route path="/fim" element={<FIMDebug tabbed={config.tabbed} />} />
+          <Route path="fim" element={<FIMDebug tabbed={config.tabbed} />} />
           {/* {page.name === "statistics page" && (
             <Statistics
               backFromStatistic={goBack}
@@ -243,7 +242,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
             />
           )} */}
           <Route
-            path="/statistics"
+            path="statistics"
             element={
               <Statistics
                 backFromStatistic={goBack}
@@ -272,7 +271,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
             />
           )} */}
           <Route
-            path="/thread-history/:chatId"
+            path="thread-history/:chatId"
             element={
               <ThreadHistory
                 backFromThreadHistory={goBack}
@@ -289,7 +288,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
         {/** page wrapper is used in this route */}
         {/* <Route element={<Layout style={{ paddingRight: 0 }} />}> */}
         <Route
-          path="/integrations"
+          path="integrations"
           element={
             <Integrations
               backFromIntegrations={goBackFromIntegrations}

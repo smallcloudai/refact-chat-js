@@ -1,9 +1,10 @@
 import React, { useMemo } from "react";
 import { Flex } from "@radix-ui/themes";
-import styles from "./PageWrapper.module.css";
+import styles from "./Layout.module.css";
 import classNames from "classnames";
 import { selectHost } from "../../features/Config/configSlice";
 import { useAppSelector } from "../../hooks";
+import { Outlet } from "react-router";
 
 export type LayoutProps = {
   children?: React.ReactNode;
@@ -40,10 +41,10 @@ export const Layout: React.FC<LayoutProps> = ({
       flexGrow="1"
       py={yPadding}
       px={xPadding}
-      className={classNames(styles.PageWrapper, className)}
+      className={classNames(styles.Layout, className)}
       style={style}
     >
-      {children}
+      {children ?? <Outlet />}
     </Flex>
   );
 };
