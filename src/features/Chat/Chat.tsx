@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import type { Config } from "../Config/configSlice";
 import { Chat as ChatComponent } from "../../components/Chat";
 import { useAppDispatch, useAppSelector } from "../../hooks";
@@ -7,8 +7,9 @@ import {
   restoreChat,
   selectChatFromCacheOrHistory,
   selectMessages,
+  selectThread,
 } from "./Thread";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 
 export type ChatProps = {
   host: Config["host"];
@@ -27,13 +28,22 @@ export const Chat: React.FC<ChatProps> = ({
   const messages = useAppSelector(selectMessages);
   const maybeChatId = useParams().chatId;
   const cached = useAppSelector(selectChatFromCacheOrHistory(maybeChatId));
-  if (maybeChatId === undefined) {
-    dispatch(newChatAction());
-  } else if (cached) {
-    dispatch(restoreChat(cached));
-  } else {
-    dispatch(newChatAction());
-  }
+  const thread = useAppSelector(selectThread);
+  // const navigate = useNavigate();
+
+  useEffect(() => {
+    if (maybeChatId === undefined) {
+      dispatch(newChatAction());
+    }
+    // } else if (thread.id !== maybeChatId && cached) {
+    //   dispatch(restoreChat(cached));
+    // }
+    // } else if (thread.id !== maybeChatId) {
+    //   dispatch(newChatAction());
+    // }
+  }, [cached, dispatch, maybeChatId, thread.id]);
+
+  console.log("chat props", maybeChatId, cached);
 
   // if no chat id make a new chat.
   // if chat id check cache for chat id, then check history for chat id, if not found ... maybe make a new one ?

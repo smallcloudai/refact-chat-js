@@ -47,23 +47,23 @@ export interface AppProps {
 }
 
 export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
   const pages = useAppSelector(selectPages);
   const isStreaming = useAppSelector(selectIsStreaming);
 
-  const isPageInHistory = useCallback(
-    (pageName: string) => {
-      return pages.some((page) => page.name === pageName);
-    },
-    [pages],
-  );
+  // const isPageInHistory = useCallback(
+  //   (pageName: string) => {
+  //     return pages.some((page) => page.name === pageName);
+  //   },
+  //   [pages],
+  // );
 
   const { chatPageChange, setIsChatStreaming, setIsChatReady } =
     useEventsBusForIDE();
-  const tourState = useAppSelector((state: RootState) => state.tour);
-  const historyState = useAppSelector((state: RootState) => state.history);
+  // const tourState = useAppSelector((state: RootState) => state.tour);
+  // const historyState = useAppSelector((state: RootState) => state.history);
   // const chatId = useAppSelector(selectChatId);
   useEventBusForWeb();
   useEventBusForApp();
@@ -76,40 +76,39 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
 
   const config = useConfig();
 
-  const isLoggedIn =
-    isPageInHistory("history") ||
-    isPageInHistory("welcome") ||
-    isPageInHistory("chat");
+  // const isLoggedIn =
+  //   isPageInHistory("history") ||
+  //   isPageInHistory("welcome") ||
+  //   isPageInHistory("chat");
 
-  useEffect(() => {
-    if (config.apiKey && config.addressURL && !isLoggedIn) {
-      if (tourState.type === "in_progress" && tourState.step === 1) {
-        // dispatch(push({ name: "welcome" }));
-        void navigate("/welcome");
-      } else if (Object.keys(historyState).length === 0) {
-        // dispatch(push({ name: "history" }));
-        // TODO: /chat defaults to new chat, /chat/:id opens from history
-        dispatch(newChatAction());
-        void navigate("/chat");
-        // dispatch(push({ name: "chat" }));
-      } else {
-        // dispatch(push({ name: "history" }));
-        void navigate("/");
-      }
-    }
-    if (!config.apiKey && !config.addressURL && isLoggedIn) {
-      // dispatch(popBackTo({ name: "login page" }));
-      void navigate("/login");
-    }
-  }, [
-    config.apiKey,
-    config.addressURL,
-    isLoggedIn,
-    dispatch,
-    tourState,
-    historyState,
-    navigate,
-  ]);
+  // useEffect(() => {
+  //   if (config.apiKey && config.addressURL) {
+  //     if (tourState.type === "in_progress" && tourState.step === 1) {
+  //       // dispatch(push({ name: "welcome" }));
+  //       void navigate("/welcome");
+  //     } else if (Object.keys(historyState).length === 0) {
+  //       // dispatch(push({ name: "history" }));
+  //       // TODO: /chat defaults to new chat, /chat/:id opens from history
+  //       // dispatch(newChatAction());
+  //       void navigate("/chat");
+  //       // dispatch(push({ name: "chat" }));
+  //     } else {
+  //       // dispatch(push({ name: "history" }));
+  //       void navigate("/");
+  //     }
+  //   }
+  //   if (!config.apiKey && !config.addressURL) {
+  //     // dispatch(popBackTo({ name: "login page" }));
+  //     void navigate("/login");
+  //   }
+  // }, [
+  //   config.apiKey,
+  //   config.addressURL,
+  //   dispatch,
+  //   tourState,
+  //   historyState,
+  //   navigate,
+  // ]);
 
   useEffect(() => {
     if (pages.length > 1) {

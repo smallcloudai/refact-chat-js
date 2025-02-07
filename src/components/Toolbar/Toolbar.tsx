@@ -125,7 +125,7 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
         });
       } else if (to === "stats") {
         // dispatch(push({ name: "statistics page" }));
-        void navigate("/statistics");
+        void navigate("statistics");
         void sendTelemetryEvent({
           scope: `openStats`,
           success: true,

@@ -12,7 +12,7 @@ export type LayoutProps = {
   style?: React.CSSProperties;
 };
 
-export const Layout: React.FC<LayoutProps> = ({
+export const BasicLayout: React.FC<LayoutProps> = ({
   children,
   className,
   style,
@@ -44,7 +44,15 @@ export const Layout: React.FC<LayoutProps> = ({
       className={classNames(styles.Layout, className)}
       style={style}
     >
-      {children ?? <Outlet />}
+      {children}
     </Flex>
+  );
+};
+
+export const Layout: React.FC<LayoutProps> = (props) => {
+  return (
+    <BasicLayout {...props}>
+      <Outlet />
+    </BasicLayout>
   );
 };
