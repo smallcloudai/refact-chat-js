@@ -7,6 +7,7 @@ import {
   IntegrationMeta,
   LspChatMode,
   PayloadWithChatAndMessageId,
+  PayloadWithChatAndBoolean,
 } from "./types";
 import {
   isAssistantDelta,
@@ -54,6 +55,10 @@ export const chatAskedQuestion = createAction<PayloadWithId>(
 
 export const setLastUserMessageId = createAction<PayloadWithChatAndMessageId>(
   "chatThread/setLastUserMessageId",
+);
+
+export const setIsNewChatSuggested = createAction<PayloadWithChatAndBoolean>(
+  "chatThread/setIsNewChatSuggested",
 );
 
 export const backUpMessages = createAction<

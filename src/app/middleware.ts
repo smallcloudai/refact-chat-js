@@ -11,6 +11,7 @@ import {
   restoreChat,
   newIntegrationChat,
   chatResponse,
+  setIsNewChatSuggested,
 } from "../features/Chat/Thread";
 import { statisticsApi } from "../services/refact/statistics";
 import { integrationsApi } from "../services/refact/integrations";
@@ -35,6 +36,7 @@ import { CONFIG_PATH_URL, FULL_PATH_URL } from "../services/refact/consts";
 import { resetConfirmationInteractedState } from "../features/ToolConfirmation/confirmationSlice";
 import {
   getAgentUsageCounter,
+  getIsNewChatSuggested,
   getMaxFreeAgentUsage,
 } from "../features/Chat/Thread/utils";
 import {
@@ -108,6 +110,18 @@ startListening({
     if ("refact_agent_max_request_num" in payload) {
       const maxFreeAgentUsage = getMaxFreeAgentUsage(payload);
       dispatch(updateMaxAgentUsageAmount(maxFreeAgentUsage));
+    }
+
+    if ("new_chat_suggestion" in payload) {
+      const isNewChatSuggested = getIsNewChatSuggested(payload);
+      if (isNewChatSuggested) {
+        dispatch(
+          setIsNewChatSuggested({
+            chatId: payload.id,
+            value: isNewChatSuggested,
+          }),
+        );
+      }
     }
   },
 });

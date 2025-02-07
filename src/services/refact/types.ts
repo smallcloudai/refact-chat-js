@@ -525,6 +525,7 @@ type ChatResponseChoice = {
   id: string;
   refact_agent_request_available: null | number;
   refact_agent_max_request_num: number;
+  new_chat_suggestion?: boolean;
 };
 
 export function isChatResponseChoice(

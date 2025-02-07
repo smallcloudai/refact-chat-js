@@ -21,6 +21,7 @@ export type ChatThread = {
   integration?: IntegrationMeta | null;
   mode?: LspChatMode;
   last_user_message_id?: string;
+  new_chat_suggested?: boolean;
 };
 
 export type ToolUse = "quick" | "explore" | "agent";
@@ -42,6 +43,7 @@ export type Chat = {
 
 export type PayloadWithId = { id: string };
 export type PayloadWithChatAndMessageId = { chatId: string; messageId: string };
+export type PayloadWithChatAndBoolean = { chatId: string; value: boolean };
 export type PayloadWithIdAndTitle = {
   title: string;
   isTitleGenerated: boolean;

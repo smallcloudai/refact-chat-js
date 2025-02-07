@@ -32,6 +32,7 @@ import {
   setAutomaticPatch,
   setLastUserMessageId,
   setEnabledCheckpoints,
+  setIsNewChatSuggested,
 } from "./actions";
 import { formatChatResponse } from "./utils";
 import { DEFAULT_MAX_NEW_TOKENS } from "../../../services/refact";
@@ -191,6 +192,11 @@ export const chatReducer = createReducer(initialState, (builder) => {
 
   builder.addCase(setAutomaticPatch, (state, action) => {
     state.automatic_patch = action.payload;
+  });
+
+  builder.addCase(setIsNewChatSuggested, (state, action) => {
+    if (state.thread.id !== action.payload.chatId) return state;
+    state.thread.new_chat_suggested = action.payload.value;
   });
 
   builder.addCase(setEnabledCheckpoints, (state, action) => {
