@@ -47,6 +47,7 @@ export const setThemeMode = createAction<"light" | "dark" | "inherit">(
   "config/setThemeMode",
 );
 export const setApiKey = createAction<string | null>("config/setApiKey");
+export const setAddressURL = createAction<string>("config/setAddressURL");
 
 export const changeFeature = createAction<{
   feature: string;
@@ -87,6 +88,10 @@ export const reducer = createReducer<Config>(initialState, (builder) => {
       ...(state.features ?? {}),
       [action.payload.feature]: action.payload.value,
     };
+  });
+
+  builder.addCase(setAddressURL, (state, action) => {
+    state.addressURL = action.payload;
   });
 });
 

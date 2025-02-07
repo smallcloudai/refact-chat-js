@@ -7,26 +7,23 @@ import {
 import type { ColumnDef } from "@tanstack/react-table";
 import { Button, Flex, Table } from "@radix-ui/themes";
 import { PlusIcon } from "@radix-ui/react-icons";
-import { toPascalCase } from "../../../utils/toPascalCase";
 import { DefaultCell } from "./DefaultCell";
 
 import styles from "./ConfirmationTable.module.css";
 
-type ConfirmationTableProps = {
-  tableName: string;
+type ArgumentsTableProps = {
   initialData: string[];
-  onToolConfirmation: (key: string, data: string[]) => void;
+  onMCPArguments: (data: string[]) => void;
 };
 
-type ConfirmationRow = {
+type ArgumentRow = {
   value: string;
   index: number;
 };
 
-export const ConfirmationTable: FC<ConfirmationTableProps> = ({
-  tableName,
+export const ArgumentsTable: FC<ArgumentsTableProps> = ({
   initialData,
-  onToolConfirmation,
+  onMCPArguments,
 }) => {
   const [data, setData] = useState<string[]>(initialData);
 
@@ -43,19 +40,19 @@ export const ConfirmationTable: FC<ConfirmationTableProps> = ({
   };
 
   useEffect(() => {
-    onToolConfirmation(tableName, data);
-  }, [tableName, data, onToolConfirmation]);
+    onMCPArguments(data);
+  }, [data, onMCPArguments]);
 
-  const tableData = useMemo<ConfirmationRow[]>(
+  const tableData = useMemo<ArgumentRow[]>(
     () => data.map((value, index) => ({ value, index })),
     [data],
   );
 
-  const columns = useMemo<ColumnDef<ConfirmationRow>[]>(
+  const columns = useMemo<ColumnDef<ArgumentRow>[]>(
     () => [
       {
-        id: tableName,
-        header: toPascalCase(tableName),
+        id: "argument",
+        header: "MCP Arguments",
         cell: ({ row }) => {
           const isLastRow = row.index === data.length - 1;
 
@@ -63,7 +60,7 @@ export const ConfirmationTable: FC<ConfirmationTableProps> = ({
             <DefaultCell
               initialValue={row.original.value}
               data-row-index={row.index}
-              data-field={tableName}
+              data-field="argument"
               data-next-row={row.index.toString()}
               onChange={(value) => updateRow(row.index, value)}
               onKeyPress={(e) => {
@@ -76,7 +73,7 @@ export const ConfirmationTable: FC<ConfirmationTableProps> = ({
                     const nextInput = document.querySelector<HTMLElement>(
                       `[data-row-index="${
                         row.index + 1
-                      }"][data-field="${tableName}"]`,
+                      }"][data-field="argument"]`,
                     );
                     nextInput?.focus();
                   }
@@ -104,7 +101,7 @@ export const ConfirmationTable: FC<ConfirmationTableProps> = ({
         ),
       },
     ],
-    [tableName, data.length],
+    [data.length],
   );
 
   const table = useReactTable({
@@ -155,7 +152,7 @@ export const ConfirmationTable: FC<ConfirmationTableProps> = ({
             ) : (
               <Table.Row>
                 <Table.Cell colSpan={columns.length}>
-                  No rules set yet
+                  No arguments set yet
                 </Table.Cell>
               </Table.Row>
             )}

@@ -1,5 +1,6 @@
 import { Checkpoint } from "../../features/Checkpoints/types";
 import { GetChatTitleActionPayload, GetChatTitleResponse } from "./chat";
+import { MCPArgs, MCPEnvs } from "./integrations";
 
 export type ChatRole =
   | "user"
@@ -635,4 +636,19 @@ export function isVecDbStatus(obj: unknown): obj is VecDbStatus {
   }
 
   return true;
+}
+export function isMCPArgumentsArray(json: unknown): json is MCPArgs {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  if (!Array.isArray(json)) return false;
+  if (!json.every((arg) => typeof arg === "string")) return false;
+  return true;
+}
+
+export function isMCPEnvironmentsDict(json: unknown): json is MCPEnvs {
+  if (!json) return false;
+  if (typeof json !== "object") return false;
+  if (Array.isArray(json)) return false;
+
+  return Object.values(json).every((value) => typeof value === "string");
 }

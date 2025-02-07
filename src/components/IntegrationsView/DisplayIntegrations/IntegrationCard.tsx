@@ -1,15 +1,15 @@
 import { Badge, Card, Flex, Text } from "@radix-ui/themes";
-import { toPascalCase } from "../../utils/toPascalCase";
 import styles from "./IntegrationCard.module.css";
 import {
   IntegrationWithIconRecord,
   NotConfiguredIntegrationWithIconRecord,
-} from "../../services/refact";
+} from "../../../services/refact";
 import { FC } from "react";
 import classNames from "classnames";
-import { iconMap } from "./icons/iconMap";
-import { useAppSelector } from "../../hooks";
-import { selectThemeMode } from "../../features/Config/configSlice";
+import { useAppSelector } from "../../../hooks";
+import { selectConfig } from "../../../features/Config/configSlice";
+import { getIntegrationInfo } from "../../../utils/getIntegrationInfo";
+import { formatIntegrationIconPath } from "../../../utils/formatIntegrationIconPath";
 
 type IntegrationCardProps = {
   integration:
@@ -23,23 +23,18 @@ type IntegrationCardProps = {
   isNotConfigured?: boolean;
 };
 
-const INTEGRATIONS_WITH_TERMINAL_ICON = ["cmdline", "service"];
-
 export const IntegrationCard: FC<IntegrationCardProps> = ({
   integration,
   handleIntegrationShowUp,
   isNotConfigured = false,
 }) => {
-  const theme = useAppSelector(selectThemeMode);
-  const icons = iconMap(
-    theme ? (theme === "inherit" ? "light" : theme) : "light",
-  );
+  const config = useAppSelector(selectConfig);
+  const port = config.lspPort;
 
-  const integrationLogo = INTEGRATIONS_WITH_TERMINAL_ICON.includes(
-    integration.integr_name.split("_")[0],
-  )
-    ? icons.cmdline
-    : icons[integration.integr_name];
+  const iconPath = formatIntegrationIconPath(integration.icon_path);
+  const integrationLogo = `http://127.0.0.1:${port}/v1${iconPath}`;
+
+  const { displayName } = getIntegrationInfo(integration.integr_name);
 
   return (
     <Card
@@ -69,22 +64,14 @@ export const IntegrationCard: FC<IntegrationCardProps> = ({
             weight="medium"
             align={isNotConfigured ? "center" : "left"}
           >
-            {integration.integr_name.includes("TEMPLATE")
-              ? integration.integr_name.startsWith("cmdline")
-                ? "Command-line Tool"
-                : "Command-line Service"
-              : toPascalCase(integration.integr_name)}
+            {displayName}
           </Text>
           {!isNotConfigured && (
             <Badge
-              color={
-                // TODO: get it back later integration.on_your_laptop || integration.when_isolated
-                integration.on_your_laptop ? "jade" : "gray"
-              }
+              color={integration.on_your_laptop ? "jade" : "gray"}
               variant="soft"
               radius="medium"
             >
-              {/* TODO: get it back later {integration.on_your_laptop || integration.when_isolated */}
               {integration.on_your_laptop ? "On" : "Off"}
             </Badge>
           )}

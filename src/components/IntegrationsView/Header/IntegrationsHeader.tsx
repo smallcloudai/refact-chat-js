@@ -1,12 +1,12 @@
 import { Button, Flex, Heading, IconButton } from "@radix-ui/themes";
-import { useWindowDimensions } from "../../hooks/useWindowDimensions";
+import { useWindowDimensions } from "../../../hooks/useWindowDimensions.ts";
 import type { FC } from "react";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import styles from "./IntegrationsHeader.module.css";
-import { LeftRightPadding } from "../../features/Integrations/Integrations";
-import { toPascalCase } from "../../utils/toPascalCase";
-import { useAppSelector } from "../../hooks";
-import { selectConfig } from "../../features/Config/configSlice.ts";
+import { LeftRightPadding } from "../../../features/Integrations/Integrations.tsx";
+import { useAppSelector } from "../../../hooks/index.ts";
+import { selectConfig } from "../../../features/Config/configSlice.ts";
+import { getIntegrationInfo } from "../../../utils/getIntegrationInfo";
 
 type IntegrationsHeaderProps = {
   handleFormReturn: () => void;
@@ -35,6 +35,8 @@ export const IntegrationsHeader: FC<IntegrationsHeaderProps> = ({
       handleFormReturn();
     }
   };
+
+  const { displayName } = getIntegrationInfo(integrationName);
 
   return (
     <Flex
@@ -78,11 +80,7 @@ export const IntegrationsHeader: FC<IntegrationsHeaderProps> = ({
               alt={integrationName}
             />
             <Heading as="h5" size="3">
-              {integrationName.includes("TEMPLATE")
-                ? integrationName.startsWith("cmdline")
-                  ? "Command Line Tool"
-                  : "Command Line Service"
-                : toPascalCase(integrationName)}
+              {displayName}
             </Heading>
           </Flex>
         </Flex>
