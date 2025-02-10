@@ -102,15 +102,19 @@ export const AddKnowledgeForm: React.FC<{ onClose: () => void }> = ({
 
     if (isAddMemoryRequest(memory)) {
       // TODO: handle errors
-      void submit(memory);
+      submit(memory)
+        .unwrap()
+        .then(() => {
+          event.currentTarget.reset();
+        })
+        .catch(() => ({}));
     }
-    // setOpenForm(false);
-    // TBD: should we clear the form after submit?
-    // event.currentTarget.reset();
   };
 
   useEffect(() => {
-    result.isSuccess && onClose();
+    if (result.isSuccess) {
+      onClose();
+    }
   }, [result.isSuccess, onClose]);
 
   return (
