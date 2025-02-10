@@ -31,6 +31,8 @@ import { ScrollArea } from "../ScrollArea";
 import { takeWhile, fenceBackTicks } from "../../utils";
 import { DialogImage } from "../DialogImage";
 import { CheckIcon, Cross2Icon } from "@radix-ui/react-icons";
+import { RootState } from "../../app/store";
+import { selectFeatures } from "../../features/Config/configSlice";
 
 type ResultProps = {
   children: string;
@@ -215,18 +217,20 @@ export type ToolContentProps = {
 };
 
 export const ToolContent: React.FC<ToolContentProps> = ({ toolCalls }) => {
+  const features = useAppSelector(selectFeatures);
   const ids = toolCalls.reduce<string[]>((acc, cur) => {
     if (cur.id !== undefined) return [...acc, cur.id];
     return acc;
   }, []);
   const allToolResults = useAppSelector(selectManyToolResultsByIds(ids));
 
-  return processToolCalls(toolCalls, allToolResults);
+  return processToolCalls(toolCalls, allToolResults, features);
 };
 
 function processToolCalls(
   toolCalls: ToolCall[],
   toolResults: ToolResult[],
+  features: RootState["config"]["features"] = {},
   processed: React.ReactNode[] = [],
 ) {
   if (toolCalls.length === 0) return processed;
@@ -236,11 +240,11 @@ function processToolCalls(
   // TODO: handle knowledge differently.
   // memories are split in content with 🗃️019957b6ff
 
-  if (result && head.function.name === "knowledge") {
+  if (features.knowledge && result && head.function.name === "knowledge") {
     const elem = (
       <Knowledge key={`knowledge-tool-${processed.length}`} toolCall={head} />
     );
-    return processToolCalls(tail, toolResults, [...processed, elem]);
+    return processToolCalls(tail, toolResults, features, [...processed, elem]);
   }
 
   if (result && isMultiModalToolResult(result)) {
@@ -265,7 +269,10 @@ function processToolCalls(
         toolResults={multiModalToolResults}
       />
     );
-    return processToolCalls(nextTail, toolResults, [...processed, elem]);
+    return processToolCalls(nextTail, toolResults, features, [
+      ...processed,
+      elem,
+    ]);
   }
 
   const restInTail = takeWhile(tail, (toolCall) => {
@@ -282,7 +289,10 @@ function processToolCalls(
       toolCalls={[head, ...restInTail]}
     />
   );
-  return processToolCalls(nextTail, toolResults, [...processed, elem]);
+  return processToolCalls(nextTail, toolResults, features, [
+    ...processed,
+    elem,
+  ]);
 }
 
 const MultiModalToolContent: React.FC<{
