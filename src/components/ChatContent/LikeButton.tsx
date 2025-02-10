@@ -45,10 +45,10 @@ export const LikeButton = () => {
   return (
     <Flex justify="end" px="2" minHeight="28px">
       <IconButton
-        title="create a trajectory from this chat"
+        title="Create a trajectory from this chat"
         variant="ghost"
         onClick={submitLike}
-        disabled={likeResponse.isSuccess}
+        disabled={likeResponse.isLoading || likeResponse.isSuccess}
         loading={likeResponse.isLoading}
         className={classnames(
           likeResponse.isSuccess && styles.like__button__success,
