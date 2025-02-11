@@ -17,6 +17,7 @@ import {
   useAgentUsage,
   useCapsForToolUse,
   USAGE_LIMIT_EXHAUSTED_MESSAGE,
+  useSendChatRequest,
 } from "../../hooks";
 import { ErrorCallout, Callout } from "../Callout";
 import { ComboBox } from "../ComboBox";
@@ -78,6 +79,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   const [helpInfo, setHelpInfo] = React.useState<React.ReactNode | null>(null);
   const { disableInput } = useAgentUsage();
   const isOnline = useIsOnline();
+  const { retry } = useSendChatRequest();
 
   const chatId = useAppSelector(selectChatId);
   const threadToolUse = useAppSelector(selectThreadToolUse);
@@ -88,7 +90,10 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     return threadToolUse === "agent" && toolUse === "agent";
   }, [toolUse, threadToolUse]);
 
-  const onClearError = useCallback(() => dispatch(clearError()), [dispatch]);
+  const onClearError = useCallback(() => {
+    retry(messages);
+    dispatch(clearError());
+  }, [dispatch, retry, messages]);
 
   const caps = useCapsForToolUse();
 
