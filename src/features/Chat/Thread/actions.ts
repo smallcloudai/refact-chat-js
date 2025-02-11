@@ -132,6 +132,10 @@ export const setMaxNewTokens = createAction<number>(
   "chatThread/setMaxNewTokens",
 );
 
+export const fixBrokenToolMessages = createAction<PayloadWithId>(
+  "chatThread/fixBrokenToolMessages",
+);
+
 // TODO: This is the circular dep when imported from hooks :/
 const createAppAsyncThunk = createAsyncThunk.withTypes<{
   state: RootState;
@@ -323,7 +327,10 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
         }
         const reader = response.body?.getReader();
         if (!reader) return;
-        const onAbort = () => thunkAPI.dispatch(setPreventSend({ id: chatId }));
+        const onAbort = () => {
+          thunkAPI.dispatch(setPreventSend({ id: chatId }));
+          thunkAPI.dispatch(fixBrokenToolMessages({ id: chatId }));
+        };
         const onChunk = (json: Record<string, unknown>) => {
           const action = chatResponse({
             ...(json as ChatResponse),
@@ -337,6 +344,7 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
         // console.log("Catch called");
         thunkAPI.dispatch(doneStreaming({ id: chatId }));
         thunkAPI.dispatch(chatError({ id: chatId, message: err.message }));
+        thunkAPI.dispatch(fixBrokenToolMessages({ id: chatId }));
         return thunkAPI.rejectWithValue(err.message);
       })
       .finally(() => {
