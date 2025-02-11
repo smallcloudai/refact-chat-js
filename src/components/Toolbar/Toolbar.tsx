@@ -15,9 +15,9 @@ import {
   HomeIcon,
   PlusIcon,
 } from "@radix-ui/react-icons";
-import { newChatAction } from "../../events";
+// import { newChatAction } from "../../events";
 import { restart, useTourRefs } from "../../features/Tour";
-import { popBackTo, push } from "../../features/Pages/pagesSlice";
+// import { popBackTo, push } from "../../features/Pages/pagesSlice";
 import {
   ChangeEvent,
   KeyboardEvent,
@@ -32,7 +32,11 @@ import {
   getHistory,
   updateChatTitleById,
 } from "../../features/History/historySlice";
-import { restoreChat, saveTitle, selectThread } from "../../features/Chat";
+import {
+  // restoreChat,
+  saveTitle,
+  selectThread,
+} from "../../features/Chat";
 import { TruncateLeft } from "../Text";
 import {
   useAppDispatch,
@@ -125,7 +129,7 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
         });
       } else if (to === "stats") {
         // dispatch(push({ name: "statistics page" }));
-        void navigate("statistics");
+        void navigate("/statistics");
         void sendTelemetryEvent({
           scope: `openStats`,
           success: true,
@@ -152,6 +156,7 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
       } else if (to === "chat") {
         // dispatch(popBackTo({ name: "history" }));
         // dispatch(push({ name: "chat" }));
+        // dispatch(newChatAction());
         void navigate("/chat");
       }
     },
@@ -160,7 +165,7 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
 
   const onCreateNewChat = useCallback(() => {
     setIsRenaming((prev) => (prev ? !prev : prev));
-    dispatch(newChatAction());
+    // dispatch(newChatAction());
     dispatch(
       clearPauseReasonsAndHandleToolsStatus({
         wasInteracted: false,
@@ -178,16 +183,18 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
   const goToTab = useCallback(
     (tab: Tab) => {
       if (tab.type === "dashboard") {
-        dispatch(popBackTo({ name: "history" }));
-        dispatch(newChatAction());
+        void navigate("/");
+        // dispatch(popBackTo({ name: "history" }));
+        // dispatch(newChatAction());
       } else {
-        if (shouldChatTabLinkBeNotClickable) return;
-        const chat = history.find((chat) => chat.id === tab.id);
-        if (chat != undefined) {
-          dispatch(restoreChat(chat));
-        }
-        dispatch(popBackTo({ name: "history" }));
-        dispatch(push({ name: "chat" }));
+        // if (shouldChatTabLinkBeNotClickable) return;
+        // const chat = history.find((chat) => chat.id === tab.id);
+        // if (chat != undefined) {
+        //   dispatch(restoreChat(chat));
+        // }
+        // dispatch(popBackTo({ name: "history" }));
+        // dispatch(push({ name: "chat" }));
+        void navigate(`/chat/${tab.id}`);
       }
       void sendTelemetryEvent({
         scope: `goToTab/${tab.type}`,
@@ -195,7 +202,7 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
         error_message: "",
       });
     },
-    [dispatch, history, shouldChatTabLinkBeNotClickable, sendTelemetryEvent],
+    [sendTelemetryEvent, navigate],
   );
 
   useEffect(() => {
@@ -231,8 +238,9 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
 
   const handleChatThreadDeletion = useCallback(() => {
     dispatch(deleteChatById(chatId));
-    goToTab({ type: "dashboard" });
-  }, [dispatch, chatId, goToTab]);
+    // goToTab({ type: "dashboard" });
+    void navigate("/");
+  }, [dispatch, chatId, navigate]);
 
   const handleChatThreadRenaming = useCallback(() => {
     setIsRenaming(true);

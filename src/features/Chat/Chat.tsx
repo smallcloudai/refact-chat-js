@@ -11,6 +11,32 @@ import {
 } from "./Thread";
 import { useNavigate, useParams } from "react-router";
 
+function useNavigateToChat() {
+  const thread = useAppSelector(selectThread);
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const params = useParams();
+  const cached = useAppSelector(selectChatFromCacheOrHistory(params.chatId));
+
+  useEffect(() => {
+    if (cached && cached.id !== thread.id) {
+      // TODO: these hooks are a bit of a hack around creating a new thread, then navigating to it
+      dispatch(restoreChat(cached));
+    }
+  }, [cached, dispatch, thread.id]);
+
+  useEffect(() => {
+    if (thread.id === params.chatId) return;
+    void navigate(`/chat/${thread.id}`);
+  }, [thread.id, navigate, params.chatId]);
+
+  useEffect(() => {
+    if (!params.chatId) {
+      dispatch(newChatAction());
+    }
+  }, [dispatch, params.chatId]);
+}
+
 export type ChatProps = {
   host: Config["host"];
   tabbed: Config["tabbed"];
@@ -24,23 +50,9 @@ export const Chat: React.FC<ChatProps> = ({
   host,
   tabbed,
 }) => {
-  const dispatch = useAppDispatch();
   const messages = useAppSelector(selectMessages);
-  const maybeChatId = useParams().chatId;
-  const cached = useAppSelector(selectChatFromCacheOrHistory(maybeChatId));
-  const thread = useAppSelector(selectThread);
-  // const navigate = useNavigate();
-  useEffect(() => {
-    // TODO: create a new chat and navigate to it
-    // if (maybeChatId === undefined) {
-    //   dispatch(newChatAction());
-    // } else
-    if (thread.id !== maybeChatId && cached) {
-      dispatch(restoreChat(cached));
-    }
-  }, [cached, dispatch, maybeChatId, thread.id]);
+  useNavigateToChat();
 
-  // can be a selector
   const unCalledTools = React.useMemo(() => {
     if (messages.length === 0) return false;
     const last = messages[messages.length - 1];
