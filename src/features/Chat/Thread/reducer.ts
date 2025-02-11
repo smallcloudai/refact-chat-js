@@ -56,6 +56,7 @@ const createChatThread = (
     tool_use,
     integration,
     mode,
+    new_chat_suggested: true,
   };
   return chat;
 };
