@@ -30,30 +30,15 @@ export const Chat: React.FC<ChatProps> = ({
   const cached = useAppSelector(selectChatFromCacheOrHistory(maybeChatId));
   const thread = useAppSelector(selectThread);
   // const navigate = useNavigate();
-
   useEffect(() => {
-    if (maybeChatId === undefined) {
-      dispatch(newChatAction());
-    }
-    // } else if (thread.id !== maybeChatId && cached) {
-    //   dispatch(restoreChat(cached));
-    // }
-    // } else if (thread.id !== maybeChatId) {
+    // TODO: create a new chat and navigate to it
+    // if (maybeChatId === undefined) {
     //   dispatch(newChatAction());
-    // }
+    // } else
+    if (thread.id !== maybeChatId && cached) {
+      dispatch(restoreChat(cached));
+    }
   }, [cached, dispatch, maybeChatId, thread.id]);
-
-  console.log("chat props", maybeChatId, cached);
-
-  // if no chat id make a new chat.
-  // if chat id check cache for chat id, then check history for chat id, if not found ... maybe make a new one ?
-
-  const sendToSideBar = () => {
-    // TODO:
-  };
-
-  const maybeSendToSideBar =
-    host === "vscode" && tabbed ? sendToSideBar : undefined;
 
   // can be a selector
   const unCalledTools = React.useMemo(() => {
@@ -76,8 +61,6 @@ export const Chat: React.FC<ChatProps> = ({
       // back ... can be a link
       backFromChat={backFromChat}
       unCalledTools={unCalledTools}
-      // not used
-      maybeSendToSidebar={maybeSendToSideBar}
     />
   );
 };

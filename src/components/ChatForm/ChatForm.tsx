@@ -56,14 +56,13 @@ import { AgentCapabilities } from "./AgentCapabilities";
 
 export type ChatFormProps = {
   onSubmit: (str: string) => void;
-  onClose?: () => void;
   className?: string;
   unCalledTools: boolean;
 };
 
 export const ChatForm: React.FC<ChatFormProps> = ({
   onSubmit,
-  onClose,
+
   className,
   unCalledTools,
 }) => {
@@ -370,14 +369,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
                 type="button"
                 onClick={handleAgentIntegrationsClick}
                 ref={(x) => refs.setSetupIntegrations(x)}
-              />
-            )}
-            {onClose && (
-              <BackToSideBarButton
-                disabled={isStreaming}
-                title="Return to sidebar"
-                size="1"
-                onClick={onClose}
               />
             )}
             {config.features?.images !== false &&

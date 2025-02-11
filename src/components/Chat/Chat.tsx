@@ -34,14 +34,9 @@ export type ChatProps = {
   backFromChat: () => void;
   style?: React.CSSProperties;
   unCalledTools: boolean;
-  maybeSendToSidebar: ChatFormProps["onClose"];
 };
 
-export const Chat: React.FC<ChatProps> = ({
-  style,
-  unCalledTools,
-  maybeSendToSidebar,
-}) => {
+export const Chat: React.FC<ChatProps> = ({ style, unCalledTools }) => {
   const dispatch = useAppDispatch();
 
   const [isViewingRawJSON, setIsViewingRawJSON] = useState(false);
@@ -132,7 +127,6 @@ export const Chat: React.FC<ChatProps> = ({
         <ChatForm
           key={chatId} // TODO: think of how can we not trigger re-render on chatId change (checkboxes)
           onSubmit={handleSummit}
-          onClose={maybeSendToSidebar}
           unCalledTools={unCalledTools}
         />
 
