@@ -26,7 +26,7 @@ import { ChatControls } from "./ChatControls";
 import { addCheckboxValuesToInput } from "./utils";
 import { useCommandCompletionAndPreviewFiles } from "./useCommandCompletionAndPreviewFiles";
 import { useAppSelector, useAppDispatch } from "../../hooks";
-import { clearError } from "../../features/Errors/errorsSlice";
+import { clearError, getErrorMessage } from "../../features/Errors/errorsSlice";
 import { useTourRefs } from "../../features/Tour";
 import { useCheckboxes } from "./useCheckBoxes";
 import { useInputValue } from "./useInputValue";
@@ -74,7 +74,8 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   const { isMultimodalitySupportedForCurrentModel } = useCapsForToolUse();
   const config = useConfig();
   const toolUse = useAppSelector(selectToolUse);
-  const error = useAppSelector(selectChatError);
+  const globalError = useAppSelector(getErrorMessage);
+  const chatError = useAppSelector(selectChatError);
   const information = useAppSelector(getInformationMessage);
   const pauseReasonsWithPause = useAppSelector(getPauseReasonsWithPauseStatus);
   const [helpInfo, setHelpInfo] = React.useState<React.ReactNode | null>(null);
@@ -92,11 +93,11 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   }, [toolUse, threadToolUse]);
 
   const onClearError = useCallback(() => {
-    if (messages.length > 0) {
+    if (messages.length > 0 && chatError) {
       retry(messages);
     }
     dispatch(clearError());
-  }, [dispatch, retry, messages]);
+  }, [dispatch, retry, messages, chatError]);
 
   const caps = useCapsForToolUse();
 
@@ -274,10 +275,10 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     setIsSendImmediately,
   ]);
 
-  if (error) {
+  if (globalError) {
     return (
       <ErrorCallout mt="2" onClick={onClearError} timeout={null}>
-        {error}
+        {globalError}
       </ErrorCallout>
     );
   }
