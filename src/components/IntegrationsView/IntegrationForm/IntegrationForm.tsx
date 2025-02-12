@@ -24,7 +24,7 @@ import { FormFields } from "./FormFields";
 import { FormSmartlinks } from "./FormSmartlinks";
 import styles from "./IntegrationForm.module.css";
 
-type IntegrationFormProps = {
+export type IntegrationFormProps = {
   integrationPath: string;
   isApplying: boolean;
   isDisabled: boolean;
