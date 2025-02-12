@@ -1,0 +1,19 @@
+.textdoc {
+}
+
+.textdoc__header {
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
+}
+
+.textdoc__header,
+.textdoc__header::before,
+.textdoc__header::after {
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-width: 0;
+}
+
+.textdoc pre {
+  margin-top: 0;
+}
