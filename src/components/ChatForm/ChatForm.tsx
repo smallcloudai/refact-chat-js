@@ -210,7 +210,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
 
   const handleChange = useCallback(
     (command: string) => {
-      console.log(`[DEBUG]: handleChange`);
       setValue(command);
       const trimmedCommand = command.trim();
       setFileInteracted(!!trimmedCommand);

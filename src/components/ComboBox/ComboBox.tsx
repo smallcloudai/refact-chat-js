@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import React, { useCallback, useEffect, useMemo } from "react";
 import { useComboboxStore, Combobox } from "@ariakit/react";
 import { getAnchorRect, replaceRange } from "./utils";
