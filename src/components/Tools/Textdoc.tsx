@@ -17,6 +17,7 @@ import { Markdown } from "../Markdown";
 import { filename } from "../../utils/filename";
 import styles from "./Texdoc.module.css";
 import { createPatch } from "diff";
+import classNames from "classnames";
 
 export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
   toolCall,
@@ -156,13 +157,16 @@ const UpdateTextDoc: React.FC<{
     toolCall.function.arguments.old_str,
     toolCall.function.arguments.path,
   ]);
+  // TODO: don't use markdown for this, it's two bright
   return (
-    <Box className={styles.textdoc}>
+    <Box className={classNames(styles.textdoc, styles.textdoc__update)}>
       <TextDocHeader
         filePath={toolCall.function.arguments.path}
         onOpenFile={onOpenFile}
       />
-      <Markdown>{diff}</Markdown>
+      <Box className={classNames(styles.textdoc__diffbox)}>
+        <Markdown useInlineStyles={false}>{diff}</Markdown>
+      </Box>
     </Box>
   );
 };
