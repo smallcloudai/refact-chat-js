@@ -36,6 +36,8 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
 }) => {
   const ref = React.useRef<HTMLTextAreaElement>(null);
   const [moveCursorTo, setMoveCursorTo] = React.useState<number | null>(null);
+  const [lastPasteTimestamp, setLastPasteTimestamp] = React.useState(0);
+  const [lastValue, setLastValue] = React.useState("");
   const shiftEnterToSubmit = useAppSelector(selectSubmitOption);
   const { escapeKeyPressed } = useEventsBusForIDE();
 
@@ -89,6 +91,19 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
   const handleReplace = useCallback(
     (input: string) => {
       if (!ref.current) return;
+      console.log("[DEBUG] handleReplace called with:", {
+        input,
+        currentValue: ref.current.value,
+        replaceRange: commands.replace,
+        timeSinceLastPaste: Date.now() - lastPasteTimestamp,
+      });
+
+      // If this is happening right after a paste, skip it
+      if (Date.now() - lastPasteTimestamp < 100) {
+        console.log("[DEBUG] Skipping handleReplace due to recent paste");
+        return;
+      }
+
       const nextValue = replaceRange(
         ref.current.value,
         commands.replace,
@@ -99,7 +114,13 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
       onChange(nextValue);
       setMoveCursorTo(commands.replace[0] + input.length);
     },
-    [closeCombobox, commands.replace, onChange, requestCommandsCompletion],
+    [
+      closeCombobox,
+      commands.replace,
+      onChange,
+      requestCommandsCompletion,
+      lastPasteTimestamp,
+    ],
   );
 
   const onKeyDown = useCallback(
@@ -198,9 +219,65 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
 
   const handleChange = useCallback(
     (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const now = Date.now();
+      console.log(
+        "[DEBUG] handleChange called with value:",
+        event.target.value,
+      );
+      console.log("[DEBUG] previous value was:", lastValue);
+      console.log(
+        "[DEBUG] time since last paste:",
+        now - lastPasteTimestamp,
+        "ms",
+      );
+      console.log("[DEBUG] combobox state:", {
+        open: state.open,
+        activeValue: state.activeValue,
+        activeId: state.activeId,
+        replace: commands.replace,
+      });
+      const isPaste = event.target.value.length > value.length + 1;
+
+      if (isPaste) {
+        if (now - lastPasteTimestamp < 100) {
+          console.log("[DEBUG] Skipping duplicate paste event");
+          return;
+        }
+        console.log(
+          "[DEBUG] paste detected, closing combobox and canceling completion",
+        );
+        setLastPasteTimestamp(now);
+        closeCombobox();
+        requestCommandsCompletion.cancel();
+      }
+
+      setLastValue(event.target.value);
       onChange(event.target.value);
     },
-    [onChange],
+    [
+      onChange,
+      closeCombobox,
+      state,
+      commands.replace,
+      value.length,
+      requestCommandsCompletion,
+      lastPasteTimestamp,
+      lastValue,
+    ],
+  );
+
+  // Add paste event handler
+  const handlePaste = useCallback(
+    (_event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      console.log("[DEBUG] handlePaste event fired");
+      setLastPasteTimestamp(Date.now());
+      if (state.open) {
+        console.log("[DEBUG] paste event detected, closing combobox");
+        closeCombobox();
+        requestCommandsCompletion.cancel();
+      }
+    },
+    [closeCombobox, state.open, requestCommandsCompletion],
   );
 
   const onItemClick = useCallback(
@@ -240,7 +317,7 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
         showOnChange={false}
         showOnKeyDown={false}
         showOnMouseDown={false}
-        setValueOnChange={true}
+        setValueOnChange={false}
         render={render({
           ref,
           placeholder,
@@ -250,6 +327,7 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,
           onSubmit: onSubmit,
+          onPaste: handlePaste,
         })}
       />
       <Portal>
