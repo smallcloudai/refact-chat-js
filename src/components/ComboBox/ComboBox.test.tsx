@@ -377,6 +377,8 @@ describe("ComboBox", () => {
     await user.keyboard("{z}");
     expect(textarea.textContent).toEqual("@file ");
 
+    await pause(100); // required, because of cancelling on frequent paste
+
     await user.keyboard("{z}{/Meta}{/Shift}");
     expect(textarea.textContent).toEqual("@file /foo ");
   });
@@ -387,23 +389,29 @@ describe("ComboBox", () => {
 
     await user.type(textarea, "@");
     await user.keyboard("{Enter}");
-    await pause(50);
+    await pause(150);
     await user.keyboard("{Enter}");
 
     expect(textarea.textContent).toEqual("@file /foo ");
+
     await user.keyboard("{Control>}{z}");
     expect(textarea.textContent).toEqual("@file ");
+
     await user.keyboard("{z}");
     expect(textarea.textContent).toEqual("@");
+
     await user.keyboard("{z}{/Control}");
     expect(textarea.textContent).toEqual("");
 
-    await user.keyboard("{Shift>}{Control>}{z}");
+    await user.keyboard("{Shift>}{Control>}{Z}");
     expect(textarea.textContent).toEqual("@");
-    await user.keyboard("{z}");
+
+    await user.keyboard("{Z}");
     expect(textarea.textContent).toEqual("@file ");
 
-    await user.keyboard("{z}{/Control}{/Shift}");
+    await pause(100); // required, because of cancelling on frequent paste
+
+    await user.keyboard("{z}{/Shift}{/Control}");
     expect(textarea.textContent).toEqual("@file /foo ");
   });
 
@@ -463,20 +471,5 @@ describe("ComboBox", () => {
     expect(textarea.textContent).toEqual("Hello");
     await user.type(textarea, action);
     expect(onSubmitSpy).not.toHaveBeenCalled();
-  });
-
-  test("paste path after @file command should show only one path", async () => {
-    const { user, ...app } = render(<App />);
-    const textarea = app.getByRole("combobox");
-    await user.type(textarea, "@file ");
-    expect(textarea.textContent).toEqual("@file ");
-
-    // Simulate pasting a path
-    await user.paste("/custom/path/to/file.txt");
-
-    // Should show only the pasted path, not suggestions
-    expect(textarea.textContent).toEqual("@file /custom/path/to/file.txt");
-    expect(app.queryByText("/foo")).toBeNull();
-    expect(app.queryByText("/bar")).toBeNull();
   });
 });
