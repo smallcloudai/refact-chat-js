@@ -6,7 +6,7 @@ import {
 } from "../../hooks";
 import { selectPages, change, ChatPage } from "../../features/Pages/pagesSlice";
 import { setInputValue, addInputValue } from "./actions";
-// import { console.log } from "../../debugConfig";
+import { debugRefact } from "../../debugConfig";
 
 export function useInputValue(
   uncheckCheckboxes: () => void,
@@ -34,14 +34,14 @@ export function useInputValue(
     (event: MessageEvent) => {
       if (addInputValue.match(event.data) || setInputValue.match(event.data)) {
         const { payload } = event.data;
-        console.log(
+        debugRefact(
           `[DEBUG]: receiving event setInputValue/addInputValue with payload:`,
           payload,
         );
         setUpIfNotReady();
 
         if (payload.messages) {
-          console.log(`[DEBUG]: payload messages: `, payload.messages);
+          debugRefact(`[DEBUG]: payload messages: `, payload.messages);
           setIsSendImmediately(true);
           submit({
             maybeMessages: payload.messages,
@@ -52,10 +52,10 @@ export function useInputValue(
 
       if (addInputValue.match(event.data)) {
         const { payload } = event.data;
-        console.log(`[DEBUG]: addInputValue triggered with:`, payload);
+        debugRefact(`[DEBUG]: addInputValue triggered with:`, payload);
         const { send_immediately, value } = payload;
         setValue((prev) => {
-          console.log(`[DEBUG]: Previous value: "${prev}", Adding: "${value}"`);
+          debugRefact(`[DEBUG]: Previous value: "${prev}", Adding: "${value}"`);
           return prev + value;
         });
         setIsSendImmediately(send_immediately);
@@ -64,11 +64,11 @@ export function useInputValue(
 
       if (setInputValue.match(event.data)) {
         const { payload } = event.data;
-        console.log(`[DEBUG]: setInputValue triggered with:`, payload);
+        debugRefact(`[DEBUG]: setInputValue triggered with:`, payload);
         const { send_immediately, value } = payload;
         uncheckCheckboxes();
         setValue(value ?? "");
-        console.log(`[DEBUG]: setInputValue.payload: `, payload);
+        debugRefact(`[DEBUG]: setInputValue.payload: `, payload);
         setIsSendImmediately(send_immediately);
         return;
       }
