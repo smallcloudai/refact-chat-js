@@ -472,4 +472,14 @@ describe("ComboBox", () => {
     await user.type(textarea, action);
     expect(onSubmitSpy).not.toHaveBeenCalled();
   });
+
+  // test("textarea should be empty after submit", async () => {
+  //   const submitSpy = vi.fn();
+  //   const { user, ...app } = render(<App onSubmit={submitSpy} />);
+  //   const textarea = app.getByRole("combobox") as HTMLTextAreaElement;
+  //   await user.type(textarea, "hello");
+  //   await user.keyboard("{Enter}");
+  //   expect(submitSpy).toHaveBeenCalled();
+  //   expect(textarea.textContent).toEqual("");
+  // });
 });
