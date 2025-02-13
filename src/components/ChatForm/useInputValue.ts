@@ -6,7 +6,7 @@ import {
 } from "../../hooks";
 import { selectPages, change, ChatPage } from "../../features/Pages/pagesSlice";
 import { setInputValue, addInputValue } from "./actions";
-import { debugRefact } from "../../debugConfig";
+// import { console.log } from "../../debugConfig";
 
 export function useInputValue(
   uncheckCheckboxes: () => void,
@@ -34,11 +34,14 @@ export function useInputValue(
     (event: MessageEvent) => {
       if (addInputValue.match(event.data) || setInputValue.match(event.data)) {
         const { payload } = event.data;
-        debugRefact(`[DEBUG]: receiving event setInputValue/addInputValue`);
+        console.log(
+          `[DEBUG]: receiving event setInputValue/addInputValue with payload:`,
+          payload,
+        );
         setUpIfNotReady();
 
         if (payload.messages) {
-          debugRefact(`[DEBUG]: payload messages: `, payload.messages);
+          console.log(`[DEBUG]: payload messages: `, payload.messages);
           setIsSendImmediately(true);
           submit({
             maybeMessages: payload.messages,
@@ -49,18 +52,23 @@ export function useInputValue(
 
       if (addInputValue.match(event.data)) {
         const { payload } = event.data;
+        console.log(`[DEBUG]: addInputValue triggered with:`, payload);
         const { send_immediately, value } = payload;
-        setValue((prev) => prev + value);
+        setValue((prev) => {
+          console.log(`[DEBUG]: Previous value: "${prev}", Adding: "${value}"`);
+          return prev + value;
+        });
         setIsSendImmediately(send_immediately);
         return;
       }
 
       if (setInputValue.match(event.data)) {
         const { payload } = event.data;
+        console.log(`[DEBUG]: setInputValue triggered with:`, payload);
         const { send_immediately, value } = payload;
         uncheckCheckboxes();
         setValue(value ?? "");
-        debugRefact(`[DEBUG]: setInputValue.payload: `, payload);
+        console.log(`[DEBUG]: setInputValue.payload: `, payload);
         setIsSendImmediately(send_immediately);
         return;
       }

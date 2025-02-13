@@ -465,13 +465,18 @@ describe("ComboBox", () => {
     expect(onSubmitSpy).not.toHaveBeenCalled();
   });
 
-  // test("textarea should be empty after submit", async () => {
-  //   const submitSpy = vi.fn();
-  //   const { user, ...app } = render(<App onSubmit={submitSpy} />);
-  //   const textarea = app.getByRole("combobox") as HTMLTextAreaElement;
-  //   await user.type(textarea, "hello");
-  //   await user.keyboard("{Enter}");
-  //   expect(submitSpy).toHaveBeenCalled();
-  //   expect(textarea.textContent).toEqual("");
-  // });
+  test("paste path after @file command should show only one path", async () => {
+    const { user, ...app } = render(<App />);
+    const textarea = app.getByRole("combobox");
+    await user.type(textarea, "@file ");
+    expect(textarea.textContent).toEqual("@file ");
+
+    // Simulate pasting a path
+    await user.paste("/custom/path/to/file.txt");
+
+    // Should show only the pasted path, not suggestions
+    expect(textarea.textContent).toEqual("@file /custom/path/to/file.txt");
+    expect(app.queryByText("/foo")).toBeNull();
+    expect(app.queryByText("/bar")).toBeNull();
+  });
 });
