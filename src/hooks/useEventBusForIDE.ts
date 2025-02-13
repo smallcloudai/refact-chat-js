@@ -7,13 +7,8 @@ import {
   HostSettings,
   SetupHost,
 } from "../events/setup";
-import type { DiffPreviewResponse, PatchResult } from "../services/refact";
 
 export const ideDiffPasteBackAction = createAction<string>("ide/diffPasteBack");
-
-export const ideDiffPreviewAction = createAction<
-  DiffPreviewResponse & { currentPin: string; allPins: string[] }
->("ide/diffPreview");
 
 export const ideOpenSettingsAction = createAction("ide/openSettings");
 
@@ -36,10 +31,6 @@ export const ideAnimateFileStart = createAction<string>(
 );
 
 export const ideAnimateFileStop = createAction<string>("ide/animateFile/stop");
-
-export const ideWriteResultsToFile = createAction<PatchResult[]>(
-  "ide/writeResultsToFile",
-);
 
 export const ideChatPageChange = createAction<string>("ide/chatPageChange");
 export const ideEscapeKeyPressed = createAction<string>("ide/escapeKeyPressed");
@@ -103,13 +94,6 @@ export const useEventsBusForIDE = () => {
     [postMessage, sendTelemetryEvent],
   );
 
-  const diffPreview = useCallback(
-    (preview: DiffPreviewResponse, currentPin: string, allPins: string[]) => {
-      postMessage(ideDiffPreviewAction({ ...preview, currentPin, allPins }));
-    },
-    [postMessage],
-  );
-
   const openSettings = useCallback(() => {
     const action = ideOpenSettingsAction();
     postMessage(action);
@@ -151,14 +135,6 @@ export const useEventsBusForIDE = () => {
   const openChatInNewTab = useCallback(
     (thread: ChatThread) => {
       const action = ideOpenChatInNewTab(thread);
-      postMessage(action);
-    },
-    [postMessage],
-  );
-
-  const writeResultsToFile = useCallback(
-    (results: PatchResult[]) => {
-      const action = ideWriteResultsToFile(results);
       postMessage(action);
     },
     [postMessage],
@@ -255,7 +231,6 @@ export const useEventsBusForIDE = () => {
     openFile,
     openChatInNewTab,
     setupHost,
-    diffPreview,
     queryPathThenOpenFile,
     openCustomizationFile,
     openPrivacyFile,
@@ -264,7 +239,6 @@ export const useEventsBusForIDE = () => {
     // canPaste,
     stopFileAnimation,
     startFileAnimation,
-    writeResultsToFile,
     chatPageChange,
     escapeKeyPressed,
     setIsChatStreaming,
