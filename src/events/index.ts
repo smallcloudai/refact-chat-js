@@ -79,6 +79,7 @@ export {
   ideEscapeKeyPressed,
   ideIsChatStreaming,
   ideIsChatReady,
+  ideCreateNewFile,
 } from "../hooks/useEventBusForIDE";
 
 export const fim = {

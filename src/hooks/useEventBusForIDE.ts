@@ -46,12 +46,17 @@ export const ideEscapeKeyPressed = createAction<string>("ide/escapeKeyPressed");
 
 export const ideIsChatStreaming = createAction<boolean>("ide/isChatStreaming");
 export const ideIsChatReady = createAction<boolean>("ide/isChatReady");
+export const ideCreateNewFile = createAction<{ path: string; content: string }>(
+  "ide/createNewFileWithContent",
+);
 
 import { pathApi } from "../services/refact/path";
 
 import { telemetryApi } from "../services/refact/telemetry";
 
 export const useEventsBusForIDE = () => {
+  const [sendTelemetryEvent] =
+    telemetryApi.useLazySendTelemetryChatEventQuery();
   const postMessage = usePostMessage();
   // const canPaste = useAppSelector((state) => state.active_file.can_paste);
 
@@ -89,8 +94,13 @@ export const useEventsBusForIDE = () => {
     (content: string) => {
       const action = ideDiffPasteBackAction(content);
       postMessage(action);
+      void sendTelemetryEvent({
+        scope: `replaceSelection`,
+        success: true,
+        error_message: "",
+      });
     },
-    [postMessage],
+    [postMessage, sendTelemetryEvent],
   );
 
   const diffPreview = useCallback(
@@ -190,8 +200,6 @@ export const useEventsBusForIDE = () => {
   const [getIntegrationsPath] = pathApi.useLazyIntegrationsPathQuery();
   const [getPrivacyPath] = pathApi.useLazyPrivacyPathQuery();
   const [getBringYourOwnKeyPath] = pathApi.useLazyBringYourOwnKeyPathQuery();
-  const [sendTelemetryEvent] =
-    telemetryApi.useLazySendTelemetryChatEventQuery();
 
   // Creating a generic function to trigger different queries from RTK Query (to avoid duplicative code)
   const openFileFromPathQuery = useCallback(
@@ -231,6 +239,14 @@ export const useEventsBusForIDE = () => {
   const openBringYourOwnKeyFile = () =>
     openFileFromPathQuery(getBringYourOwnKeyPath);
 
+  const createNewFile = useCallback(
+    (path: string, content: string) => {
+      const action = ideCreateNewFile({ path, content });
+      postMessage(action);
+    },
+    [postMessage],
+  );
+
   return {
     diffPasteBack,
     openSettings,
@@ -253,5 +269,6 @@ export const useEventsBusForIDE = () => {
     escapeKeyPressed,
     setIsChatStreaming,
     setIsChatReady,
+    createNewFile,
   };
 };

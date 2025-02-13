@@ -18,6 +18,12 @@ import { filename } from "../../utils/filename";
 import styles from "./Texdoc.module.css";
 import { createPatch } from "diff";
 import classNames from "classnames";
+import { useAppSelector } from "../../hooks";
+import {
+  selectIsStreaming,
+  selectIsWaiting,
+} from "../../features/Chat/Thread/selectors";
+import { selectCanPaste } from "../../features/Chat";
 
 export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
   toolCall,
@@ -28,8 +34,19 @@ export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
     // stopFileAnimation,
     openFile,
     // writeResultsToFile,
-    // diffPasteBack,
+    diffPasteBack,
+    // newFile,
+    createNewFile,
   } = useEventsBusForIDE();
+
+  const isStreaming = useAppSelector(selectIsStreaming);
+  const isWaiting = useAppSelector(selectIsWaiting);
+  const canPaste = useAppSelector(selectCanPaste);
+
+  const disabled = useMemo(
+    () => isStreaming || isWaiting,
+    [isStreaming, isWaiting],
+  );
 
   const maybeTextDocToolCall = parseRawTextDocToolCall(toolCall);
 
@@ -37,6 +54,13 @@ export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
     if (!maybeTextDocToolCall?.function.arguments.path) return;
     openFile({ file_name: maybeTextDocToolCall.function.arguments.path });
   }, [maybeTextDocToolCall?.function.arguments.path, openFile]);
+
+  const handleReplace = useCallback(
+    (content: string) => {
+      diffPasteBack(content);
+    },
+    [diffPasteBack],
+  );
 
   if (!maybeTextDocToolCall) return false;
 
@@ -47,6 +71,21 @@ export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
       <CreateTextDoc
         toolCall={maybeTextDocToolCall}
         onOpenFile={handleOpenFile}
+        onApply={() => {
+          createNewFile(
+            maybeTextDocToolCall.function.arguments.path,
+            maybeTextDocToolCall.function.arguments.content,
+          );
+        }}
+        onReplace={() =>
+          handleReplace(maybeTextDocToolCall.function.arguments.content)
+        }
+        disabled={
+          disabled ||
+          maybeTextDocToolCall.function.arguments.content.length === 0
+        }
+        canPaste={canPaste}
+        // onApply={() => newFile()}
       />
     );
   }
@@ -71,15 +110,23 @@ export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
       <TextDocHeader
         filePath={maybeTextDocToolCall.function.arguments.path}
         onOpenFile={handleOpenFile}
+        onApply={() => ({})}
+        onReplace={() => ({})}
+        disabled={disabled}
+        canPaste={canPaste}
       />
     </>
   );
 };
 
-const TextDocHeader: React.FC<{ filePath: string; onOpenFile: () => void }> = ({
-  filePath,
-  onOpenFile,
-}) => {
+const TextDocHeader: React.FC<{
+  filePath: string;
+  onOpenFile: () => void;
+  onApply?: () => void;
+  onReplace: () => void;
+  disabled?: boolean;
+  canPaste?: boolean;
+}> = ({ filePath, onOpenFile, onApply, onReplace, disabled, canPaste }) => {
   return (
     <Card size="1" variant="surface" mt="4" className={styles.textdoc__header}>
       <Flex gap="2" py="2" pl="2" justify="between">
@@ -95,20 +142,13 @@ const TextDocHeader: React.FC<{ filePath: string; onOpenFile: () => void }> = ({
           </Link>
         </TruncateLeft>{" "}
         <div style={{ flexGrow: 1 }} />
-        <Button
-          size="1"
-          onClick={(_event) => {
-            // get content and send to ide.
-          }}
-          // disabled={disable}
-          // title={`Show: ${children}`}
-        >
+        <Button size="1" onClick={onApply} disabled={disabled} title={`Apply`}>
           ➕ Apply
         </Button>
         <Button
           size="1"
-          // onClick={onDiffClick}
-          // disabled={disable || !hasMarkdown || !canPaste}
+          onClick={onReplace}
+          disabled={disabled ?? !canPaste}
           title="Replace the current selection in the ide."
         >
           ➕ Replace Selection
@@ -121,7 +161,11 @@ const TextDocHeader: React.FC<{ filePath: string; onOpenFile: () => void }> = ({
 const CreateTextDoc: React.FC<{
   toolCall: CreateTextDocToolCall;
   onOpenFile: () => void;
-}> = ({ toolCall, onOpenFile }) => {
+  onApply: () => void;
+  onReplace: () => void;
+  disabled?: boolean;
+  canPaste?: boolean;
+}> = ({ toolCall, onOpenFile, onApply, disabled, canPaste, onReplace }) => {
   const code = useMemo(() => {
     const extension = getFileExtension(toolCall.function.arguments.path);
     return (
@@ -134,6 +178,10 @@ const CreateTextDoc: React.FC<{
       <TextDocHeader
         filePath={toolCall.function.arguments.path}
         onOpenFile={onOpenFile}
+        onApply={onApply}
+        disabled={disabled}
+        canPaste={canPaste}
+        onReplace={onReplace}
       />
       <Markdown>{code}</Markdown>
     </Box>
@@ -163,6 +211,8 @@ const UpdateTextDoc: React.FC<{
       <TextDocHeader
         filePath={toolCall.function.arguments.path}
         onOpenFile={onOpenFile}
+        onReplace={() => ({})}
+        onApply={() => ({})}
       />
       <Box className={classNames(styles.textdoc__diffbox)}>
         <Markdown useInlineStyles={false}>{diff}</Markdown>
