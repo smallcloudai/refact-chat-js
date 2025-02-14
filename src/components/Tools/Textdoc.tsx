@@ -9,9 +9,7 @@ import {
   isCreateTextDocToolCall,
   isReplaceTextDocToolCall,
   isUpdateRegexTextDocToolCall,
-  // isReplaceTextDocToolCall,
   isUpdateTextDocToolCall,
-  //   isUpdateRegexTextDocToolCall,
   parseRawTextDocToolCall,
 } from "./types";
 import { Box, Button, Card, Flex } from "@radix-ui/themes";
@@ -36,13 +34,11 @@ export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
 }) => {
   const {
     // diffPreview,
-    // startFileAnimation,
-    // stopFileAnimation,
     openFile,
     // writeResultsToFile,
     diffPasteBack,
     // newFile,
-    createNewFile,
+    // createNewFile,
     sendToolEditToIde,
   } = useEventsBusForIDE();
 
@@ -65,24 +61,33 @@ export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
   }, [maybeTextDocToolCall?.function.arguments.path, openFile]);
 
   const handleApplyToolResult = useCallback(
-    async (toolCall: TextDocToolCall) => {
-      const results = await requestDryRun({
+    (toolCall: TextDocToolCall) => {
+      // startFileAnimation(toolCall.function.arguments.path);
+      requestDryRun({
         toolName: toolCall.function.name,
         toolArgs: toolCall.function.arguments,
-      });
-      if (results.data) {
-        sendToolEditToIde(results.data);
-      }
+      })
+        .then((results) => {
+          if (results.data) {
+            sendToolEditToIde(toolCall.function.arguments.path, results.data);
+          } else {
+            // TODO: handle errors
+          }
+        })
+        .catch(() => ({}))
+        .finally(() => {
+          // stopFileAnimation(toolCall.function.arguments.path);
+        });
     },
     [requestDryRun, sendToolEditToIde],
   );
 
-  const handleCreateFile = useCallback(
-    (filePath: string, content: string) => {
-      createNewFile(filePath, content);
-    },
-    [createNewFile],
-  );
+  // const handleCreateFile = useCallback(
+  //   (filePath: string, content: string) => {
+  //     createNewFile(filePath, content);
+  //   },
+  //   [createNewFile],
+  // );
 
   const handleReplace = useCallback(
     (content: string) => {
@@ -100,12 +105,13 @@ export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
       <CreateTextDoc
         toolCall={maybeTextDocToolCall}
         onOpenFile={handleOpenFile}
-        onApply={() =>
-          handleCreateFile(
-            maybeTextDocToolCall.function.arguments.path,
-            maybeTextDocToolCall.function.arguments.content,
-          )
-        }
+        onApply={() => {
+          // handleCreateFile(
+          //   maybeTextDocToolCall.function.arguments.path,
+          //   maybeTextDocToolCall.function.arguments.content,
+          // );
+          handleApplyToolResult(maybeTextDocToolCall);
+        }}
         onReplace={() =>
           handleReplace(maybeTextDocToolCall.function.arguments.content)
         }
@@ -120,7 +126,7 @@ export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
     return (
       <UpdateTextDoc
         onOpenFile={handleOpenFile}
-        onApply={() => void handleApplyToolResult(maybeTextDocToolCall)}
+        onApply={() => handleApplyToolResult(maybeTextDocToolCall)}
         toolCall={maybeTextDocToolCall}
       />
     );
@@ -130,7 +136,7 @@ export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
     return (
       <ReplaceTextDoc
         toolCall={maybeTextDocToolCall}
-        onApply={() => void handleApplyToolResult(maybeTextDocToolCall)}
+        onApply={() => handleApplyToolResult(maybeTextDocToolCall)}
         onOpenFile={handleOpenFile}
         onReplace={() =>
           handleReplace(maybeTextDocToolCall.function.arguments.replacement)
@@ -145,7 +151,7 @@ export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
     return (
       <UpdateRegexTextDoc
         toolCall={maybeTextDocToolCall}
-        onApply={() => void handleApplyToolResult(maybeTextDocToolCall)}
+        onApply={() => handleApplyToolResult(maybeTextDocToolCall)}
         onOpenFile={handleOpenFile}
         disabled={disabled}
       />

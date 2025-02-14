@@ -41,7 +41,9 @@ export const ideCreateNewFile = createAction<{ path: string; content: string }>(
   "ide/createNewFileWithContent",
 );
 
-export const ideToolEdit = createAction<ToolEditResult>("ide/toolEdit");
+export const ideToolEdit = createAction<{ path: string; edit: ToolEditResult }>(
+  "ide/toolEdit",
+);
 
 import { pathApi } from "../services/refact/path";
 
@@ -227,8 +229,8 @@ export const useEventsBusForIDE = () => {
   );
 
   const sendToolEditToIde = useCallback(
-    (edit: ToolEditResult) => {
-      const action = ideToolEdit(edit);
+    (path: string, edit: ToolEditResult) => {
+      const action = ideToolEdit({ path, edit });
       postMessage(action);
     },
     [postMessage],
