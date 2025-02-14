@@ -28,7 +28,6 @@ export {
 export type { FimDebugData } from "../services/refact/fim";
 export type { ChatHistoryItem } from "../features/History/historySlice";
 export { addInputValue, setInputValue } from "../components/ChatForm/actions";
-
 export {
   setCurrentProjectInfo,
   type CurrentProjectInfo,
@@ -41,6 +40,8 @@ export type {
   UserMessage,
   ChatMessage,
   ChatMessages,
+  DiffChunk,
+  ToolEditResult,
 } from "../services/refact";
 
 // TODO: re-exporting from redux seems to break things :/
@@ -73,6 +74,7 @@ export {
   ideIsChatStreaming,
   ideIsChatReady,
   ideCreateNewFile,
+  ideToolEdit,
 } from "../hooks/useEventBusForIDE";
 
 export const fim = {

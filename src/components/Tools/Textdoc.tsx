@@ -2,8 +2,13 @@ import React, { useCallback, useMemo } from "react";
 import {
   type CreateTextDocToolCall,
   type RawTextDocTool,
+  ReplaceTextDocToolCall,
+  TextDocToolCall,
+  UpdateRegexTextDocToolCall,
   UpdateTextDocToolCall,
   isCreateTextDocToolCall,
+  isReplaceTextDocToolCall,
+  isUpdateRegexTextDocToolCall,
   // isReplaceTextDocToolCall,
   isUpdateTextDocToolCall,
   //   isUpdateRegexTextDocToolCall,
@@ -24,6 +29,7 @@ import {
   selectIsWaiting,
 } from "../../features/Chat/Thread/selectors";
 import { selectCanPaste } from "../../features/Chat";
+import { toolsApi } from "../../services/refact";
 
 export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
   toolCall,
@@ -37,23 +43,46 @@ export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
     diffPasteBack,
     // newFile,
     createNewFile,
+    sendToolEditToIde,
   } = useEventsBusForIDE();
+
+  const [requestDryRun, dryRunResult] = toolsApi.useDryRunForEditToolMutation();
 
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
   const canPaste = useAppSelector(selectCanPaste);
 
-  const disabled = useMemo(
-    () => isStreaming || isWaiting,
-    [isStreaming, isWaiting],
-  );
-
   const maybeTextDocToolCall = parseRawTextDocToolCall(toolCall);
+
+  const disabled = useMemo(
+    () => isStreaming || isWaiting || dryRunResult.isLoading,
+    [dryRunResult.isLoading, isStreaming, isWaiting],
+  );
 
   const handleOpenFile = useCallback(() => {
     if (!maybeTextDocToolCall?.function.arguments.path) return;
     openFile({ file_name: maybeTextDocToolCall.function.arguments.path });
   }, [maybeTextDocToolCall?.function.arguments.path, openFile]);
+
+  const handleApplyToolResult = useCallback(
+    async (toolCall: TextDocToolCall) => {
+      const results = await requestDryRun({
+        toolName: toolCall.function.name,
+        toolArgs: toolCall.function.arguments,
+      });
+      if (results.data) {
+        sendToolEditToIde(results.data);
+      }
+    },
+    [requestDryRun, sendToolEditToIde],
+  );
+
+  const handleCreateFile = useCallback(
+    (filePath: string, content: string) => {
+      createNewFile(filePath, content);
+    },
+    [createNewFile],
+  );
 
   const handleReplace = useCallback(
     (content: string) => {
@@ -71,19 +100,16 @@ export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
       <CreateTextDoc
         toolCall={maybeTextDocToolCall}
         onOpenFile={handleOpenFile}
-        onApply={() => {
-          createNewFile(
+        onApply={() =>
+          handleCreateFile(
             maybeTextDocToolCall.function.arguments.path,
             maybeTextDocToolCall.function.arguments.content,
-          );
-        }}
+          )
+        }
         onReplace={() =>
           handleReplace(maybeTextDocToolCall.function.arguments.content)
         }
-        disabled={
-          disabled ||
-          maybeTextDocToolCall.function.arguments.content.length === 0
-        }
+        disabled={disabled}
         canPaste={canPaste}
         // onApply={() => newFile()}
       />
@@ -94,36 +120,46 @@ export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
     return (
       <UpdateTextDoc
         onOpenFile={handleOpenFile}
+        onApply={() => void handleApplyToolResult(maybeTextDocToolCall)}
         toolCall={maybeTextDocToolCall}
       />
     );
   }
 
-  // TODO: if(isReplaceTextDocToolCall(maybeTextDocToolCall)) {}; if(isUpdateRegexTextDocToolCall(maybeTextDocToolCall)) {}
-
-  // return JSON.stringify(maybeTextDocToolCall, null, 2);
-
-  // similar style to PinMessage in MArkdown.tsx
-
-  return (
-    <>
-      <TextDocHeader
-        filePath={maybeTextDocToolCall.function.arguments.path}
+  if (isReplaceTextDocToolCall(maybeTextDocToolCall)) {
+    return (
+      <ReplaceTextDoc
+        toolCall={maybeTextDocToolCall}
+        onApply={() => void handleApplyToolResult(maybeTextDocToolCall)}
         onOpenFile={handleOpenFile}
-        onApply={() => ({})}
-        onReplace={() => ({})}
+        onReplace={() =>
+          handleReplace(maybeTextDocToolCall.function.arguments.replacement)
+        }
         disabled={disabled}
         canPaste={canPaste}
       />
-    </>
-  );
+    );
+  }
+
+  if (isUpdateRegexTextDocToolCall(maybeTextDocToolCall)) {
+    return (
+      <UpdateRegexTextDoc
+        toolCall={maybeTextDocToolCall}
+        onApply={() => void handleApplyToolResult(maybeTextDocToolCall)}
+        onOpenFile={handleOpenFile}
+        disabled={disabled}
+      />
+    );
+  }
+
+  return false;
 };
 
 const TextDocHeader: React.FC<{
   filePath: string;
   onOpenFile: () => void;
   onApply?: () => void;
-  onReplace: () => void;
+  onReplace?: () => void;
   disabled?: boolean;
   canPaste?: boolean;
 }> = ({ filePath, onOpenFile, onApply, onReplace, disabled, canPaste }) => {
@@ -145,14 +181,16 @@ const TextDocHeader: React.FC<{
         <Button size="1" onClick={onApply} disabled={disabled} title={`Apply`}>
           ➕ Apply
         </Button>
-        <Button
-          size="1"
-          onClick={onReplace}
-          disabled={disabled ?? !canPaste}
-          title="Replace the current selection in the ide."
-        >
-          ➕ Replace Selection
-        </Button>
+        {onReplace && (
+          <Button
+            size="1"
+            onClick={onReplace}
+            disabled={disabled ?? !canPaste}
+            title="Replace the current selection in the ide."
+          >
+            ➕ Replace Selection
+          </Button>
+        )}
       </Flex>
     </Card>
   );
@@ -188,10 +226,81 @@ const CreateTextDoc: React.FC<{
   );
 };
 
+const ReplaceTextDoc: React.FC<{
+  toolCall: ReplaceTextDocToolCall;
+  onOpenFile: () => void;
+  onApply: () => void;
+  onReplace: () => void;
+  disabled?: boolean;
+  canPaste?: boolean;
+}> = ({ toolCall, onOpenFile, onApply, disabled, canPaste, onReplace }) => {
+  const code = useMemo(() => {
+    const extension = getFileExtension(toolCall.function.arguments.path);
+    return (
+      "```" +
+      extension +
+      "\n" +
+      toolCall.function.arguments.replacement +
+      "\n```"
+    );
+  }, [
+    toolCall.function.arguments.path,
+    toolCall.function.arguments.replacement,
+  ]);
+  return (
+    // TODO: move this box up a bit, or make it generic
+    <Box className={styles.textdoc}>
+      <TextDocHeader
+        filePath={toolCall.function.arguments.path}
+        onOpenFile={onOpenFile}
+        onApply={onApply}
+        disabled={disabled}
+        canPaste={canPaste}
+        onReplace={onReplace}
+      />
+      <Markdown>{code}</Markdown>
+    </Box>
+  );
+};
+
+const UpdateRegexTextDoc: React.FC<{
+  toolCall: UpdateRegexTextDocToolCall;
+  onOpenFile: () => void;
+  onApply: () => void;
+  disabled?: boolean;
+}> = ({ toolCall, onOpenFile, onApply, disabled }) => {
+  const code = useMemo(() => {
+    return (
+      "```py\nre.sub(" +
+      toolCall.function.arguments.replacement +
+      ", open(" +
+      +toolCall.function.arguments.path +
+      "))\n```"
+    );
+  }, [
+    toolCall.function.arguments.path,
+    toolCall.function.arguments.replacement,
+  ]);
+
+  return (
+    <Box className={styles.textdoc}>
+      <TextDocHeader
+        filePath={toolCall.function.arguments.path}
+        onOpenFile={onOpenFile}
+        onApply={onApply}
+        disabled={disabled}
+        canPaste={false}
+      />
+      <Markdown>{code}</Markdown>
+    </Box>
+  );
+};
+
 const UpdateTextDoc: React.FC<{
   toolCall: UpdateTextDocToolCall;
   onOpenFile: () => void;
-}> = ({ toolCall, onOpenFile }) => {
+  onApply: () => void;
+}> = ({ toolCall, onOpenFile, onApply }) => {
   const diff = useMemo(() => {
     const patch = createPatch(
       toolCall.function.arguments.path,
@@ -212,7 +321,7 @@ const UpdateTextDoc: React.FC<{
         filePath={toolCall.function.arguments.path}
         onOpenFile={onOpenFile}
         onReplace={() => ({})}
-        onApply={() => ({})}
+        onApply={onApply}
       />
       <Box className={classNames(styles.textdoc__diffbox)}>
         <Markdown useInlineStyles={false}>{diff}</Markdown>

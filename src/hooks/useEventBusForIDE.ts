@@ -41,9 +41,12 @@ export const ideCreateNewFile = createAction<{ path: string; content: string }>(
   "ide/createNewFileWithContent",
 );
 
+export const ideToolEdit = createAction<ToolEditResult>("ide/toolEdit");
+
 import { pathApi } from "../services/refact/path";
 
 import { telemetryApi } from "../services/refact/telemetry";
+import { ToolEditResult } from "../services/refact";
 
 export const useEventsBusForIDE = () => {
   const [sendTelemetryEvent] =
@@ -223,6 +226,14 @@ export const useEventsBusForIDE = () => {
     [postMessage],
   );
 
+  const sendToolEditToIde = useCallback(
+    (edit: ToolEditResult) => {
+      const action = ideToolEdit(edit);
+      postMessage(action);
+    },
+    [postMessage],
+  );
+
   return {
     diffPasteBack,
     openSettings,
@@ -244,5 +255,6 @@ export const useEventsBusForIDE = () => {
     setIsChatStreaming,
     setIsChatReady,
     createNewFile,
+    sendToolEditToIde,
   };
 };
