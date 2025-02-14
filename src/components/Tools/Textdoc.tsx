@@ -281,6 +281,7 @@ const UpdateRegexTextDoc: React.FC<{
     );
   }, [
     toolCall.function.arguments.path,
+    toolCall.function.arguments.pattern,
     toolCall.function.arguments.replacement,
   ]);
 
