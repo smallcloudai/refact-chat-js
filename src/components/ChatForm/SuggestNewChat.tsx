@@ -4,7 +4,7 @@ import { Cross2Icon } from "@radix-ui/react-icons";
 import {
   newChatAction,
   selectChatId,
-  setIsNewChatSuggested,
+  setIsNewChatSuggestionRejected,
 } from "../../features/Chat";
 import { useAppDispatch, useAppSelector } from "../../hooks";
 import { useCallback, useEffect, useState } from "react";
@@ -47,7 +47,7 @@ export const SuggestNewChat = ({
   }, [shouldBeVisible]);
 
   const handleClose = () => {
-    dispatch(setIsNewChatSuggested({ chatId, value: false }));
+    dispatch(setIsNewChatSuggestionRejected({ chatId, value: true }));
     void sendTelemetryEvent({
       scope: `dismissedNewChatSuggestionWarning`,
       success: true,
@@ -64,7 +64,6 @@ export const SuggestNewChat = ({
       }),
       popBackTo({ name: "history" }),
       push({ name: "chat" }),
-      setIsNewChatSuggested({ chatId, value: false }),
     ];
 
     actions.forEach((action) => dispatch(action));
@@ -73,15 +72,16 @@ export const SuggestNewChat = ({
       success: true,
       error_message: "",
     });
-  }, [dispatch, sendTelemetryEvent, chatId]);
+  }, [dispatch, sendTelemetryEvent]);
 
   return (
     <Box
       py="3"
       px="4"
       mb="1"
+      flexShrink="0"
+      display={isRendered ? "block" : "none"}
       style={{
-        display: isRendered ? "block" : "none",
         backgroundColor: "var(--violet-a2)",
         borderRadius: "var(--radius-2)",
         border: "1px solid var(--violet-a5)",

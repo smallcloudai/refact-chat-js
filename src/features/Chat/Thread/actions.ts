@@ -61,6 +61,11 @@ export const setIsNewChatSuggested = createAction<PayloadWithChatAndBoolean>(
   "chatThread/setIsNewChatSuggested",
 );
 
+export const setIsNewChatSuggestionRejected =
+  createAction<PayloadWithChatAndBoolean>(
+    "chatThread/setIsNewChatSuggestionRejected",
+  );
+
 export const backUpMessages = createAction<
   PayloadWithId & {
     messages: ChatThread["messages"];

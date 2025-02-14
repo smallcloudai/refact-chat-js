@@ -143,14 +143,6 @@ export function getMaxFreeAgentUsage(response: ChatResponse): number {
   return 0;
 }
 
-export function getIsNewChatSuggested(
-  response: ChatResponse,
-): boolean | undefined {
-  if (isChatResponseChoice(response)) {
-    return response.new_chat_suggestion;
-  }
-}
-
 export function formatChatResponse(
   messages: ChatMessages,
   response: ChatResponse,

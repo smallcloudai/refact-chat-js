@@ -120,7 +120,12 @@ export const Chat: React.FC<ChatProps> = ({
         {shouldCheckpointsPopupBeShown && <Checkpoints />}
 
         <AgentUsage />
-        <SuggestNewChat shouldBeVisible={threadNewChatSuggested} />
+        <SuggestNewChat
+          shouldBeVisible={
+            threadNewChatSuggested.wasSuggested &&
+            !threadNewChatSuggested.wasRejectedByUser
+          }
+        />
         {!isStreaming && preventSend && unCalledTools && (
           <Flex py="4">
             <Card style={{ width: "100%" }}>

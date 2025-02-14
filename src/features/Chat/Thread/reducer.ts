@@ -34,6 +34,7 @@ import {
   setEnabledCheckpoints,
   fixBrokenToolMessages,
   setIsNewChatSuggested,
+  setIsNewChatSuggestionRejected,
 } from "./actions";
 import { formatChatResponse } from "./utils";
 import {
@@ -56,7 +57,9 @@ const createChatThread = (
     tool_use,
     integration,
     mode,
-    new_chat_suggested: true,
+    new_chat_suggested: {
+      wasSuggested: false,
+    },
   };
   return chat;
 };
@@ -202,7 +205,17 @@ export const chatReducer = createReducer(initialState, (builder) => {
 
   builder.addCase(setIsNewChatSuggested, (state, action) => {
     if (state.thread.id !== action.payload.chatId) return state;
-    state.thread.new_chat_suggested = action.payload.value;
+    state.thread.new_chat_suggested = {
+      wasSuggested: action.payload.value,
+    };
+  });
+
+  builder.addCase(setIsNewChatSuggestionRejected, (state, action) => {
+    if (state.thread.id !== action.payload.chatId) return state;
+    state.thread.new_chat_suggested = {
+      ...state.thread.new_chat_suggested,
+      wasRejectedByUser: action.payload.value,
+    };
   });
 
   builder.addCase(setEnabledCheckpoints, (state, action) => {

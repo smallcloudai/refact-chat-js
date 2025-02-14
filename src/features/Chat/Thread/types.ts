@@ -22,7 +22,12 @@ export type ChatThread = {
   mode?: LspChatMode;
   project_name?: string;
   last_user_message_id?: string;
-  new_chat_suggested?: boolean;
+  new_chat_suggested: SuggestedChat;
+};
+
+export type SuggestedChat = {
+  wasSuggested: boolean;
+  wasRejectedByUser?: boolean;
 };
 
 export type ToolUse = "quick" | "explore" | "agent";

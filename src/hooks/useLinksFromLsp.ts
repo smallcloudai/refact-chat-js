@@ -21,6 +21,7 @@ import {
   selectModel,
   selectThreadMode,
   setIntegrationData,
+  setIsNewChatSuggested,
   setMaxNewTokens,
 } from "../features/Chat";
 import { useGoToLink } from "./useGoToLink";
@@ -31,6 +32,8 @@ import { telemetryApi } from "../services/refact/telemetry";
 import { isAbsolutePath } from "../utils";
 
 export function useGetLinksFromLsp() {
+  const dispatch = useAppDispatch();
+
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
   const messages = useAppSelector(selectMessages);
@@ -73,6 +76,17 @@ export function useGetLinksFromLsp() {
     },
     { skip: skipLinksRequest },
   );
+
+  useEffect(() => {
+    if (linksResult.data) {
+      dispatch(
+        setIsNewChatSuggested({
+          chatId,
+          value: linksResult.data.new_chat_suggestion,
+        }),
+      );
+    }
+  }, [dispatch, linksResult.data, chatId]);
 
   return linksResult;
 }
