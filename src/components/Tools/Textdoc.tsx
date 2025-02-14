@@ -271,11 +271,13 @@ const UpdateRegexTextDoc: React.FC<{
 }> = ({ toolCall, onOpenFile, onApply, disabled }) => {
   const code = useMemo(() => {
     return (
-      "```py\nre.sub(" +
+      '```py\nre.sub("' +
+      toolCall.function.arguments.pattern +
+      '", "' +
       toolCall.function.arguments.replacement +
-      ", open(" +
-      +toolCall.function.arguments.path +
-      "))\n```"
+      '", open("' +
+      toolCall.function.arguments.path +
+      '"))\n```'
     );
   }, [
     toolCall.function.arguments.path,
