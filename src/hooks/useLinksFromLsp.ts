@@ -78,7 +78,7 @@ export function useGetLinksFromLsp() {
   );
 
   useEffect(() => {
-    if (linksResult.data) {
+    if (linksResult.data?.new_chat_suggestion) {
       dispatch(
         setIsNewChatSuggested({
           chatId,
