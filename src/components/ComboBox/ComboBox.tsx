@@ -267,20 +267,6 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
     ],
   );
 
-  // Add paste event handler
-  const handlePaste = useCallback(
-    (_event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-      console.log("[DEBUG] handlePaste event fired");
-      setLastPasteTimestamp(Date.now());
-      if (state.open) {
-        console.log("[DEBUG] paste event detected, closing combobox");
-        closeCombobox();
-        requestCommandsCompletion.cancel();
-      }
-    },
-    [closeCombobox, state.open, requestCommandsCompletion],
-  );
-
   const onItemClick = useCallback(
     (item: string, event: React.MouseEvent<HTMLDivElement>) => {
       event.stopPropagation();
@@ -328,7 +314,6 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
           onKeyUp: onKeyUp,
           onKeyDown: onKeyDown,
           onSubmit: onSubmit,
-          onPaste: handlePaste,
         })}
       />
       <Portal>
