@@ -221,46 +221,54 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
   const handleChange = useCallback(
     (event: React.ChangeEvent<HTMLTextAreaElement>) => {
       const now = Date.now();
-      console.log(
-        "[DEBUG] handleChange called with value:",
-        event.target.value,
-      );
+      const newValue = event.target.value;
+
+      const inputType = (event.nativeEvent as InputEvent).inputType;
+      const isPasteEvent = [
+        "insertFromPaste",
+        "insertFromDrop",
+        "insertFromYank",
+        "insertReplacementText",
+      ].includes(inputType);
+
+      const timeSinceLastChange = now - lastPasteTimestamp;
+
+      console.log("[DEBUG] handleChange called with:", {
+        value: newValue,
+        inputType,
+        previousValue: lastValue,
+        timeSinceLastChange,
+      });
       console.log("[DEBUG] previous value was:", lastValue);
-      console.log(
-        "[DEBUG] time since last paste:",
-        now - lastPasteTimestamp,
-        "ms",
-      );
+      console.log("[DEBUG] time since last paste:", timeSinceLastChange, "ms");
       console.log("[DEBUG] combobox state:", {
         open: state.open,
         activeValue: state.activeValue,
         activeId: state.activeId,
         replace: commands.replace,
       });
-      const isPaste = event.target.value.length > value.length + 1;
 
-      if (isPaste) {
-        if (now - lastPasteTimestamp < 100) {
-          console.log("[DEBUG] Skipping duplicate paste event");
-          return;
-        }
-        console.log(
-          "[DEBUG] paste detected, closing combobox and canceling completion",
-        );
+      // Only apply paste throttling for large changes
+      if (isPasteEvent && timeSinceLastChange < 100) {
+        console.log("[DEBUG] Skipping duplicate paste event");
+        return;
+      }
+
+      if (isPasteEvent) {
+        console.log("[DEBUG] Paste event detected, resetting combobox state");
         setLastPasteTimestamp(now);
         closeCombobox();
         requestCommandsCompletion.cancel();
       }
-
-      setLastValue(event.target.value);
-      onChange(event.target.value);
+      setLastValue(newValue);
+      onChange(newValue);
     },
     [
       onChange,
       closeCombobox,
       state,
       commands.replace,
-      value.length,
+      // value,
       requestCommandsCompletion,
       lastPasteTimestamp,
       lastValue,
