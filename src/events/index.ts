@@ -73,7 +73,6 @@ export {
   ideEscapeKeyPressed,
   ideIsChatStreaming,
   ideIsChatReady,
-  ideCreateNewFile,
   ideToolEdit,
 } from "../hooks/useEventBusForIDE";
 

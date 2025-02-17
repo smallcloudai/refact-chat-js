@@ -37,9 +37,6 @@ export const ideEscapeKeyPressed = createAction<string>("ide/escapeKeyPressed");
 
 export const ideIsChatStreaming = createAction<boolean>("ide/isChatStreaming");
 export const ideIsChatReady = createAction<boolean>("ide/isChatReady");
-export const ideCreateNewFile = createAction<{ path: string; content: string }>(
-  "ide/createNewFileWithContent",
-);
 
 export const ideToolEdit = createAction<{ path: string; edit: ToolEditResult }>(
   "ide/toolEdit",
@@ -220,14 +217,6 @@ export const useEventsBusForIDE = () => {
   const openBringYourOwnKeyFile = () =>
     openFileFromPathQuery(getBringYourOwnKeyPath);
 
-  const createNewFile = useCallback(
-    (path: string, content: string) => {
-      const action = ideCreateNewFile({ path, content });
-      postMessage(action);
-    },
-    [postMessage],
-  );
-
   const sendToolEditToIde = useCallback(
     (path: string, edit: ToolEditResult) => {
       const action = ideToolEdit({ path, edit });
@@ -249,14 +238,12 @@ export const useEventsBusForIDE = () => {
     openPrivacyFile,
     openBringYourOwnKeyFile,
     openIntegrationsFile,
-    // canPaste,
     stopFileAnimation,
     startFileAnimation,
     chatPageChange,
     escapeKeyPressed,
     setIsChatStreaming,
     setIsChatReady,
-    createNewFile,
     sendToolEditToIde,
   };
 };
