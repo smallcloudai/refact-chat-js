@@ -1,15 +1,20 @@
+import { FC, MouseEventHandler } from "react";
+import classNames from "classnames";
+
 import { Badge, Card, Flex, Text } from "@radix-ui/themes";
-import styles from "./IntegrationCard.module.css";
+import { useAppSelector } from "../../../hooks";
+import { useUpdateIntegration } from "./useUpdateIntegration";
+
 import {
   IntegrationWithIconRecord,
   NotConfiguredIntegrationWithIconRecord,
 } from "../../../services/refact";
-import { FC } from "react";
-import classNames from "classnames";
-import { useAppSelector } from "../../../hooks";
+
 import { selectConfig } from "../../../features/Config/configSlice";
-import { getIntegrationInfo } from "../../../utils/getIntegrationInfo";
 import { formatIntegrationIconPath } from "../../../utils/formatIntegrationIconPath";
+import { getIntegrationInfo } from "../../../utils/getIntegrationInfo";
+
+import styles from "./IntegrationCard.module.css";
 
 type IntegrationCardProps = {
   integration:
@@ -35,13 +40,35 @@ export const IntegrationCard: FC<IntegrationCardProps> = ({
   const integrationLogo = `http://127.0.0.1:${port}/v1${iconPath}`;
 
   const { displayName } = getIntegrationInfo(integration.integr_name);
+  const {
+    updateIntegrationAvailability,
+    integrationAvailability,
+    isUpdatingAvailability,
+  } = useUpdateIntegration({ integration });
+
+  const handleAvailabilityClick: MouseEventHandler<HTMLDivElement> = (
+    event,
+  ) => {
+    if (isUpdatingAvailability) return;
+    event.stopPropagation();
+    void updateIntegrationAvailability();
+  };
+
+  const switches = [
+    { label: "On", leftRadius: true },
+    { label: "Off", rightRadius: true },
+  ];
 
   return (
     <Card
       className={classNames(styles.integrationCard, {
         [styles.integrationCardInline]: isNotConfigured,
+        [styles.disabledCard]: isUpdatingAvailability,
       })}
-      onClick={() => handleIntegrationShowUp(integration)}
+      onClick={() => {
+        if (isUpdatingAvailability) return;
+        handleIntegrationShowUp(integration);
+      }}
     >
       <Flex
         gap="4"
@@ -67,13 +94,42 @@ export const IntegrationCard: FC<IntegrationCardProps> = ({
             {displayName}
           </Text>
           {!isNotConfigured && (
-            <Badge
-              color={integration.on_your_laptop ? "jade" : "gray"}
-              variant="soft"
-              radius="medium"
+            <Flex
+              className={classNames(styles.availabilitySwitch, {
+                [styles.disabledAvailabilitySwitch]: isUpdatingAvailability,
+              })}
+              onClick={handleAvailabilityClick}
             >
-              {integration.on_your_laptop ? "On" : "Off"}
-            </Badge>
+              {switches.map(({ label, leftRadius }) => {
+                const isOn = label === "On";
+                const isActive =
+                  isOn === integrationAvailability.on_your_laptop;
+
+                return (
+                  <Badge
+                    key={label}
+                    color={
+                      isActive && !isUpdatingAvailability ? "jade" : "gray"
+                    }
+                    variant="soft"
+                    radius="medium"
+                    style={{
+                      ...(leftRadius
+                        ? {
+                            borderTopRightRadius: 0,
+                            borderBottomRightRadius: 0,
+                          }
+                        : {
+                            borderTopLeftRadius: 0,
+                            borderBottomLeftRadius: 0,
+                          }),
+                    }}
+                  >
+                    {label}
+                  </Badge>
+                );
+              })}
+            </Flex>
           )}
         </Flex>
       </Flex>

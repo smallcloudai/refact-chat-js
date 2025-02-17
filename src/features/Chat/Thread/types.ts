@@ -22,6 +22,12 @@ export type ChatThread = {
   mode?: LspChatMode;
   project_name?: string;
   last_user_message_id?: string;
+  new_chat_suggested: SuggestedChat;
+};
+
+export type SuggestedChat = {
+  wasSuggested: boolean;
+  wasRejectedByUser?: boolean;
 };
 
 export type ToolUse = "quick" | "explore" | "agent";
@@ -43,6 +49,7 @@ export type Chat = {
 
 export type PayloadWithId = { id: string };
 export type PayloadWithChatAndMessageId = { chatId: string; messageId: string };
+export type PayloadWithChatAndBoolean = { chatId: string; value: boolean };
 export type PayloadWithIdAndTitle = {
   title: string;
   isTitleGenerated: boolean;
@@ -80,7 +87,10 @@ export function chatModeToLspMode(
   toolUse?: ToolUse,
   mode?: LspChatMode,
 ): LspChatMode {
-  if (mode) return mode;
+  if (mode) {
+    if (mode === "AGENT" || mode === "THINKING_AGENT") return "AGENT";
+    return mode;
+  }
   if (toolUse === "agent") return "AGENT";
   if (toolUse === "quick") return "NO_TOOLS";
   return "EXPLORE";

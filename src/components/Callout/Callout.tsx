@@ -108,9 +108,9 @@ export const ErrorCallout: React.FC<Omit<CalloutProps, "type">> = ({
       {...props}
     >
       Error: {children}
-      {!isAuthError && !preventRetry && (
+      {!isAuthError && (
         <Text size="1" as="p">
-          Click to retry
+          {preventRetry ? "Click to close" : "Click to retry"}
         </Text>
       )}
       {isAuthError && (
