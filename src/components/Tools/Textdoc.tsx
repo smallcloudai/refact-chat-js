@@ -22,10 +22,6 @@ import styles from "./Texdoc.module.css";
 import { createPatch } from "diff";
 import classNames from "classnames";
 import { useAppSelector } from "../../hooks";
-import {
-  selectIsStreaming,
-  selectIsWaiting,
-} from "../../features/Chat/Thread/selectors";
 import { selectCanPaste } from "../../features/Chat";
 import { toolsApi } from "../../services/refact";
 import { ErrorCallout } from "../Callout";
@@ -64,13 +60,7 @@ const TextDocHeader: React.FC<{
   const { openFile, diffPasteBack, sendToolEditToIde } = useEventsBusForIDE();
   const [requestDryRun, dryRunResult] = toolsApi.useDryRunForEditToolMutation();
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const isStreaming = useAppSelector(selectIsStreaming);
-  const isWaiting = useAppSelector(selectIsWaiting);
   const canPaste = useAppSelector(selectCanPaste);
-  const disabled = useMemo(
-    () => isStreaming || isWaiting || dryRunResult.isLoading,
-    [dryRunResult.isLoading, isStreaming, isWaiting],
-  );
 
   const clearErrorMessage = useCallback(() => setErrorMessage(""), []);
   // move this
@@ -89,12 +79,11 @@ const TextDocHeader: React.FC<{
   const replaceContent = useMemo(() => {
     if (isCreateTextDocToolCall(toolCall))
       return toolCall.function.arguments.content;
-    if (isReplaceTextDocToolCall(toolCall))
+    if (isUpdateTextDocToolCall(toolCall))
       return toolCall.function.arguments.replacement;
     return null;
   }, [toolCall]);
 
-  // and this
   const handleApplyToolResult = useCallback(() => {
     // startFileAnimation(toolCall.function.arguments.path);
     requestDryRun({
@@ -153,7 +142,7 @@ const TextDocHeader: React.FC<{
         <Button
           size="1"
           onClick={handleApplyToolResult}
-          disabled={disabled}
+          disabled={dryRunResult.isLoading}
           title={`Apply`}
         >
           ➕ Apply
@@ -162,7 +151,7 @@ const TextDocHeader: React.FC<{
           <Button
             size="1"
             onClick={() => handleReplace(replaceContent)}
-            disabled={disabled || !canPaste}
+            disabled={dryRunResult.isLoading || !canPaste}
             title="Replace the current selection in the ide."
           >
             ➕ Replace Selection
