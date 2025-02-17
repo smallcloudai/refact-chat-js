@@ -3,6 +3,7 @@
 import type { ChatThread } from "../features/Chat/Thread";
 export const CHAT_WITH_TEXTDOC: ChatThread = {
   id: "754565e2-8efd-469b-a9bf-1414ce566ff2",
+  new_chat_suggested: { wasSuggested: false },
   messages: [
     {
       role: "system",
