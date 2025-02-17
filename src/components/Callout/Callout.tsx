@@ -32,7 +32,7 @@ export const Callout: React.FC<CalloutProps> = ({
   type = "info",
   timeout = null,
   onClick = () => void 0,
-  preventRetry = false,
+  // preventRetry = false,
   ...props
 }) => {
   const [isOpened, setIsOpened] = useState(false);
@@ -48,7 +48,8 @@ export const Callout: React.FC<CalloutProps> = ({
   }, []);
 
   const handleRetryClick = () => {
-    if (preventRetry) return;
+    // TBD: why was this added?
+    // if (preventRetry) return;
     setIsOpened(false);
     const timeoutId = setTimeout(() => {
       onClick();
