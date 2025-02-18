@@ -149,7 +149,7 @@ const TextDocHeader: React.FC<{
         )}
       </Flex>
       {errorMessage && (
-        <ErrorCallout onClick={clearErrorMessage} timeout={5000} preventRetry>
+        <ErrorCallout onClick={clearErrorMessage} timeout={5000}>
           {errorMessage}
         </ErrorCallout>
       )}
