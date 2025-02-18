@@ -5,21 +5,18 @@ import { useConfig } from "./useConfig";
 import { updateConfig } from "../features/Config/configSlice";
 import { setFileInfo } from "../features/Chat/activeFile";
 import { setSelectedSnippet } from "../features/Chat/selectedSnippet";
+import { setCurrentProjectInfo } from "../features/Chat/currentProject";
 import { newChatAction } from "../features/Chat/Thread/actions";
 import {
   isPageInHistory,
   push,
   selectPages,
 } from "../features/Pages/pagesSlice";
-import { diffApi, resetDiffApi } from "../services/refact/diffs";
-import { usePatchActions } from "./usePatchActions";
-import { showPatchTicket } from "../events";
 
 export function useEventBusForApp() {
   const config = useConfig();
   const dispatch = useAppDispatch();
   const pages = useAppSelector(selectPages);
-  const { handleShow } = usePatchActions();
 
   useEffect(() => {
     const listener = (event: MessageEvent) => {
@@ -42,13 +39,13 @@ export function useEventBusForApp() {
         dispatch(newChatAction(event.data.payload));
       }
 
-      if (resetDiffApi.match(event.data)) {
-        dispatch(diffApi.util.resetApiState());
+      if (setCurrentProjectInfo.match(event.data)) {
+        dispatch(setCurrentProjectInfo(event.data.payload));
       }
 
-      if (showPatchTicket.match(event.data)) {
-        handleShow(event.data.payload);
-      }
+      // TODO: active project
+      // vscode workspace can be found with vscode.workspace.name
+      // JB: project.name
     };
 
     window.addEventListener("message", listener);
@@ -56,5 +53,5 @@ export function useEventBusForApp() {
     return () => {
       window.removeEventListener("message", listener);
     };
-  }, [config.host, dispatch, handleShow, pages]);
+  }, [config.host, dispatch, pages]);
 }
