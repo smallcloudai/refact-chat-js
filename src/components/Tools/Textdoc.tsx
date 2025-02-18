@@ -25,6 +25,7 @@ import { useAppSelector } from "../../hooks";
 import { selectCanPaste } from "../../features/Chat";
 import { toolsApi } from "../../services/refact";
 import { ErrorCallout } from "../Callout";
+import { isRTKResponseErrorWithDetailMessage } from "../../utils";
 
 export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
   toolCall,
@@ -32,8 +33,6 @@ export const TextDocTool: React.FC<{ toolCall: RawTextDocTool }> = ({
   const maybeTextDocToolCall = parseRawTextDocToolCall(toolCall);
 
   if (!maybeTextDocToolCall) return false;
-
-  // TODO: add reveal to the mardkown preview, add ide actions
 
   if (isCreateTextDocToolCall(maybeTextDocToolCall)) {
     return <CreateTextDoc toolCall={maybeTextDocToolCall} />;
@@ -85,7 +84,6 @@ const TextDocHeader: React.FC<{
   }, [toolCall]);
 
   const handleApplyToolResult = useCallback(() => {
-    // startFileAnimation(toolCall.function.arguments.path);
     requestDryRun({
       toolName: toolCall.function.name,
       toolArgs: toolCall.function.arguments,
@@ -93,15 +91,7 @@ const TextDocHeader: React.FC<{
       .then((results) => {
         if (results.data) {
           sendToolEditToIde(toolCall.function.arguments.path, results.data);
-        } else if (
-          "error" in results &&
-          typeof results.error === "object" &&
-          "data" in results.error &&
-          results.error.data &&
-          typeof results.error.data === "object" &&
-          "detail" in results.error.data &&
-          typeof results.error.data.detail === "string"
-        ) {
+        } else if (isRTKResponseErrorWithDetailMessage(results)) {
           setErrorMessage(results.error.data.detail);
         }
       })
