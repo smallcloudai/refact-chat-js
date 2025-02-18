@@ -17,7 +17,7 @@ import type { TipOfTheDayState } from "../features/TipOfTheDay";
 import type { PageSliceState } from "../features/Pages/pagesSlice";
 import type { TourState } from "../features/Tour";
 import type { FIMDebugState } from "../hooks";
-import { createAction } from "@reduxjs/toolkit";
+import { CurrentProjectInfo } from "../features/Chat/currentProject";
 
 export { updateConfig, type Config } from "../features/Config/configSlice";
 export { type FileInfo, setFileInfo } from "../features/Chat/activeFile";
@@ -28,9 +28,21 @@ export {
 export type { FimDebugData } from "../services/refact/fim";
 export type { ChatHistoryItem } from "../features/History/historySlice";
 export { addInputValue, setInputValue } from "../components/ChatForm/actions";
-export { resetDiffApi } from "../services/refact/diffs";
+export {
+  setCurrentProjectInfo,
+  type CurrentProjectInfo,
+} from "../features/Chat/currentProject";
 
-export const showPatchTicket = createAction<string>("showPatchTicket");
+export type {
+  ToolCommand,
+  CustomPromptsResponse,
+  CapsResponse,
+  UserMessage,
+  ChatMessage,
+  ChatMessages,
+  DiffChunk,
+  ToolEditResult,
+} from "../services/refact";
 
 // TODO: re-exporting from redux seems to break things :/
 export type InitialState = {
@@ -44,24 +56,24 @@ export type InitialState = {
   history: HistoryState;
   error: ErrorSliceState;
   pages: PageSliceState;
+  current_project: CurrentProjectInfo;
 };
 
 export {
   ideOpenFile,
   type OpenFilePayload,
   ideDiffPasteBackAction,
-  ideDiffPreviewAction,
   ideNewFileAction,
   ideOpenHotKeys,
   ideOpenSettingsAction,
   ideOpenChatInNewTab,
   ideAnimateFileStart,
   ideAnimateFileStop,
-  ideWriteResultsToFile,
   ideChatPageChange,
   ideEscapeKeyPressed,
   ideIsChatStreaming,
   ideIsChatReady,
+  ideToolEdit,
 } from "../hooks/useEventBusForIDE";
 
 export const fim = {
@@ -96,7 +108,7 @@ export {
   isUserMessage,
 } from "../services/refact";
 
-export type * from "../services/refact";
+// export type * from "../services/refact";
 
 export * from "./setup";
 export type * from "./setup";

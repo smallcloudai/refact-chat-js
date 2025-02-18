@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ChatForm, ChatFormProps } from "../ChatForm";
+import { ChatForm } from "../ChatForm";
 import { ChatContent } from "../ChatContent";
 import { Flex, Button, Text, Card } from "@radix-ui/themes";
 import {
@@ -20,6 +20,7 @@ import {
   selectChatId,
   selectMessages,
   getSelectedToolUse,
+  selectThreadNewChatSuggested,
 } from "../../features/Chat/Thread";
 import { ThreadHistoryButton } from "../Buttons";
 import { push } from "../../features/Pages/pagesSlice";
@@ -27,6 +28,7 @@ import { DropzoneProvider } from "../Dropzone";
 import { AgentUsage } from "../../features/AgentUsage";
 import { useCheckpoints } from "../../hooks/useCheckpoints";
 import { Checkpoints } from "../../features/Checkpoints";
+import { SuggestNewChat } from "../ChatForm/SuggestNewChat";
 
 export type ChatProps = {
   host: Config["host"];
@@ -48,6 +50,8 @@ export const Chat: React.FC<ChatProps> = ({ style, unCalledTools }) => {
   const { submit, abort, retryFromIndex } = useSendChatRequest();
 
   const chatToolUse = useAppSelector(getSelectedToolUse);
+
+  const threadNewChatSuggested = useAppSelector(selectThreadNewChatSuggested);
   const messages = useAppSelector(selectMessages);
   const capsForToolUse = useCapsForToolUse();
   const { disableInput } = useAgentUsage();
@@ -111,6 +115,12 @@ export const Chat: React.FC<ChatProps> = ({ style, unCalledTools }) => {
         {shouldCheckpointsPopupBeShown && <Checkpoints />}
 
         <AgentUsage />
+        <SuggestNewChat
+          shouldBeVisible={
+            threadNewChatSuggested.wasSuggested &&
+            !threadNewChatSuggested.wasRejectedByUser
+          }
+        />
         {!isStreaming && preventSend && unCalledTools && (
           <Flex py="4">
             <Card style={{ width: "100%" }}>

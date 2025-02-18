@@ -3,7 +3,7 @@ import isEqual from "lodash.isequal";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { debugIntegrations } from "../../../debugConfig";
 import { setIntegrationData } from "../../../features/Chat";
-import { selectThemeMode } from "../../../features/Config/configSlice";
+import { selectConfig } from "../../../features/Config/configSlice";
 import {
   clearError,
   getErrorMessage,
@@ -38,15 +38,19 @@ import {
   IntegrationWithIconRecordAndAddress,
   IntegrationWithIconResponse,
   isDetailMessage,
+  isMCPArgumentsArray,
+  isMCPEnvironmentsDict,
   isNotConfiguredIntegrationWithIconRecord,
   isPrimitive,
+  MCPArgs,
+  MCPEnvs,
   NotConfiguredIntegrationWithIconRecord,
   ToolConfirmation,
   ToolParameterEntity,
 } from "../../../services/refact";
 import { toPascalCase } from "../../../utils/toPascalCase";
 import { validateSnakeCase } from "../../../utils/validateSnakeCase";
-import { iconMap } from "../icons/iconMap";
+import { formatIntegrationIconPath } from "../../../utils/formatIntegrationIconPath";
 
 type useIntegrationsViewArgs = {
   integrationsMap?: IntegrationWithIconResponse;
@@ -189,31 +193,24 @@ export const useIntegrations = ({
   const [currentNotConfiguredIntegration, setCurrentNotConfiguredIntegration] =
     useState<NotConfiguredIntegrationWithIconRecord | null>(null);
 
-  const theme = useAppSelector(selectThemeMode);
-  const icons = iconMap(
-    theme ? (theme === "inherit" ? "light" : theme) : "light",
-  );
+  const config = useAppSelector(selectConfig);
+  const port = config.lspPort;
 
   const integrationLogo = useMemo(() => {
     if (!currentIntegration && !currentNotConfiguredIntegration) {
       return "https://placehold.jp/150x150.png";
     }
-    return INTEGRATIONS_WITH_TERMINAL_ICON.includes(
-      currentIntegration
-        ? currentIntegration.integr_name.split("_")[0]
-        : currentNotConfiguredIntegration
-          ? currentNotConfiguredIntegration.integr_name.split("_")[0]
-          : "https://placehold.jp/150x150.png",
-    )
-      ? icons.cmdline
-      : icons[
-          currentIntegration
-            ? currentIntegration.integr_name
-            : currentNotConfiguredIntegration
-              ? currentNotConfiguredIntegration.integr_name
-              : ""
-        ];
-  }, [currentIntegration, currentNotConfiguredIntegration, icons]);
+
+    const iconPath = currentIntegration
+      ? formatIntegrationIconPath(currentIntegration.icon_path)
+      : currentNotConfiguredIntegration
+        ? formatIntegrationIconPath(currentNotConfiguredIntegration.icon_path)
+        : "";
+
+    return iconPath
+      ? `http://127.0.0.1:${port}/v1${iconPath}`
+      : "https://placehold.jp/150x150.png";
+  }, [currentIntegration, currentNotConfiguredIntegration, port]);
 
   // TODO: uncomment when ready
   useEffect(() => {
@@ -283,6 +280,10 @@ export const useIntegrations = ({
     ask_user: [],
     deny: [],
   });
+
+  const [MCPArguments, setMCPArguments] = useState<MCPArgs>([]);
+  const [MCPEnvironmentVariables, setMCPEnvironmentVariables] =
+    useState<MCPEnvs>({});
 
   const [toolParameters, setToolParameters] = useState<
     ToolParameterEntity[] | null
@@ -384,17 +385,45 @@ export const useIntegrations = ({
 
   // TODO: make this one in better way, too much of code
   useEffect(() => {
+    if (!currentIntegrationValues) {
+      setIsDisabledIntegrationForm(false);
+    }
     if (
       currentIntegration &&
       currentIntegrationSchema &&
       currentIntegrationValues
     ) {
       setIsDisabledIntegrationForm((isDisabled) => {
+        const isMCPIntegration = currentIntegration.integr_name.includes("mcp");
         const toolParametersChanged =
           toolParameters &&
-          areToolParameters(currentIntegrationValues.parameters)
+          areToolParameters(currentIntegrationValues.parameters) &&
+          !isMCPIntegration // if integration is MCP, then not checking toolParameters
             ? !isEqual(toolParameters, currentIntegrationValues.parameters)
             : false;
+
+        const MCPArgumentsChanged = isMCPArgumentsArray(
+          currentIntegrationValues.args,
+        )
+          ? !isEqual(currentIntegrationValues.args, MCPArguments)
+          : false;
+
+        const MCPEnvironmentVariablesChanged = isMCPEnvironmentsDict(
+          currentIntegrationValues.env,
+        )
+          ? !isEqual(currentIntegrationValues.env, MCPEnvironmentVariables)
+          : false;
+
+        const confirmationRulesChanged = !isEqual(
+          confirmationRules,
+          currentIntegrationValues.confirmation,
+        );
+
+        const someFieldsHaveBeenChanged =
+          confirmationRulesChanged ||
+          toolParametersChanged ||
+          MCPArgumentsChanged ||
+          MCPEnvironmentVariablesChanged;
 
         // Manually collecting data from the form
         const formElement = document.getElementById(
@@ -429,40 +458,22 @@ export const useIntegrations = ({
           },
         );
 
-        const confirmationRulesChanged = !isEqual(
-          confirmationRules,
-          currentIntegrationValues.confirmation,
+        const allToolParametersAreWrittenInSnakeCase = toolParameters?.every(
+          (param) => validateSnakeCase(param.name),
         );
 
-        debugIntegrations(
-          `[DEBUG confirmationRulesChanged]: confirmationRulesChanged: `,
-          confirmationRulesChanged,
-        );
-
-        const allToolParametersNamesInSnakeCase = toolParameters
-          ? toolParameters.every((param) => validateSnakeCase(param.name))
-          : true;
-
-        if (!allToolParametersNamesInSnakeCase) {
-          return true; // Disabling form if any of tool parameters names are written not in snake case
-        }
-
-        if ((toolParametersChanged || confirmationRulesChanged) && isDisabled) {
-          return false; // Enable form if toolParameters changed and form was disabled
-        }
-
         if (
-          otherFieldsChanged &&
-          (toolParametersChanged || confirmationRulesChanged)
+          typeof allToolParametersAreWrittenInSnakeCase !== "undefined" &&
+          !allToolParametersAreWrittenInSnakeCase
         ) {
-          return isDisabled; // Keep the form in the same condition
+          return true; // Disabling form if any of toolParameters are defined and not written in snake case
         }
 
-        if (
-          !otherFieldsChanged &&
-          !toolParametersChanged &&
-          !confirmationRulesChanged
-        ) {
+        if (someFieldsHaveBeenChanged && isDisabled) {
+          return false;
+        }
+
+        if (!otherFieldsChanged && !someFieldsHaveBeenChanged) {
           return true; // Disable form if all fields are back to original state
         }
 
@@ -475,6 +486,8 @@ export const useIntegrations = ({
     currentIntegrationSchema,
     confirmationRules,
     currentIntegration,
+    MCPArguments,
+    MCPEnvironmentVariables,
   ]);
 
   const handleSetCurrentIntegrationSchema = (
@@ -508,6 +521,8 @@ export const useIntegrations = ({
       ask_user: [],
       deny: [],
     });
+    setMCPArguments([]);
+    setMCPEnvironmentVariables({});
     information && dispatch(clearInformation());
     globalError && dispatch(clearError());
     currentIntegrationValues && setCurrentIntegrationValues(null);
@@ -557,6 +572,10 @@ export const useIntegrations = ({
       ) {
         formValues.parameters = toolParameters;
       }
+      if (currentIntegration.integr_name.includes("mcp")) {
+        formValues.env = MCPEnvironmentVariables;
+        formValues.args = MCPArguments;
+      }
       if (!currentIntegrationSchema.confirmation.not_applicable) {
         formValues.confirmation = confirmationRules;
       }
@@ -595,6 +614,8 @@ export const useIntegrations = ({
       availabilityValues,
       confirmationRules,
       toolParameters,
+      MCPArguments,
+      MCPEnvironmentVariables,
     ],
   );
 
@@ -662,7 +683,7 @@ export const useIntegrations = ({
         : false;
 
       debugIntegrations(
-        `[DEBUG]: eachFormValueIsNotChanged: `,
+        `[DEBUG MCP]: eachFormValueIsNotChanged: `,
         eachFormValueIsNotChanged,
       );
 
@@ -686,46 +707,75 @@ export const useIntegrations = ({
           ? isEqual(currentIntegrationValues.parameters, toolParameters)
           : true;
 
+      const eachMCPArgumentIsNotChanged =
+        currentIntegrationValues &&
+        isMCPArgumentsArray(currentIntegrationValues.args)
+          ? isEqual(currentIntegrationValues.args, MCPArguments)
+          : true;
+
+      const eachMCPEnvironmentVariableIsNotChanged =
+        currentIntegrationValues &&
+        isMCPEnvironmentsDict(currentIntegrationValues.env)
+          ? isEqual(currentIntegrationValues.env, MCPEnvironmentVariables)
+          : true;
+
       const eachToolConfirmationIsNotChanged =
         currentIntegrationValues &&
         areToolConfirmation(currentIntegrationValues.confirmation)
           ? isEqual(currentIntegrationValues.confirmation, confirmationRules)
           : true;
-      debugIntegrations(`[DEBUG]: formValues: `, formValues);
+      debugIntegrations(`[DEBUG MCP]: formValues: `, formValues);
       debugIntegrations(
-        `[DEBUG]: currentIntegrationValues: `,
+        `[DEBUG MCP]: currentIntegrationValues: `,
         currentIntegrationValues,
       );
       debugIntegrations(
-        `[DEBUG]: eachAvailabilityOptionIsNotChanged: `,
+        `[DEBUG MCP]: eachAvailabilityOptionIsNotChanged: `,
         eachAvailabilityOptionIsNotChanged,
       );
 
       debugIntegrations(
-        `[DEBUG]: eachToolParameterIsNotChanged: `,
+        `[DEBUG MCP]: eachToolParameterIsNotChanged: `,
         eachToolParameterIsNotChanged,
       );
 
       debugIntegrations(
-        `[DEBUG]: eachToolConfirmationIsNotChanged: `,
+        `[DEBUG MCP]: eachToolConfirmationIsNotChanged: `,
         eachToolConfirmationIsNotChanged,
       );
-      debugIntegrations(`[DEBUG]: availabilityValues: `, availabilityValues);
+      debugIntegrations(
+        `[DEBUG MCP]: availabilityValues: `,
+        availabilityValues,
+      );
       const maybeDisabled =
         eachFormValueIsNotChanged &&
         eachAvailabilityOptionIsNotChanged &&
         eachToolParameterIsNotChanged &&
-        eachToolConfirmationIsNotChanged;
+        eachToolConfirmationIsNotChanged &&
+        eachMCPArgumentIsNotChanged &&
+        eachMCPEnvironmentVariableIsNotChanged;
 
-      debugIntegrations(`[DEBUG CHANGE]: maybeDisabled: `, maybeDisabled);
+      debugIntegrations(`[DEBUG MCP]: maybeDisabled: `, maybeDisabled);
 
-      setIsDisabledIntegrationForm(
-        toolParameters
-          ? toolParameters.every((param) => validateSnakeCase(param.name))
+      const areToolParametersWrittenInSnakeCase = toolParameters?.every(
+        (param) => validateSnakeCase(param.name),
+      );
+
+      debugIntegrations(
+        `[DEBUG MCP]: areToolParametersWrittenInSnakeCase: `,
+        areToolParametersWrittenInSnakeCase,
+      );
+
+      const newDisabled =
+        areToolParametersWrittenInSnakeCase !== undefined
+          ? areToolParametersWrittenInSnakeCase
             ? maybeDisabled
             : true
-          : maybeDisabled,
-      );
+          : maybeDisabled;
+
+      debugIntegrations(`[DEBUG MCP]: newDisabled: `, newDisabled);
+
+      setIsDisabledIntegrationForm(newDisabled);
     },
     [
       currentIntegration,
@@ -734,6 +784,8 @@ export const useIntegrations = ({
       availabilityValues,
       toolParameters,
       confirmationRules,
+      MCPArguments,
+      MCPEnvironmentVariables,
     ],
   );
 
@@ -775,6 +827,7 @@ export const useIntegrations = ({
           on_your_laptop: false,
           integr_name: `${type}_${commandName}`,
           integr_config_path: configPath,
+          icon_path: currentNotConfiguredIntegration.icon_path,
           project_path: rawFormValues.integr_config_path
             .toString()
             .includes(".config")
@@ -870,6 +923,17 @@ export const useIntegrations = ({
     [handleNotSetupIntegrationShowUp],
   );
 
+  useEffect(() => {
+    debugIntegrations(`[DEBUG MCP]: MCPArguments: `, MCPArguments);
+  }, [MCPArguments]);
+
+  useEffect(() => {
+    debugIntegrations(
+      `[DEBUG MCP]: MCPEnvironmentVariables: `,
+      MCPEnvironmentVariables,
+    );
+  }, [MCPEnvironmentVariables]);
+
   return {
     currentIntegration,
     currentIntegrationSchema,
@@ -878,6 +942,8 @@ export const useIntegrations = ({
     confirmationRules,
     toolParameters,
     availabilityValues,
+    MCPArguments,
+    MCPEnvironmentVariables,
     integrationLogo,
     handleFormReturn,
     handleIntegrationFormChange,
@@ -892,6 +958,8 @@ export const useIntegrations = ({
     setAvailabilityValues,
     setConfirmationRules,
     setToolParameters,
+    setMCPArguments,
+    setMCPEnvironmentVariables,
     isDisabledIntegrationForm,
     isApplyingIntegrationForm,
     isDeletingIntegration,

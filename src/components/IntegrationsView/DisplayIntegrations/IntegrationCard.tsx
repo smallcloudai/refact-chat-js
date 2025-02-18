@@ -1,15 +1,20 @@
+import { FC, MouseEventHandler } from "react";
+import classNames from "classnames";
+
 import { Badge, Card, Flex, Text } from "@radix-ui/themes";
-import { toPascalCase } from "../../../utils/toPascalCase";
-import styles from "./IntegrationCard.module.css";
+import { useAppSelector } from "../../../hooks";
+import { useUpdateIntegration } from "./useUpdateIntegration";
+
 import {
   IntegrationWithIconRecord,
   NotConfiguredIntegrationWithIconRecord,
 } from "../../../services/refact";
-import { FC } from "react";
-import classNames from "classnames";
-import { iconMap } from "../icons/iconMap";
-import { useAppSelector } from "../../../hooks";
-import { selectThemeMode } from "../../../features/Config/configSlice";
+
+import { selectConfig } from "../../../features/Config/configSlice";
+import { formatIntegrationIconPath } from "../../../utils/formatIntegrationIconPath";
+import { getIntegrationInfo } from "../../../utils/getIntegrationInfo";
+
+import styles from "./IntegrationCard.module.css";
 
 type IntegrationCardProps = {
   integration:
@@ -23,30 +28,47 @@ type IntegrationCardProps = {
   isNotConfigured?: boolean;
 };
 
-const INTEGRATIONS_WITH_TERMINAL_ICON = ["cmdline", "service"];
-
 export const IntegrationCard: FC<IntegrationCardProps> = ({
   integration,
   handleIntegrationShowUp,
   isNotConfigured = false,
 }) => {
-  const theme = useAppSelector(selectThemeMode);
-  const icons = iconMap(
-    theme ? (theme === "inherit" ? "light" : theme) : "light",
-  );
+  const config = useAppSelector(selectConfig);
+  const port = config.lspPort;
 
-  const integrationLogo = INTEGRATIONS_WITH_TERMINAL_ICON.includes(
-    integration.integr_name.split("_")[0],
-  )
-    ? icons.cmdline
-    : icons[integration.integr_name];
+  const iconPath = formatIntegrationIconPath(integration.icon_path);
+  const integrationLogo = `http://127.0.0.1:${port}/v1${iconPath}`;
+
+  const { displayName } = getIntegrationInfo(integration.integr_name);
+  const {
+    updateIntegrationAvailability,
+    integrationAvailability,
+    isUpdatingAvailability,
+  } = useUpdateIntegration({ integration });
+
+  const handleAvailabilityClick: MouseEventHandler<HTMLDivElement> = (
+    event,
+  ) => {
+    if (isUpdatingAvailability) return;
+    event.stopPropagation();
+    void updateIntegrationAvailability();
+  };
+
+  const switches = [
+    { label: "On", leftRadius: true },
+    { label: "Off", rightRadius: true },
+  ];
 
   return (
     <Card
       className={classNames(styles.integrationCard, {
         [styles.integrationCardInline]: isNotConfigured,
+        [styles.disabledCard]: isUpdatingAvailability,
       })}
-      onClick={() => handleIntegrationShowUp(integration)}
+      onClick={() => {
+        if (isUpdatingAvailability) return;
+        handleIntegrationShowUp(integration);
+      }}
     >
       <Flex
         gap="4"
@@ -69,24 +91,45 @@ export const IntegrationCard: FC<IntegrationCardProps> = ({
             weight="medium"
             align={isNotConfigured ? "center" : "left"}
           >
-            {integration.integr_name.includes("TEMPLATE")
-              ? integration.integr_name.startsWith("cmdline")
-                ? "Command-line Tool"
-                : "Command-line Service"
-              : toPascalCase(integration.integr_name)}
+            {displayName}
           </Text>
           {!isNotConfigured && (
-            <Badge
-              color={
-                // TODO: get it back later integration.on_your_laptop || integration.when_isolated
-                integration.on_your_laptop ? "jade" : "gray"
-              }
-              variant="soft"
-              radius="medium"
+            <Flex
+              className={classNames(styles.availabilitySwitch, {
+                [styles.disabledAvailabilitySwitch]: isUpdatingAvailability,
+              })}
+              onClick={handleAvailabilityClick}
             >
-              {/* TODO: get it back later {integration.on_your_laptop || integration.when_isolated */}
-              {integration.on_your_laptop ? "On" : "Off"}
-            </Badge>
+              {switches.map(({ label, leftRadius }) => {
+                const isOn = label === "On";
+                const isActive =
+                  isOn === integrationAvailability.on_your_laptop;
+
+                return (
+                  <Badge
+                    key={label}
+                    color={
+                      isActive && !isUpdatingAvailability ? "jade" : "gray"
+                    }
+                    variant="soft"
+                    radius="medium"
+                    style={{
+                      ...(leftRadius
+                        ? {
+                            borderTopRightRadius: 0,
+                            borderBottomRightRadius: 0,
+                          }
+                        : {
+                            borderTopLeftRadius: 0,
+                            borderBottomLeftRadius: 0,
+                          }),
+                    }}
+                  >
+                    {label}
+                  </Badge>
+                );
+              })}
+            </Flex>
           )}
         </Flex>
       </Flex>

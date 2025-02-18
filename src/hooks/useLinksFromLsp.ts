@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  diffApi,
   isCommitLink,
   isPostChatLink,
   isUserMessage,
@@ -13,6 +12,7 @@ import { useAppSelector } from "./useAppSelector";
 import { useGetCapsQuery } from "./useGetCapsQuery";
 import { useSendChatRequest } from "./useSendChatRequest";
 import {
+  chatModeToLspMode,
   selectChatId,
   selectIntegration,
   selectIsStreaming,
@@ -21,6 +21,7 @@ import {
   selectModel,
   selectThreadMode,
   setIntegrationData,
+  setIsNewChatSuggested,
   setMaxNewTokens,
 } from "../features/Chat";
 import { useGoToLink } from "./useGoToLink";
@@ -31,6 +32,8 @@ import { telemetryApi } from "../services/refact/telemetry";
 import { isAbsolutePath } from "../utils";
 
 export function useGetLinksFromLsp() {
+  const dispatch = useAppDispatch();
+
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
   const messages = useAppSelector(selectMessages);
@@ -68,11 +71,22 @@ export function useGetLinksFromLsp() {
       chat_id: chatId,
       messages,
       model: model ?? "",
-      mode: threadMode, // TODO: Changing thread mode invalidates the cache.
+      mode: chatModeToLspMode(undefined, threadMode),
       current_config_file: maybeIntegration?.path,
     },
     { skip: skipLinksRequest },
   );
+
+  useEffect(() => {
+    if (linksResult.data?.new_chat_suggestion) {
+      dispatch(
+        setIsNewChatSuggested({
+          chatId,
+          value: linksResult.data.new_chat_suggestion,
+        }),
+      );
+    }
+  }, [dispatch, linksResult.data, chatId]);
 
   return linksResult;
 }
@@ -82,8 +96,6 @@ export function useLinksFromLsp() {
   const { handleGoTo } = useGoToLink();
   const { submit } = useSendChatRequest();
 
-  const [applyPatches, _applyPatchesResult] =
-    diffApi.useApplyAllPatchesInMessagesMutation();
   const [applyCommit, _applyCommitResult] = linksApi.useSendCommitMutation();
 
   const [sendTelemetryEvent] =
@@ -164,11 +176,15 @@ export function useLinksFromLsp() {
       }
 
       if (link.link_action === "patch-all") {
-        void applyPatches(messages).then(() => {
-          if ("link_goto" in link) {
-            handleGoTo({ goto: link.link_goto });
-          }
-        });
+        // TBD: smart links for patches
+        // void applyPatches(messages).then(() => {
+        //   if ("link_goto" in link) {
+        //     handleGoTo({ goto: link.link_goto });
+        //   }
+        // });
+        if ("link_goto" in link) {
+          handleGoTo({ goto: link.link_goto });
+        }
         return;
       }
 
@@ -247,15 +263,7 @@ export function useLinksFromLsp() {
       // eslint-disable-next-line no-console
       console.warn(`unknown action: ${JSON.stringify(link)}`);
     },
-    [
-      applyCommit,
-      applyPatches,
-      dispatch,
-      handleGoTo,
-      messages,
-      submit,
-      sendTelemetryEvent,
-    ],
+    [applyCommit, dispatch, handleGoTo, sendTelemetryEvent, submit],
   );
 
   const linksResult = useGetLinksFromLsp();

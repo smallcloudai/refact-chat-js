@@ -6,7 +6,8 @@ import { setUpStore } from "../../app/store";
 import { Theme } from "../Theme";
 import { AbortControllerProvider } from "../../contexts/AbortControllers";
 import { MarkdownMessage } from "../../__fixtures__/markdown";
-import { ChatMessages, ChatThread } from "../../events";
+import type { ChatMessages } from "../../services/refact";
+import type { ChatThread } from "../../features/Chat/Thread";
 import {
   CHAT_FUNCTIONS_MESSAGES,
   CHAT_WITH_DIFF_ACTIONS,
@@ -16,9 +17,21 @@ import {
   CHAT_WITH_MULTI_MODAL,
   CHAT_CONFIG_THREAD,
   STUB_LINKS_FOR_CHAT_RESPONSE,
+  CHAT_WITH_TEXTDOC,
 } from "../../__fixtures__";
 import { http, HttpResponse } from "msw";
 import { CHAT_LINKS_URL } from "../../services/refact/consts";
+import {
+  goodCaps,
+  goodPing,
+  goodPrompts,
+  goodUser,
+  makeKnowledgeFromChat,
+  noCommandPreview,
+  noCompletions,
+  noTools,
+  ToolConfirmation,
+} from "../../__fixtures__/msw";
 
 const MockedStore: React.FC<{
   messages?: ChatMessages;
@@ -28,6 +41,9 @@ const MockedStore: React.FC<{
     id: "test",
     model: "test",
     messages: messages ?? [],
+    new_chat_suggested: {
+      wasSuggested: false,
+    },
   };
   const store = setUpStore({
     chat: {
@@ -137,6 +153,28 @@ export const IntegrationChat: Story = {
         http.post(`http://127.0.0.1:8001${CHAT_LINKS_URL}`, () => {
           return HttpResponse.json(STUB_LINKS_FOR_CHAT_RESPONSE);
         }),
+      ],
+    },
+  },
+};
+
+export const TextDoc: Story = {
+  args: {
+    thread: CHAT_WITH_TEXTDOC,
+  },
+  parameters: {
+    msw: {
+      handlers: [
+        goodCaps,
+        goodPing,
+        goodPrompts,
+        goodUser,
+        // noChatLinks,
+        noTools,
+        makeKnowledgeFromChat,
+        ToolConfirmation,
+        noCompletions,
+        noCommandPreview,
       ],
     },
   },

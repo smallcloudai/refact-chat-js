@@ -12,13 +12,18 @@ import { Markdown } from "../../components/Markdown";
 import { toPascalCase } from "../../utils/toPascalCase";
 import styles from "./IntegrationFormField.module.css";
 
-import type {
-  Integration,
-  IntegrationField,
-  IntegrationPrimitive,
-  SmartLink as TSmartLink,
-  ToolParameterEntity,
+import {
+  areToolParameters,
+  isMCPArgumentsArray,
+  isMCPEnvironmentsDict,
+  type Integration,
+  type IntegrationField,
+  type IntegrationPrimitive,
+  type SmartLink as TSmartLink,
+  type ToolParameterEntity,
 } from "../../services/refact";
+import { ArgumentsTable } from "../../components/IntegrationsView/IntegrationsTable/ArgumentsTable";
+import { EnvironmentVariablesTable } from "../../components/IntegrationsView/IntegrationsTable/EnvironmentVariablesTable";
 
 type FieldType = "string" | "bool" | "int" | "tool" | "output";
 
@@ -67,6 +72,8 @@ type IntegrationFormFieldProps = {
   integrationProject: string;
   isFieldVisible?: boolean;
   onToolParameters: (data: ToolParameterEntity[]) => void;
+  onArguments: (updatedArgs: string[]) => void;
+  onEnvs: (updatedEnvs: Record<string, string>) => void;
 };
 
 type CommonFieldProps = {
@@ -84,9 +91,20 @@ const FieldContent: FC<{
   values: Integration["integr_values"];
   fieldKey: string;
   onToolParameters: (data: ToolParameterEntity[]) => void;
-}> = ({ f_type, commonProps, f_size, values, fieldKey, onToolParameters }) => {
+  onArguments: (updatedArgs: string[]) => void;
+  onEnvs: (updatedEnvs: Record<string, string>) => void;
+}> = ({
+  f_type,
+  commonProps,
+  f_size,
+  values,
+  fieldKey,
+  onToolParameters,
+  onArguments,
+  onEnvs,
+}) => {
   switch (f_type) {
-    case "bool":
+    case "bool": {
       return (
         <CustomBoolField
           {...commonProps}
@@ -95,16 +113,20 @@ const FieldContent: FC<{
           )}
         />
       );
-    case "tool":
-      return (
-        <ParametersTable
-          initialData={
-            values ? (values[fieldKey] as ToolParameterEntity[]) : []
-          }
-          onToolParameters={onToolParameters}
-        />
-      );
-    case "output":
+    }
+    case "tool": {
+      const valuesForTable = values?.[fieldKey];
+      if (values && areToolParameters(valuesForTable)) {
+        return (
+          <ParametersTable
+            initialData={valuesForTable}
+            onToolParameters={onToolParameters}
+          />
+        );
+      }
+      break;
+    }
+    case "output": {
       return (
         <Box>
           <Markdown>
@@ -114,15 +136,53 @@ const FieldContent: FC<{
           </Markdown>
         </Box>
       );
-    default:
+    }
+    case "string": {
+      if (f_size === "array") {
+        const valuesForTable = values?.[fieldKey];
+        const tableData = isMCPArgumentsArray(valuesForTable)
+          ? valuesForTable
+          : [];
+
+        return (
+          <ArgumentsTable
+            initialData={tableData}
+            onMCPArguments={onArguments}
+          />
+        );
+      }
+      if (f_size === "to_string_map") {
+        const valuesForTable = values?.[fieldKey];
+        const tableData = isMCPEnvironmentsDict(valuesForTable)
+          ? valuesForTable
+          : {};
+
+        return (
+          <EnvironmentVariablesTable
+            initialData={tableData}
+            onMCPEnvironmentVariables={onEnvs}
+          />
+        );
+      }
       return (
         <CustomInputField
           {...commonProps}
-          type={f_type === "int" ? "number" : "text"}
+          type={"text"}
           size={f_size}
           defaultValue={commonProps.defaultValue?.toString()}
         />
       );
+    }
+    default: {
+      return (
+        <CustomInputField
+          {...commonProps}
+          type="number"
+          size={f_size}
+          defaultValue={commonProps.defaultValue?.toString()}
+        />
+      );
+    }
   }
 };
 
@@ -164,8 +224,12 @@ export const IntegrationFormField: FC<IntegrationFormFieldProps> = ({
   integrationProject,
   isFieldVisible = true,
   onToolParameters,
+  onArguments,
+  onEnvs,
 }) => {
-  const [f_type_raw, f_size] = field.f_type.toString().split("_");
+  const splittedType = field.f_type.toString().split("_");
+  const [f_type_raw, ...rest] = splittedType;
+  const f_size = rest.join("_");
   const f_type = isFieldType(f_type_raw) ? f_type_raw : "string";
 
   const defaultValue = getDefaultValue({ field, values, fieldKey, f_type });
@@ -207,6 +271,8 @@ export const IntegrationFormField: FC<IntegrationFormFieldProps> = ({
           values={values}
           fieldKey={fieldKey}
           onToolParameters={onToolParameters}
+          onArguments={onArguments}
+          onEnvs={onEnvs}
         />
 
         {field.f_desc && (

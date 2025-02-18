@@ -158,6 +158,9 @@ export const Toolbar = ({ activeTab }: ToolbarProps) => {
         // dispatch(push({ name: "chat" }));
         // dispatch(newChatAction());
         void navigate("/chat");
+      } else if (to === "knowledge list") {
+        // TODO: send telemetry
+        void navigate("/knowledge");
       }
     },
     [openSettings, sendTelemetryEvent, openHotKeys, navigate, dispatch],

@@ -1,9 +1,18 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { MemoryRouter, Routes, Route, useNavigate } from "react-router";
+import React, {
+  // useCallback,
+  useEffect,
+  useState,
+} from "react";
+import {
+  MemoryRouter,
+  Routes,
+  Route,
+  // useNavigate
+} from "react-router";
 import { Flex } from "@radix-ui/themes";
 import {
   Chat,
-  newChatAction,
+  // newChatAction,
   // selectChatId,
   selectIsStreaming,
 } from "./Chat";
@@ -11,7 +20,11 @@ import { Sidebar } from "../components/Sidebar/Sidebar";
 import { useEventsBusForIDE, useConfig, useEffectOnce } from "../hooks";
 import { useAppSelector, useAppDispatch } from "../hooks";
 import { FIMDebug } from "./FIM";
-import { store, persistor, RootState } from "../app/store";
+import {
+  store,
+  persistor,
+  // RootState
+} from "../app/store";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { Theme } from "../components/Theme";
@@ -36,11 +49,14 @@ import { ThreadHistory } from "./ThreadHistory";
 import { Integrations } from "./Integrations";
 import { UserSurvey } from "./UserSurvey";
 import { integrationsApi } from "../services/refact";
+// import { KnowledgeList } from "./Knowledge";
 import { LoginPage } from "./Login";
 
 import styles from "./App.module.css";
 import classNames from "classnames";
 import { LayoutWithToolbar } from "../components/Layout/LayoutWithTopbar";
+import { usePatchesAndDiffsEventsForIDE } from "../hooks/usePatchesAndDiffEventsForIDE";
+import { KnowledgeList } from "./Knowledge";
 
 export interface AppProps {
   style?: React.CSSProperties;
@@ -67,6 +83,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
   // const chatId = useAppSelector(selectChatId);
   useEventBusForWeb();
   useEventBusForApp();
+  usePatchesAndDiffsEventsForIDE();
 
   const [isPaddingApplied, setIsPaddingApplied] = useState<boolean>(false);
 
@@ -284,6 +301,7 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
             }
           />
         </Route>
+        <Route path="knowledge" element={<KnowledgeList />} />
         {/** page wrapper is used in this route */}
         {/* <Route element={<Layout style={{ paddingRight: 0 }} />}> */}
         <Route
@@ -302,6 +320,9 @@ export const InnerApp: React.FC<AppProps> = ({ style }: AppProps) => {
       </Routes>
       {/* </PageWrapper> */}
       {/* {page.name !== "welcome" && <Tour page={pages[pages.length - 1].name} />} */}
+      {/* {page.name === "knowledge list" && <KnowledgeList />}
+      </PageWrapper>
+      {page.name !== "welcome" && <Tour page={pages[pages.length - 1].name} />} */}
     </Flex>
   );
 };

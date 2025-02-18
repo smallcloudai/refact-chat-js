@@ -16,12 +16,12 @@ import {
   promptsApi,
   toolsApi,
   commandsApi,
-  diffApi,
   pathApi,
   pingApi,
   integrationsApi,
   dockerApi,
   telemetryApi,
+  knowledgeApi,
 } from "../services/refact";
 import { smallCloudApi } from "../services/smallcloud";
 import { reducer as fimReducer } from "../features/FIM/reducer";
@@ -47,8 +47,11 @@ import { userSurveySlice } from "../features/UserSurvey/userSurveySlice";
 import { linksApi } from "../services/refact/links";
 import { integrationsSlice } from "../features/Integrations";
 import { agentUsageSlice } from "../features/AgentUsage/agentUsageSlice";
+import { currentProjectInfoReducer } from "../features/Chat/currentProject";
+import { knowledgeSlice } from "../features/Knowledge/knowledgeSlice";
 import { checkpointsSlice } from "../features/Checkpoints/checkpointsSlice";
 import { checkpointsApi } from "../services/refact/checkpoints";
+import { patchesAndDiffsTrackerSlice } from "../features/PatchesAndDiffsTracker/patchesAndDiffsTrackerSlice";
 
 const tipOfTheDayPersistConfig = {
   key: "totd",
@@ -82,6 +85,7 @@ const rootReducer = combineSlices(
     [agentUsageSlice.reducerPath]: persistedAgentUsageReducer,
     config: configReducer,
     active_file: activeFileReducer,
+    current_project: currentProjectInfoReducer,
     selected_snippet: selectedSnippetReducer,
     chat: chatReducer,
     [statisticsApi.reducerPath]: statisticsApi.reducer,
@@ -89,13 +93,13 @@ const rootReducer = combineSlices(
     [promptsApi.reducerPath]: promptsApi.reducer,
     [toolsApi.reducerPath]: toolsApi.reducer,
     [commandsApi.reducerPath]: commandsApi.reducer,
-    [diffApi.reducerPath]: diffApi.reducer,
     [smallCloudApi.reducerPath]: smallCloudApi.reducer,
     [pathApi.reducerPath]: pathApi.reducer,
     [pingApi.reducerPath]: pingApi.reducer,
     [linksApi.reducerPath]: linksApi.reducer,
     [checkpointsApi.reducerPath]: checkpointsApi.reducer,
     [telemetryApi.reducerPath]: telemetryApi.reducer,
+    [knowledgeApi.reducerPath]: knowledgeApi.reducer,
   },
   historySlice,
   errorSlice,
@@ -107,7 +111,10 @@ const rootReducer = combineSlices(
   attachedImagesSlice,
   userSurveySlice,
   integrationsSlice,
+  agentUsageSlice,
+  knowledgeSlice,
   checkpointsSlice,
+  patchesAndDiffsTrackerSlice,
 );
 
 const rootPersistConfig = {
@@ -164,14 +171,13 @@ export function setUpStore(preloadedState?: Partial<RootState>) {
 
       return (
         middleware
-          .concat(
+          .prepend(
             pingApi.middleware,
             statisticsApi.middleware,
             capsApi.middleware,
             promptsApi.middleware,
             toolsApi.middleware,
             commandsApi.middleware,
-            diffApi.middleware,
             smallCloudApi.middleware,
             pathApi.middleware,
             linksApi.middleware,
@@ -179,6 +185,7 @@ export function setUpStore(preloadedState?: Partial<RootState>) {
             dockerApi.middleware,
             checkpointsApi.middleware,
             telemetryApi.middleware,
+            knowledgeApi.middleware,
           )
           .prepend(historyMiddleware.middleware)
           // .prepend(errorMiddleware.middleware)

@@ -7,6 +7,7 @@ import {
   IntegrationMeta,
   LspChatMode,
   PayloadWithChatAndMessageId,
+  PayloadWithChatAndBoolean,
 } from "./types";
 import {
   isAssistantDelta,
@@ -55,6 +56,15 @@ export const chatAskedQuestion = createAction<PayloadWithId>(
 export const setLastUserMessageId = createAction<PayloadWithChatAndMessageId>(
   "chatThread/setLastUserMessageId",
 );
+
+export const setIsNewChatSuggested = createAction<PayloadWithChatAndBoolean>(
+  "chatThread/setIsNewChatSuggested",
+);
+
+export const setIsNewChatSuggestionRejected =
+  createAction<PayloadWithChatAndBoolean>(
+    "chatThread/setIsNewChatSuggestionRejected",
+  );
 
 export const backUpMessages = createAction<
   PayloadWithId & {
@@ -125,6 +135,10 @@ export const setIsWaitingForResponse = createAction<boolean>(
 
 export const setMaxNewTokens = createAction<number>(
   "chatThread/setMaxNewTokens",
+);
+
+export const fixBrokenToolMessages = createAction<PayloadWithId>(
+  "chatThread/fixBrokenToolMessages",
 );
 
 // TODO: This is the circular dep when imported from hooks :/
@@ -318,7 +332,10 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
         }
         const reader = response.body?.getReader();
         if (!reader) return;
-        const onAbort = () => thunkAPI.dispatch(setPreventSend({ id: chatId }));
+        const onAbort = () => {
+          thunkAPI.dispatch(setPreventSend({ id: chatId }));
+          thunkAPI.dispatch(fixBrokenToolMessages({ id: chatId }));
+        };
         const onChunk = (json: Record<string, unknown>) => {
           const action = chatResponse({
             ...(json as ChatResponse),
@@ -332,6 +349,7 @@ export const chatAskQuestionThunk = createAppAsyncThunk<
         // console.log("Catch called");
         thunkAPI.dispatch(doneStreaming({ id: chatId }));
         thunkAPI.dispatch(chatError({ id: chatId, message: err.message }));
+        thunkAPI.dispatch(fixBrokenToolMessages({ id: chatId }));
         return thunkAPI.rejectWithValue(err.message);
       })
       .finally(() => {

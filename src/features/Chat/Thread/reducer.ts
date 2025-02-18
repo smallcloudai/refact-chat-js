@@ -32,9 +32,16 @@ import {
   setAutomaticPatch,
   setLastUserMessageId,
   setEnabledCheckpoints,
+  fixBrokenToolMessages,
+  setIsNewChatSuggested,
+  setIsNewChatSuggestionRejected,
 } from "./actions";
 import { formatChatResponse } from "./utils";
-import { DEFAULT_MAX_NEW_TOKENS } from "../../../services/refact";
+import {
+  DEFAULT_MAX_NEW_TOKENS,
+  isToolCallMessage,
+  validateToolCall,
+} from "../../../services/refact";
 
 const createChatThread = (
   tool_use: ToolUse,
@@ -50,6 +57,9 @@ const createChatThread = (
     tool_use,
     integration,
     mode,
+    new_chat_suggested: {
+      wasSuggested: false,
+    },
   };
   return chat;
 };
@@ -60,13 +70,28 @@ type createInitialStateArgs = {
   maybeMode?: LspChatMode;
 };
 
+const getThreadMode = ({
+  tool_use,
+  integration,
+  maybeMode,
+}: createInitialStateArgs) => {
+  if (integration) {
+    return "CONFIGURE";
+  }
+  if (maybeMode) {
+    return maybeMode === "CONFIGURE" ? "AGENT" : maybeMode;
+  }
+
+  return chatModeToLspMode(tool_use);
+};
+
 const createInitialState = ({
   tool_use = "agent",
   integration,
   maybeMode,
 }: createInitialStateArgs): Chat => {
-  const mode =
-    maybeMode ?? integration ? "CONFIGURE" : chatModeToLspMode(tool_use);
+  const mode = getThreadMode({ tool_use, integration, maybeMode });
+
   return {
     streaming: false,
     thread: createChatThread(tool_use, integration, mode),
@@ -124,7 +149,6 @@ export const chatReducer = createReducer(initialState, (builder) => {
       next.cache[state.thread.id] = { ...state.thread, read: false };
     }
     next.thread.model = state.thread.model;
-    next.thread.mode = state.thread.mode;
     next.system_prompt = state.system_prompt;
     next.automatic_patch = state.automatic_patch;
     next.checkpoints_enabled = state.checkpoints_enabled;
@@ -177,6 +201,21 @@ export const chatReducer = createReducer(initialState, (builder) => {
 
   builder.addCase(setAutomaticPatch, (state, action) => {
     state.automatic_patch = action.payload;
+  });
+
+  builder.addCase(setIsNewChatSuggested, (state, action) => {
+    if (state.thread.id !== action.payload.chatId) return state;
+    state.thread.new_chat_suggested = {
+      wasSuggested: action.payload.value,
+    };
+  });
+
+  builder.addCase(setIsNewChatSuggestionRejected, (state, action) => {
+    if (state.thread.id !== action.payload.chatId) return state;
+    state.thread.new_chat_suggested = {
+      ...state.thread.new_chat_suggested,
+      wasRejectedByUser: action.payload.value,
+    };
   });
 
   builder.addCase(setEnabledCheckpoints, (state, action) => {
@@ -279,5 +318,17 @@ export const chatReducer = createReducer(initialState, (builder) => {
 
   builder.addCase(setMaxNewTokens, (state, action) => {
     state.max_new_tokens = action.payload;
+  });
+
+  builder.addCase(fixBrokenToolMessages, (state, action) => {
+    if (action.payload.id !== state.thread.id) return state;
+    if (state.thread.messages.length === 0) return state;
+    const lastMessage = state.thread.messages[state.thread.messages.length - 1];
+    if (!isToolCallMessage(lastMessage)) return state;
+    if (lastMessage.tool_calls.every(validateToolCall)) return state;
+    const validToolCalls = lastMessage.tool_calls.filter(validateToolCall);
+    const messages = state.thread.messages.slice(0, -1);
+    const newMessage = { ...lastMessage, tool_calls: validToolCalls };
+    state.thread.messages = [...messages, newMessage];
   });
 });

@@ -33,21 +33,24 @@ const _MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
   onCopyClick,
   wrap = false,
   color = undefined,
+  useInlineStyles,
 }) => {
   const codeRef = React.useRef<HTMLElement | null>(null);
   const match = /language-(\w+)/.exec(className ?? "");
-  const textWithOutTrailingNewLine = String(children).replace(/\n$/, "");
+  const textWithOutTrailingNewLine =
+    children === undefined ? undefined : String(children).replace(/\n$/, "");
   const textWithOutIndent = trimIndent(textWithOutTrailingNewLine);
 
-  const preTagProps: PreTagProps = onCopyClick
-    ? {
-        onCopyClick: () => {
-          if (codeRef.current?.textContent) {
-            onCopyClick(codeRef.current.textContent);
-          }
-        },
-      }
-    : {};
+  const preTagProps: PreTagProps =
+    onCopyClick && textWithOutIndent
+      ? {
+          onCopyClick: () => {
+            if (codeRef.current?.textContent) {
+              onCopyClick(codeRef.current.textContent);
+            }
+          },
+        }
+      : {};
 
   if (match ?? String(children).includes("\n")) {
     const language: string = match && match.length > 0 ? match[1] : "text";
@@ -69,9 +72,9 @@ const _MarkdownCodeBlock: React.FC<MarkdownCodeBlockProps> = ({
             />
           )}
           language={language}
-          // useInlineStyles={false}
+          useInlineStyles={useInlineStyles}
         >
-          {textWithOutIndent}
+          {textWithOutIndent ? textWithOutIndent : "No content"}
         </SyntaxHighlighter>
       </Text>
     );

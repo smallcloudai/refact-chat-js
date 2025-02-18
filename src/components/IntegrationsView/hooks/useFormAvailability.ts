@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import type {
+  MCPArgs,
   ToolConfirmation,
   ToolParameterEntity,
 } from "../../../services/refact";
@@ -12,12 +13,18 @@ type UseFormAvailabilityProps = {
   setToolParameters: React.Dispatch<
     React.SetStateAction<ToolParameterEntity[] | null>
   >;
+  setMCPArguments: React.Dispatch<React.SetStateAction<MCPArgs>>;
+  setMCPEnvironmentVariables: React.Dispatch<
+    React.SetStateAction<Record<string, string>>
+  >;
 };
 
 export const useFormAvailability = ({
   setAvailabilityValues,
   setConfirmationRules,
   setToolParameters,
+  setMCPArguments,
+  setMCPEnvironmentVariables,
 }: UseFormAvailabilityProps) => {
   const handleAvailabilityChange = useCallback(
     (fieldName: string, value: boolean) => {
@@ -43,9 +50,25 @@ export const useFormAvailability = ({
     [setToolParameters],
   );
 
+  const handleMCPArguments = useCallback(
+    (updatedArgs: MCPArgs) => {
+      setMCPArguments(updatedArgs);
+    },
+    [setMCPArguments],
+  );
+
+  const handleMCPEnvironmentVariables = useCallback(
+    (updatedEnvs: Record<string, string>) => {
+      setMCPEnvironmentVariables(updatedEnvs);
+    },
+    [setMCPEnvironmentVariables],
+  );
+
   return {
     handleAvailabilityChange,
     handleConfirmationChange,
     handleToolParameters,
+    handleMCPArguments,
+    handleMCPEnvironmentVariables,
   };
 };

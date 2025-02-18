@@ -3,11 +3,7 @@ import React, { useCallback, useEffect, useMemo } from "react";
 import { Flex, Card, Text } from "@radix-ui/themes";
 import styles from "./ChatForm.module.css";
 
-import {
-  PaperPlaneButton,
-  BackToSideBarButton,
-  AgentIntegrationsButton,
-} from "../Buttons/Buttons";
+import { PaperPlaneButton, AgentIntegrationsButton } from "../Buttons/Buttons";
 import { TextArea } from "../TextArea";
 import { Form } from "./Form";
 import {
@@ -15,9 +11,9 @@ import {
   useIsOnline,
   useConfig,
   useAgentUsage,
-  useSendChatRequest,
   useCapsForToolUse,
   USAGE_LIMIT_EXHAUSTED_MESSAGE,
+  useSendChatRequest,
 } from "../../hooks";
 import { ErrorCallout, Callout } from "../Callout";
 import { ComboBox } from "../ComboBox";
@@ -26,7 +22,7 @@ import { ChatControls } from "./ChatControls";
 import { addCheckboxValuesToInput } from "./utils";
 import { useCommandCompletionAndPreviewFiles } from "./useCommandCompletionAndPreviewFiles";
 import { useAppSelector, useAppDispatch } from "../../hooks";
-import { getErrorMessage, clearError } from "../../features/Errors/errorsSlice";
+import { clearError, getErrorMessage } from "../../features/Errors/errorsSlice";
 import { useTourRefs } from "../../features/Tour";
 import { useCheckboxes } from "./useCheckBoxes";
 import { useInputValue } from "./useInputValue";
@@ -42,6 +38,7 @@ import { AttachFileButton, FileList } from "../Dropzone";
 import { useAttachedImages } from "../../hooks/useAttachedImages";
 import {
   enableSend,
+  selectChatError,
   selectChatId,
   selectIsStreaming,
   selectIsWaiting,
@@ -50,7 +47,7 @@ import {
   selectThreadToolUse,
   selectToolUse,
 } from "../../features/Chat";
-import { isUserMessage, telemetryApi } from "../../services/refact";
+import { telemetryApi } from "../../services/refact";
 import { push } from "../../features/Pages/pagesSlice";
 import { AgentCapabilities } from "./AgentCapabilities";
 
@@ -69,16 +66,17 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   const dispatch = useAppDispatch();
   const isStreaming = useAppSelector(selectIsStreaming);
   const isWaiting = useAppSelector(selectIsWaiting);
-  const { retryFromIndex } = useSendChatRequest();
   const { isMultimodalitySupportedForCurrentModel } = useCapsForToolUse();
   const config = useConfig();
   const toolUse = useAppSelector(selectToolUse);
-  const error = useAppSelector(getErrorMessage);
+  const globalError = useAppSelector(getErrorMessage);
+  const chatError = useAppSelector(selectChatError);
   const information = useAppSelector(getInformationMessage);
   const pauseReasonsWithPause = useAppSelector(getPauseReasonsWithPauseStatus);
   const [helpInfo, setHelpInfo] = React.useState<React.ReactNode | null>(null);
   const { disableInput } = useAgentUsage();
   const isOnline = useIsOnline();
+  const { retry } = useSendChatRequest();
 
   const chatId = useAppSelector(selectChatId);
   const threadToolUse = useAppSelector(selectThreadToolUse);
@@ -90,21 +88,11 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   }, [toolUse, threadToolUse]);
 
   const onClearError = useCallback(() => {
+    if (messages.length > 0 && chatError) {
+      retry(messages);
+    }
     dispatch(clearError());
-    const userMessages = messages.filter(isUserMessage);
-
-    // getting second-to-last user message
-    const lastSuccessfulUserMessage =
-      userMessages.slice(-2, -1)[0] || userMessages[0];
-
-    const lastSuccessfulUserMessageIndex = messages.indexOf(
-      lastSuccessfulUserMessage,
-    );
-    retryFromIndex(
-      lastSuccessfulUserMessageIndex,
-      lastSuccessfulUserMessage.content,
-    );
-  }, [dispatch, retryFromIndex, messages]);
+  }, [dispatch, retry, messages, chatError]);
 
   const caps = useCapsForToolUse();
 
@@ -173,7 +161,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
       const valueIncludingChecks = addCheckboxValuesToInput(
         trimmedValue,
         checkboxes,
-        config.features?.vecdb ?? false,
       );
       setFileInteracted(false);
       setLineSelectionInteracted(false);
@@ -187,7 +174,6 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     disableSend,
     dispatch,
     checkboxes,
-    config.features?.vecdb,
     setFileInteracted,
     setLineSelectionInteracted,
     onSubmit,
@@ -284,10 +270,10 @@ export const ChatForm: React.FC<ChatFormProps> = ({
     setIsSendImmediately,
   ]);
 
-  if (error) {
+  if (globalError) {
     return (
       <ErrorCallout mt="2" onClick={onClearError} timeout={null}>
-        {error}
+        {globalError}
       </ErrorCallout>
     );
   }
@@ -307,7 +293,7 @@ export const ChatForm: React.FC<ChatFormProps> = ({
   }
 
   return (
-    <Card mt="1" style={{ flexShrink: 0, position: "static" }}>
+    <Card mt="1" style={{ flexShrink: 0, position: "relative" }}>
       {!isOnline && (
         <Callout type="info" mb="2">
           Oops, seems that connection was lost... Check your internet connection

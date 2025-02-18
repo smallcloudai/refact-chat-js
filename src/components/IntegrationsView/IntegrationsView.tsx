@@ -43,6 +43,8 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     availableIntegrationsToConfigure,
     confirmationRules,
     availabilityValues,
+    MCPArguments,
+    MCPEnvironmentVariables,
     integrationLogo,
     handleIntegrationFormChange,
     handleSubmit,
@@ -57,6 +59,8 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
     setAvailabilityValues,
     setConfirmationRules,
     setToolParameters,
+    setMCPArguments,
+    setMCPEnvironmentVariables,
     isDisabledIntegrationForm,
     isApplyingIntegrationForm,
     isDeletingIntegration,
@@ -110,8 +114,12 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
           handleChange={handleIntegrationFormChange}
           availabilityValues={availabilityValues}
           confirmationRules={confirmationRules}
+          MCPArguments={MCPArguments}
+          MCPEnvironmentVariables={MCPEnvironmentVariables}
           setAvailabilityValues={setAvailabilityValues}
           setConfirmationRules={setConfirmationRules}
+          setMCPArguments={setMCPArguments}
+          setMCPEnvironmentVariables={setMCPEnvironmentVariables}
           setToolParameters={setToolParameters}
           handleSwitchIntegration={handleNavigateToIntegrationSetup}
         />
@@ -192,6 +200,17 @@ export const IntegrationsView: FC<IntegrationViewProps> = ({
       <Flex direction="column" style={{ width: "100%", height: "100%" }}>
         {renderHeader()}
         {renderContent()}
+        {globalError && (
+          <ErrorCallout
+            mx="0"
+            timeout={3000}
+            onClick={() => dispatch(clearError())}
+            className={styles.popup}
+            preventRetry
+          >
+            {globalError}
+          </ErrorCallout>
+        )}
       </Flex>
     </Box>
   );
