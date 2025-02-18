@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import React, { useCallback, useEffect, useMemo } from "react";
 import { useComboboxStore, Combobox } from "@ariakit/react";
 import { getAnchorRect, replaceRange } from "./utils";
@@ -38,7 +37,6 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
   const ref = React.useRef<HTMLTextAreaElement>(null);
   const [moveCursorTo, setMoveCursorTo] = React.useState<number | null>(null);
   const [lastPasteTimestamp, setLastPasteTimestamp] = React.useState(0);
-  const [lastValue, setLastValue] = React.useState("");
   const shiftEnterToSubmit = useAppSelector(selectSubmitOption);
   const { escapeKeyPressed } = useEventsBusForIDE();
 
@@ -92,19 +90,6 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
   const handleReplace = useCallback(
     (input: string) => {
       if (!ref.current) return;
-      console.log("[DEBUG] handleReplace called with:", {
-        input,
-        currentValue: ref.current.value,
-        replaceRange: commands.replace,
-        timeSinceLastPaste: Date.now() - lastPasteTimestamp,
-      });
-
-      // If this is happening right after a paste, skip it
-      if (Date.now() - lastPasteTimestamp < 100) {
-        console.log("[DEBUG] Skipping handleReplace due to recent paste");
-        return;
-      }
-
       const nextValue = replaceRange(
         ref.current.value,
         commands.replace,
@@ -115,13 +100,7 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
       onChange(nextValue);
       setMoveCursorTo(commands.replace[0] + input.length);
     },
-    [
-      closeCombobox,
-      commands.replace,
-      onChange,
-      requestCommandsCompletion,
-      lastPasteTimestamp,
-    ],
+    [closeCombobox, commands.replace, onChange, requestCommandsCompletion],
   );
 
   const onKeyDown = useCallback(
@@ -220,10 +199,11 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
 
   const handleChange = useCallback(
     (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const now = Date.now();
       const newValue = event.target.value;
+      const nativeEvent = event.nativeEvent as InputEvent;
+      const currentEventTimestamp = nativeEvent.timeStamp;
 
-      const inputType = (event.nativeEvent as InputEvent).inputType;
+      const inputType = nativeEvent.inputType;
       const isPasteEvent = [
         "insertFromPaste",
         "insertFromDrop",
@@ -231,48 +211,18 @@ export const ComboBox: React.FC<ComboBoxProps> = ({
         "insertReplacementText",
       ].includes(inputType);
 
-      const timeSinceLastChange = now - lastPasteTimestamp;
+      const timeSinceLastChange = currentEventTimestamp - lastPasteTimestamp;
 
-      console.log("[DEBUG] handleChange called with:", {
-        value: newValue,
-        inputType,
-        previousValue: lastValue,
-        timeSinceLastChange,
-      });
-      console.log("[DEBUG] previous value was:", lastValue);
-      console.log("[DEBUG] time since last paste:", timeSinceLastChange, "ms");
-      console.log("[DEBUG] combobox state:", {
-        open: state.open,
-        activeValue: state.activeValue,
-        activeId: state.activeId,
-        replace: commands.replace,
-      });
-
-      // Only apply paste throttling for large changes
-      if (isPasteEvent && timeSinceLastChange < 100) {
-        console.log("[DEBUG] Skipping duplicate paste event");
-        return;
-      }
+      if (isPasteEvent && timeSinceLastChange < 100) return;
 
       if (isPasteEvent) {
-        console.log("[DEBUG] Paste event detected, resetting combobox state");
-        setLastPasteTimestamp(now);
+        setLastPasteTimestamp(currentEventTimestamp);
         closeCombobox();
         requestCommandsCompletion.cancel();
       }
-      setLastValue(newValue);
       onChange(newValue);
     },
-    [
-      onChange,
-      closeCombobox,
-      state,
-      commands.replace,
-      // value,
-      requestCommandsCompletion,
-      lastPasteTimestamp,
-      lastValue,
-    ],
+    [onChange, closeCombobox, requestCommandsCompletion, lastPasteTimestamp],
   );
 
   const onItemClick = useCallback(
