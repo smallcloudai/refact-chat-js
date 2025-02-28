@@ -1,3 +1,9 @@
+# ⚠️ ARCHIVED
+
+**This repository has been archived. Active development continues in [smallcloudai/refact](https://github.com/smallcloudai/refact).**
+
+---
+
 # Refact Chat Js
 
 Shared component for chat with refact plugins and [refact docker](https://github.com/smallcloudai/refact).
